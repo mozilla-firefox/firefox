@@ -177,7 +177,7 @@ class BrowserSearchTelemetryHandler {
    * @param {Values<typeof lazy.SearchUtils.URL_TYPE>} [details.searchUrlType=undefined]
    *        A `SearchUtils.URL_TYPE` value that indicates the type of search.
    *        Defaults to `SearchUtils.URL_TYPE.SEARCH`, a plain old search.
-   * @param {SearchSubmissionData} [details.submission]
+   * @param {Pick<SearchSubmissionData, "partnerCode"|"telemetryId">} [details.submission]
    *        Submission details used for this event. This is used for recording
    *        specific details to telemetry.
    * @throws if source is not in the known sources list.

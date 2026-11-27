@@ -45,6 +45,7 @@ export var SearchUIUtils = {
   init() {
     if (!this.initialized) {
       Services.obs.addObserver(this, "browser-search-engine-modified");
+      Services.obs.addObserver(this, "keyword-search");
       this.initialized = true;
 
       // On startup, cache urlbar placeholder for regular and private windows.
@@ -54,11 +55,43 @@ export var SearchUIUtils = {
   },
 
   /**
-   * @param {{wrappedJSObject: SearchEngine}} subject
-   * @param {"browser-search-engine-modified"} topic
+   * @param {nsISupports} subject
+   * @param {"browser-search-engine-modified"|"keyword-search"} topic
    * @param {string} data
    */
   observe(subject, topic, data) {
+    if (topic == "keyword-search") {
+      // This notification is broadcast by the docshell when it "fixes up" a
+      // URI that it's been asked to load into a keyword search.
+      /** @type {SearchEngine} */
+      let engine = null;
+      /** @type {nsIURIFixupInfo} */
+      let info = null;
+      try {
+        info = subject.QueryInterface(Ci.nsIURIFixupInfo);
+        engine = lazy.SearchService.getEngineById(info.keywordProviderId);
+      } catch (ex) {
+        console.error(ex);
+        return;
+      }
+      let win = lazy.BrowserWindowTracker.getTopWindow({
+        allowFromInactiveWorkspace: true,
+      });
+      lazy.BrowserSearchTelemetry.recordSearch(
+        win.gBrowser.selectedBrowser,
+        engine,
+        "urlbar",
+        {
+          submission: info
+            ? {
+                partnerCode: info.keywordPartnerCode,
+                telemetryId: info.keywordTelemetryId || undefined,
+              }
+            : undefined,
+        }
+      );
+      return;
+    }
     switch (data) {
       case "engine-default":
         this.updatePlaceholderNamePreference(false);

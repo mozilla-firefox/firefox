@@ -16,8 +16,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   ASRouterNewTabHook: "resource:///modules/asrouter/ASRouterNewTabHook.sys.mjs",
   AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
   BackupService: "moz-src:///browser/components/backup/BackupService.sys.mjs",
-  BrowserSearchTelemetry:
-    "moz-src:///browser/components/search/BrowserSearchTelemetry.sys.mjs",
   BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
   BrowserUsageTelemetry: "resource:///modules/BrowserUsageTelemetry.sys.mjs",
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
@@ -294,36 +292,6 @@ BrowserGlue.prototype = {
         // the UI has gone should be finalized in _onQuitApplicationGranted.
         this._dispose();
         break;
-      case "keyword-search": {
-        // This notification is broadcast by the docshell when it "fixes up" a
-        // URI that it's been asked to load into a keyword search.
-        let engine = null;
-        let info = null;
-        try {
-          info = subject.QueryInterface(Ci.nsIURIFixupInfo);
-          engine = lazy.SearchService.getEngineById(info.keywordProviderId);
-        } catch (ex) {
-          console.error(ex);
-          return;
-        }
-        let win = lazy.BrowserWindowTracker.getTopWindow({
-          allowFromInactiveWorkspace: true,
-        });
-        lazy.BrowserSearchTelemetry.recordSearch(
-          win.gBrowser.selectedBrowser,
-          engine,
-          "urlbar",
-          {
-            submission: info
-              ? {
-                  partnerCode: info.keywordPartnerCode,
-                  telemetryId: info.keywordTelemetryId || undefined,
-                }
-              : undefined,
-          }
-        );
-        break;
-      }
       case "xpi-signature-changed": {
         let disabledAddons = JSON.parse(data).disabled;
         let addons = await lazy.AddonManager.getAddonsByIDs(disabledAddons);
@@ -376,7 +344,6 @@ BrowserGlue.prototype = {
       "places-init-complete",
       "handle-xul-text-link",
       "profile-before-change",
-      "keyword-search",
       "restart-in-safe-mode",
       "xpi-signature-changed",
       "handlersvc-store-initialized",
