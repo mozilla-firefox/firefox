@@ -14,7 +14,8 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { propertyConfig, propertyTypes } from "../config.mjs";
-import { CSS_WIDE_KEYWORDS, SYSTEM_COLORS } from "../helpers.mjs";
+import { SYSTEM_COLORS } from "../helpers.mjs";
+import { PropertyValidator } from "../property-validator.mjs";
 
 const topsrcdir = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -66,7 +67,7 @@ const allowedWords = types =>
   new Set(
     types
       .flatMap(type => type.allow ?? [])
-      .concat(...CSS_WIDE_KEYWORDS)
+      .concat(...PropertyValidator.GLOBAL_WORDS)
       .map(word => word.toLowerCase())
   );
 
@@ -184,7 +185,7 @@ and a property listed under several types accepts a value that any of them
 accepts. Where two of a property's types fix the same value, the first type in
 its \`validTypes\` wins.
 
-Every checked property also accepts ${list([...CSS_WIDE_KEYWORDS], "and")}.
+Every checked property also accepts ${list([...PropertyValidator.GLOBAL_WORDS], "and")}.
 `;
 
   const sections = Object.entries(propertyTypes)

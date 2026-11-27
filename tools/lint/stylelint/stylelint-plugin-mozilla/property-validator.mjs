@@ -6,7 +6,7 @@
 
 import valueParser from "postcss-value-parser";
 import { tokensTable } from "../../../../toolkit/themes/shared/design-system/dist/semantic-categories.mjs";
-import { CSS_WIDE_KEYWORDS, isSystemColor } from "./helpers.mjs";
+import { isSystemColor } from "./helpers.mjs";
 
 /**
  * Validates whether a given CSS property value complies with allowed design token rules.
@@ -15,6 +15,14 @@ import { CSS_WIDE_KEYWORDS, isSystemColor } from "./helpers.mjs";
  * @property {PropertyConfig} config Configuration for the given property.
  */
 export class PropertyValidator {
+  static GLOBAL_WORDS = new Set([
+    "inherit",
+    "initial",
+    "revert",
+    "revert-layer",
+    "unset",
+  ]);
+
   /** @type {PropertyConfig} */
   config;
   /** @type {Set<string>} */
@@ -39,7 +47,7 @@ export class PropertyValidator {
     this.allowedWords = new Set(
       this.config.validTypes
         .flatMap(propType => propType.allow ?? [])
-        .concat(...CSS_WIDE_KEYWORDS)
+        .concat(...PropertyValidator.GLOBAL_WORDS)
     );
     this.allowedAliasWords = new Set(
       this.config.validTypes
