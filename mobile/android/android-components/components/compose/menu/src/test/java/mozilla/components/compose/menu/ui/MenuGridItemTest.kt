@@ -5,18 +5,24 @@
 package mozilla.components.compose.menu.ui
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHasNoClickAction
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.longClick
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
@@ -158,21 +164,39 @@ class MenuGridItemTest {
         }
     }
 
+    @Test
+    fun `GIVEN an item in its container without a title THEN it is as tall as its icon circle`() {
+        setItem(title = null, showContainer = true)
+
+        composeTestRule.onNodeWithTag(ITEM_TAG).assertHeightIsEqualTo(48.dp)
+    }
+
+    @Test
+    fun `GIVEN an item in its container with a title THEN it keeps space above and below its content`() {
+        setItem(showContainer = true)
+
+        composeTestRule.onNodeWithTag(ITEM_TAG).assertHeightIsAtLeast(52.dp)
+    }
+
     private fun setItem(
-        onClickEvent: MenuEvent?,
+        onClickEvent: MenuEvent? = null,
         onLongClickEvent: MenuEvent? = null,
         state: MenuItemState = MenuItemState.DEFAULT,
+        title: Text? = Text.String(TITLE),
+        showContainer: Boolean = false,
     ) {
         composeTestRule.setContent {
             AcornTheme {
                 MenuGridItem(
-                    title = Text.String(TITLE),
+                    title = title,
                     icon = MenuItemIconRes(iconsR.drawable.mozac_ic_settings_24),
                     onClickEvent = onClickEvent,
                     onInteraction = { events += it },
+                    modifier = Modifier.testTag(ITEM_TAG),
                     contentDescription = null,
                     state = state,
                     onLongClickEvent = onLongClickEvent,
+                    showContainer = showContainer,
                 )
             }
         }
@@ -184,5 +208,6 @@ class MenuGridItemTest {
 
     private companion object {
         const val TITLE = "Item"
+        const val ITEM_TAG = "menuGridItem"
     }
 }

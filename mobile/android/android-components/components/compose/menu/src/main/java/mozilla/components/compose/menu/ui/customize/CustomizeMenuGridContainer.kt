@@ -106,6 +106,7 @@ private fun MenuGridContainerPreview() = AcornTheme {
                     contentDescription = Text.String("Refresh"),
                     icon = MenuItemIconRes(iconsR.drawable.mozac_ic_arrow_clockwise_24),
                 ),
-            )
+            ),
+        showTitles = false,
     )
 }

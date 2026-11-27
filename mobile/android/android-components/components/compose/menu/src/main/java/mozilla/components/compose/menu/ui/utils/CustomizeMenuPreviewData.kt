@@ -28,6 +28,7 @@ internal val customizeMenuPreviewData: List<MenuItemsGroup> =
                     previewMenuItem("Refresh", iconsR.drawable.mozac_ic_arrow_clockwise_24),
                 ),
             isSticky = true,
+            showTitles = false,
         ),
         MenuItemsGroup.Row(
             id = "vpn",

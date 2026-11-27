@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasScrollAction
@@ -239,6 +241,27 @@ class MenuTest {
     }
 
     @Test
+    fun `GIVEN a grid without titles moved between other sections THEN its items are 48dp tall`() {
+        setMenu(listOf(row("Top"), iconsGrid(), row("Bottom")))
+
+        composeTestRule.onNodeWithContentDescription("Icon 1").assertHeightIsEqualTo(48.dp)
+    }
+
+    @Test
+    fun `GIVEN a grid with titles between other sections THEN its items keep space above and below their content`() {
+        setMenu(listOf(row("Top"), iconsGrid(showTitles = true), row("Bottom")))
+
+        composeTestRule.onNode(hasText("Icon 1")).assertHeightIsAtLeast(52.dp)
+    }
+
+    @Test
+    fun `GIVEN a grid without titles as the sticky header THEN its items stay 48dp tall`() {
+        setMenu(listOf(iconsGrid(), row("Item")))
+
+        composeTestRule.onNodeWithContentDescription("Icon 1").assertHeightIsEqualTo(48.dp)
+    }
+
+    @Test
     fun `WHEN menu with sticky header is scrollable THEN report dark header background`() {
         var isHeaderDark = false
         val groups = listOf(stickyGroup("Header")) + List(20) { row("Item $it") }
@@ -286,6 +309,14 @@ class MenuTest {
 
     private fun stickyGroup(title: String) =
         MenuItemsGroup.Grid(id = title, items = listOf(item(title)), isSticky = true)
+
+    private fun iconsGrid(showTitles: Boolean = false) =
+        MenuItemsGroup.Grid(
+            id = "icons",
+            items = (1..5).map { item("Icon $it") },
+            isSticky = true,
+            showTitles = showTitles,
+        )
 
     private data object BannerClicked : MenuEvent
 

@@ -14,6 +14,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -1020,6 +1021,25 @@ class CustomizeMenuContentTest {
         composeTestRule.onNodeWithTag(EDIT_GROUP_ITEMS_BUTTON_TAG, useUnmergedTree = true).performClick()
 
         assertTrue(CustomizableMenuAction.EditGroupItemsClicked("Editable") in actions)
+    }
+
+    @Test
+    fun `GIVEN a section of icons without titles THEN its items are 48dp tall`() {
+        val iconsSection =
+            MenuItemsGroup.Grid(
+                id = "icons",
+                items =
+                    (1..5).map {
+                        StandardMenuItem(
+                            title = MenuItemTitle(Text.String("Icon $it")),
+                            icon = MenuItemIconRes(iconsR.drawable.mozac_ic_settings_24),
+                        )
+                    },
+                showTitles = false,
+            )
+        setContent(menuState(shown = listOf(iconsSection)))
+
+        composeTestRule.onNodeWithContentDescription("Icon 1", useUnmergedTree = true).assertHeightIsEqualTo(48.dp)
     }
 
     private fun sectionAncestor(itemNames: String) = hasAnyAncestor(hasContentDescription(itemNames, substring = true))

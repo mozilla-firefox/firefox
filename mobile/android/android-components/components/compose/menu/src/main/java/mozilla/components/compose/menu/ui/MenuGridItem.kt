@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.Role.Companion.Button
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.text.value
 import mozilla.components.compose.base.theme.AcornTheme
@@ -30,7 +31,8 @@ import mozilla.components.ui.icons.R as iconsR
 /**
  * A menu item shown as a cell in a grid.
  *
- * @param title The title of the menu item, or null to show only the icon inside a circle.
+ * @param title The title of the menu item, or null to show only the icon inside a circle, without space above and below
+ *   it.
  * @param icon An icon of the menu item.
  * @param onClickEvent Optional [MenuEvent] to dispatch when the menu item is clicked.
  * @param onInteraction The callback to invoke when the menu item is interacted with.
@@ -77,12 +79,14 @@ internal fun MenuGridItem(
             )
             .menuGridItemSemantics(index, description, onClickEvent, onLongClickEvent)
 
+    val verticalPadding = if (title == null) 0.dp else AcornTheme.layout.space.static150
+
     Column(
         modifier =
             if (showContainer) {
                 containerModifier.padding(
                     horizontal = AcornTheme.layout.space.static50,
-                    vertical = AcornTheme.layout.space.static150,
+                    vertical = verticalPadding,
                 )
             } else {
                 containerModifier
