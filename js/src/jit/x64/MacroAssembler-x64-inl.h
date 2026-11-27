@@ -181,6 +181,11 @@ void MacroAssembler::xor64(const Operand& src, Register64 dest) {
   xorq(src, dest.reg);
 }
 
+void MacroAssembler::andNot64(Register64 lhs, Register64 rhs, Register64 dest) {
+  MOZ_ASSERT(Assembler::HasBMI1());
+  andnq(rhs.reg, lhs.reg, dest.reg);
+}
+
 // ===============================================================
 // Swap instructions
 

@@ -55,6 +55,10 @@ void MacroAssembler::and32(Register src, Register dest) {
   as_and(dest, dest, src);
 }
 
+void MacroAssembler::andNot32(Register lhs, Register rhs, Register dest) {
+  MOZ_CRASH("Not supported for this target");
+}
+
 void MacroAssembler::and32(Imm32 imm, Register dest) { ma_and(dest, imm); }
 
 void MacroAssembler::and32(Imm32 imm, Register src, Register dest) {

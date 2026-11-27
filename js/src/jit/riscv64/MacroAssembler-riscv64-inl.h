@@ -396,6 +396,16 @@ void MacroAssembler::andPtr(Imm32 imm, const Address& dest) {
   storePtr(scratch2, dest);
 }
 
+void MacroAssembler::andNot32(Register lhs, Register rhs, Register dest) {
+  MOZ_ASSERT(HasZbbExtension());
+  andn(dest, lhs, rhs);
+}
+
+void MacroAssembler::andNot64(Register64 lhs, Register64 rhs, Register64 dest) {
+  MOZ_ASSERT(HasZbbExtension());
+  andn(dest.reg, lhs.reg, rhs.reg);
+}
+
 void MacroAssembler::branch8(Condition cond, const Address& lhs, Imm32 rhs,
                              Label* label) {
   UseScratchRegisterScope temps(this);

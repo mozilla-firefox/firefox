@@ -298,6 +298,14 @@ void MacroAssembler::nor32(Imm32 imm, Register src, Register dest) {
   ma_nor(dest, src, imm);
 }
 
+void MacroAssembler::andNot32(Register lhs, Register rhs, Register dest) {
+  as_andn(dest, lhs, rhs);
+}
+
+void MacroAssembler::andNot64(Register64 lhs, Register64 rhs, Register64 dest) {
+  as_andn(dest.reg, lhs.reg, rhs.reg);
+}
+
 // ===============================================================
 // Swap instructions
 

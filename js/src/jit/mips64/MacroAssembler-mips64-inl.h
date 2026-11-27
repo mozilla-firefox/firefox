@@ -109,6 +109,10 @@ void MacroAssembler::and64(Register64 src, Register64 dest) {
   ma_and(dest.reg, src.reg);
 }
 
+void MacroAssembler::andNot64(Register64 lhs, Register64 rhs, Register64 dest) {
+  MOZ_CRASH("Not supported for this target");
+}
+
 void MacroAssembler::or64(Imm64 imm, Register64 dest) {
   UseScratchRegisterScope temps(*this);
   Register scratch = temps.Acquire();

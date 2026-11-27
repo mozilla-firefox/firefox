@@ -123,6 +123,11 @@ void MacroAssembler::nor32(Imm32 imm, Register src, Register dest) {
   not32(dest);
 }
 
+void MacroAssembler::andNot32(Register lhs, Register rhs, Register dest) {
+  MOZ_ASSERT(AssemblerX86Shared::HasBMI1());
+  andnl(rhs, lhs, dest);
+}
+
 void MacroAssembler::clz32(Register src, Register dest, bool knownNotZero) {
   if (AssemblerX86Shared::HasLZCNT()) {
     lzcntl(src, dest);
