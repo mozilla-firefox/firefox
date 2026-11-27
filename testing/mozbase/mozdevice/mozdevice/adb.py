@@ -1264,14 +1264,13 @@ class ADBDevice(ADBCommand):
         if self._have_pidof:
             try:
                 pid_output = self.shell_output("pidof %s" % app_name, timeout=timeout)
-                re_pids = re.compile(r"[0-9]+")
-                pids = re_pids.findall(pid_output)
+                pids = self._pids_with_name(pid_output, app_name, timeout=timeout)
                 if self._have_flaky_pidof and not pids:
                     time.sleep(0.1)
                     pid_output = self.shell_output(
                         "pidof %s" % app_name, timeout=timeout
                     )
-                    pids = re_pids.findall(pid_output)
+                    pids = self._pids_with_name(pid_output, app_name, timeout=timeout)
             except ADBError:
                 pids = []
         else:
@@ -1281,6 +1280,32 @@ class ADBDevice(ADBCommand):
             pids = [proc[0] for proc in procs if proc[1] == app_name[:75]]
 
         return [int(pid) for pid in pids]
+
+    def _pids_with_name(self, pid_output, app_name, timeout=None):
+        """Return the pids in pidof's output whose command line still has the
+        basename of app_name. pidof can briefly match a process that Zygote
+        has just forked against a name it does not run under; reading its
+        command line again shows its real name. If that check fails, return
+        all of pidof's pids.
+        """
+        pids = re.findall(r"[0-9]+", pid_output)
+        if not pids:
+            return []
+        loop = f"for p in {' '.join(pids)}; do echo pid=$p; cat /proc/$p/cmdline 2>/dev/null; echo; done"
+        try:
+            output = self.shell_output(f"sh -c {shlex.quote(loop)}", timeout=timeout)
+        except ADBError as e:
+            self._logger.warning(
+                f"pidof {app_name}: could not check process names: {e}"
+            )
+            return pids
+        name = posixpath.basename(app_name)
+        cmdlines = re.findall(r"^pid=([0-9]+)\n([^\n]*)$", output, re.M)
+        return [
+            pid
+            for pid, cmdline in cmdlines
+            if posixpath.basename(cmdline.split("\0")[0]) == name
+        ]
 
     def _sync(self, timeout=None):
         """Sync the file system using shell_output in order that exceptions
