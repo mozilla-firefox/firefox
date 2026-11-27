@@ -64,7 +64,7 @@ class SlicedInputStream final : public nsIAsyncInputStream,
 
   void SetSourceStream(already_AddRefed<nsIInputStream> aInputStream);
 
-  uint64_t AdjustRange(uint64_t aRange);
+  uint64_t AdjustRange(uint64_t aRange) MOZ_REQUIRES(mMutex);
 
   nsCOMPtr<nsIInputStream> mInputStream;
 
@@ -79,9 +79,9 @@ class SlicedInputStream final : public nsIAsyncInputStream,
 
   uint64_t mStart;
   uint64_t mLength;
-  uint64_t mCurPos;
+  uint64_t mCurPos MOZ_GUARDED_BY(mMutex);
 
-  bool mClosed;
+  bool mClosed MOZ_GUARDED_BY(mMutex);
 
   // These four are used for AsyncWait. They are protected by mutex because
   // touched on multiple threads.

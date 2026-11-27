@@ -159,7 +159,10 @@ NS_IMETHODIMP
 SlicedInputStream::Close() {
   NS_ENSURE_STATE(mInputStream);
 
-  mClosed = true;
+  {
+    MutexAutoLock lock(mMutex);
+    mClosed = true;
+  }
   return mInputStream->Close();
 }
 
@@ -167,6 +170,7 @@ NS_IMETHODIMP
 SlicedInputStream::Available(uint64_t* aLength) {
   NS_ENSURE_STATE(mInputStream);
 
+  MutexAutoLock lock(mMutex);
   if (mClosed) {
     return NS_BASE_STREAM_CLOSED;
   }
@@ -189,6 +193,7 @@ NS_IMETHODIMP
 SlicedInputStream::StreamStatus() {
   NS_ENSURE_STATE(mInputStream);
 
+  MutexAutoLock lock(mMutex);
   if (mClosed) {
     return NS_BASE_STREAM_CLOSED;
   }
@@ -204,6 +209,7 @@ NS_IMETHODIMP
 SlicedInputStream::Read(char* aBuffer, uint32_t aCount, uint32_t* aReadCount) {
   *aReadCount = 0;
 
+  MutexAutoLock lock(mMutex);
   if (mClosed) {
     return NS_OK;
   }
@@ -316,7 +322,10 @@ SlicedInputStream::CloseWithStatus(nsresult aStatus) {
   NS_ENSURE_STATE(mInputStream);
   NS_ENSURE_STATE(mWeakAsyncInputStream);
 
-  mClosed = true;
+  {
+    MutexAutoLock lock(mMutex);
+    mClosed = true;
+  }
   return mWeakAsyncInputStream->CloseWithStatus(aStatus);
 }
 
@@ -484,6 +493,8 @@ void SlicedInputStream::Serialize(mozilla::ipc::InputStreamParams& aParams,
   SlicedInputStreamParams params;
   InputStreamHelper::SerializeInputStream(mInputStream, params.stream(),
                                           aMaxSize, aSizeUsed);
+
+  MutexAutoLock lock(mMutex);
   params.start() = mStart;
   params.length() = mLength;
   params.curPos() = mCurPos;
@@ -521,6 +532,7 @@ bool SlicedInputStream::Deserialize(
 
   SetSourceStream(stream.forget());
 
+  MutexAutoLock lock(mMutex);
   mStart = params.start();
   mLength = params.length();
   mCurPos = params.curPos();
@@ -539,6 +551,7 @@ SlicedInputStream::Seek(int32_t aWhence, int64_t aOffset) {
   int64_t offset;
   nsresult rv;
 
+  MutexAutoLock lock(mMutex);
   switch (aWhence) {
     case NS_SEEK_SET:
       offset = mStart + aOffset;
@@ -584,6 +597,7 @@ SlicedInputStream::SetEOF() {
   NS_ENSURE_STATE(mInputStream);
   NS_ENSURE_STATE(mWeakSeekableInputStream);
 
+  MutexAutoLock lock(mMutex);
   mClosed = true;
   return mWeakSeekableInputStream->SetEOF();
 }
@@ -622,6 +636,7 @@ SlicedInputStream::Length(int64_t* aLength) {
   NS_ENSURE_STATE(mInputStream);
   NS_ENSURE_STATE(mWeakInputStreamLength);
 
+  MutexAutoLock lock(mMutex);
   nsresult rv = mWeakInputStreamLength->Length(aLength);
   if (rv == NS_BASE_STREAM_CLOSED) {
     mClosed = true;
@@ -676,10 +691,10 @@ SlicedInputStream::OnInputStreamLengthReady(nsIAsyncInputStreamLength* aStream,
     }
 
     callback.swap(mAsyncWaitLengthCallback);
-  }
 
-  if (aLength != -1) {
-    aLength = (int64_t)AdjustRange((uint64_t)aLength);
+    if (aLength != -1) {
+      aLength = (int64_t)AdjustRange((uint64_t)aLength);
+    }
   }
 
   MOZ_ASSERT(callback);
