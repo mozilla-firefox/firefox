@@ -58,6 +58,7 @@ UNCOMMON_TRY_TASK_LABELS = [
     r"-artifact[/-]",  # Artifact build test jobs - Bug 1945658
     r"-ccov",
     r"-profiling-",  # talos/raptor profiling jobs are run too often
+    r"-test-verify-path",  # Expensive, bug 2098497
     r"-32-.*-webgpu",  # webgpu gets little benefit from these tests.
     r"-asan-.*-webgpu",
     r"-tsan-.*-webgpu",

@@ -160,7 +160,7 @@ test-verify: &test-verify
             - tr8ns.T.esen.model
             - tr8ns.T.esen.vocab
 
-# Runs on the projects test-verify runs on, to be in the set `mach try` offers,
+# Runs on the projects test-verify runs on, to be in the set `mach try --full` offers,
 # and is dropped outside of try by set_test_verify_path_chunks.
 test-verify-path:
     <<: *test-verify
