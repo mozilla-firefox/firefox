@@ -24,6 +24,8 @@ import mozilla.components.concept.engine.ipprotection.ServiceState
 import mozilla.components.feature.ipprotection.store.IPProtectionStore
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
+import mozilla.components.feature.ipprotection.store.state.IPProtectionStatus
+import mozilla.components.feature.ipprotection.store.state.ipProtectionStatus
 import mozilla.components.lib.state.helpers.AbstractBinding
 import mozilla.components.service.nimbus.messaging.Message
 import mozilla.components.service.nimbus.messaging.NimbusMessagingControllerInterface
@@ -72,7 +74,12 @@ class IPProtectionMessagingBinding(
 
     private suspend fun observeIpProtectionState(flow: Flow<IPProtectionState>) {
         flow
-            .distinctUntilChangedBy { Triple(it.serviceStatus, it.currentAuthProvider, it.accountState) }
+            .distinctUntilChanged { old, new ->
+                old.serviceStatus == new.serviceStatus &&
+                    old.currentAuthProvider == new.currentAuthProvider &&
+                    old.ipProtectionStatus == new.ipProtectionStatus &&
+                    old.usageQuotaResetPromptPending == new.usageQuotaResetPromptPending
+            }
             .filter { it.readyForEvaluation() }
             .map { state ->
                 state.toMessageContext()
@@ -93,14 +100,15 @@ class IPProtectionMessagingBinding(
     }
 
     /**
-     * The state is ready for evaluation when the service is ready, current auth provider is GPI, and there's no account
-     * signed in
+     * The state is ready for evaluation when the service status, current auth provider, account status and ip
+     * protection status are initialized.
      */
     private fun IPProtectionState.readyForEvaluation(): Boolean {
-        val serviceReady = serviceStatus == ServiceState.Ready
-        val gpiAuthProvider = currentAuthProvider == CurrentAuthProvider.Gpi
-        val noAccount = accountState.status == AccountStatus.NoAccount
+        val serviceInitialized = serviceStatus != ServiceState.Uninitialized
+        val authProviderInitialized = currentAuthProvider != CurrentAuthProvider.Unknown
+        val accountInitialized = accountState.status != AccountStatus.Uninitialized
+        val ipProtectionInitialized = ipProtectionStatus != IPProtectionStatus.Uninitialized
 
-        return serviceReady && gpiAuthProvider && noAccount
+        return serviceInitialized && authProviderInitialized && accountInitialized && ipProtectionInitialized
     }
 }

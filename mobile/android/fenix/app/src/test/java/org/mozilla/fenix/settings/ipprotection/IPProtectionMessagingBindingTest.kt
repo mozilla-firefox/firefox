@@ -17,12 +17,17 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
+import mozilla.components.concept.engine.ipprotection.ProxyState
 import mozilla.components.concept.engine.ipprotection.ServiceState
-import mozilla.components.feature.ipprotection.store.IPProtectionAction.ServiceAction.ServiceStateChanged
+import mozilla.components.feature.ipprotection.store.IPProtectionAction
+import mozilla.components.feature.ipprotection.store.IPProtectionAction.ServiceAction
 import mozilla.components.feature.ipprotection.store.IPProtectionStore
 import mozilla.components.feature.ipprotection.store.state.AccountState
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
+import mozilla.components.feature.ipprotection.store.state.Authorized
+import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
+import mozilla.components.feature.ipprotection.store.state.ProxyStatus
 import mozilla.components.service.nimbus.messaging.Message
 import mozilla.components.service.nimbus.messaging.MessageData
 import mozilla.components.service.nimbus.messaging.MessageSurfaceId
@@ -65,14 +70,14 @@ class IPProtectionMessagingBindingTest {
         }
 
     @Test
-    fun `GIVEN binding is started, WHEN there is an account on device, THEN the surface is not evaluated`() =
+    fun `GIVEN binding is started, WHEN account is not yet resolved, THEN the surface is not evaluated`() =
         runTest(testDispatcher) {
             val appStore = AppStore(middlewares = listOf(captureActions))
             val ipProtectionStore =
                 buildIpProtectionStore(
                     serviceStatus = ServiceState.Ready,
                     authProvider = CurrentAuthProvider.Gpi,
-                    accountStatus = AccountStatus.Authenticated,
+                    accountStatus = AccountStatus.Uninitialized,
                 )
             val controller = createBinding(appStore, ipProtectionStore)
 
@@ -83,21 +88,170 @@ class IPProtectionMessagingBindingTest {
         }
 
     @Test
-    fun `GIVEN binding is started, WHEN the user is using FxA, THEN the surface is not evaluated`() =
+    fun `GIVEN binding is started, WHEN the auth provider changes, THEN the surface is re-evaluated with the new trigger context`() =
         runTest(testDispatcher) {
             val appStore = AppStore(middlewares = listOf(captureActions))
             val ipProtectionStore =
                 buildIpProtectionStore(
                     serviceStatus = ServiceState.Ready,
                     authProvider = CurrentAuthProvider.Fxa,
-                    accountStatus = AccountStatus.NoAccount,
+                    accountStatus = AccountStatus.Authenticated,
+                    eligibilityStatus = EligibilityStatus.UnsupportedRegion,
                 )
             val controller = createBinding(appStore, ipProtectionStore)
 
             controller.start()
             runCurrent()
 
-            captureActions.assertNotDispatched(Evaluate::class)
+            ipProtectionStore.dispatch(ServiceAction.CurrentAuthProviderChanged(authProvider = CurrentAuthProvider.Gpi))
+            runCurrent()
+
+            captureActions.assertLastAction(Evaluate::class) { action ->
+                assertEquals(FenixMessageSurfaceId.SETTINGS_VPN, action.surface)
+                assertEquals(
+                    createTriggerContext(
+                        authProvider = "gpi",
+                        isReadyToUse = false,
+                        isEnabled = false,
+                        usageResetPromptPending = false,
+                    ),
+                    action.triggerContext,
+                )
+            }
+        }
+
+    @Test
+    fun `GIVEN binding is started, WHEN the usage quota prompt state changes, THEN the surface is re-evaluated with the new trigger context`() =
+        runTest(testDispatcher) {
+            val appStore = AppStore(middlewares = listOf(captureActions))
+            val ipProtectionStore =
+                buildIpProtectionStore(
+                    serviceStatus = ServiceState.Ready,
+                    authProvider = CurrentAuthProvider.Fxa,
+                    accountStatus = AccountStatus.Authenticated,
+                    usageQuotaResetPromptPending = false,
+                )
+
+            val controller = createBinding(appStore, ipProtectionStore)
+
+            controller.start()
+            runCurrent()
+
+            ipProtectionStore.dispatch(IPProtectionAction.UsageAction.UsageResetPromptPending(pending = true))
+            runCurrent()
+
+            captureActions.assertLastAction(Evaluate::class) { action ->
+                assertEquals(FenixMessageSurfaceId.SETTINGS_VPN, action.surface)
+                assertEquals(
+                    createTriggerContext(
+                        authProvider = "fxa",
+                        isReadyToUse = true,
+                        isEnabled = false,
+                        usageResetPromptPending = true,
+                    ),
+                    action.triggerContext,
+                )
+            }
+        }
+
+    @Test
+    fun `GIVEN binding is started, WHEN the proxy state changes, THEN the surface is re-evaluated with the new trigger context`() =
+        runTest(testDispatcher) {
+            val appStore = AppStore(middlewares = listOf(captureActions))
+            val ipProtectionStore =
+                buildIpProtectionStore(
+                    serviceStatus = ServiceState.Ready,
+                    authProvider = CurrentAuthProvider.Fxa,
+                    accountStatus = AccountStatus.Authenticated,
+                    proxyStatus = Authorized.Idle,
+                    usageQuotaResetPromptPending = false,
+                )
+
+            val controller = createBinding(appStore, ipProtectionStore)
+
+            controller.start()
+            runCurrent()
+
+            ipProtectionStore.dispatch(
+                IPProtectionAction.ProxyAction.ProxyStateChanged(proxyState = ProxyState.ACTIVATING)
+            )
+            runCurrent()
+
+            captureActions.assertLastAction(Evaluate::class) { action ->
+                assertEquals(FenixMessageSurfaceId.SETTINGS_VPN, action.surface)
+                assertEquals(
+                    createTriggerContext(
+                        authProvider = "fxa",
+                        isReadyToUse = true,
+                        isEnabled = false,
+                        usageResetPromptPending = false,
+                    ),
+                    action.triggerContext,
+                )
+            }
+
+            ipProtectionStore.dispatch(IPProtectionAction.ProxyAction.ProxyStateChanged(proxyState = ProxyState.ACTIVE))
+            runCurrent()
+
+            captureActions.assertLastAction(Evaluate::class) { action ->
+                assertEquals(FenixMessageSurfaceId.SETTINGS_VPN, action.surface)
+                assertEquals(
+                    createTriggerContext(
+                        authProvider = "fxa",
+                        isReadyToUse = true,
+                        isEnabled = true,
+                        usageResetPromptPending = false,
+                    ),
+                    action.triggerContext,
+                )
+            }
+        }
+
+    @Test
+    fun `GIVEN binding is started, WHEN none of the trigger context values change, THEN the surface is not re-evaluated`() =
+        runTest(testDispatcher) {
+            val appStore = AppStore(middlewares = listOf(captureActions))
+            val ipProtectionStore =
+                buildIpProtectionStore(
+                    serviceStatus = ServiceState.Ready,
+                    authProvider = CurrentAuthProvider.Fxa,
+                    accountStatus = AccountStatus.Authenticated,
+                    usageQuotaResetPromptPending = true,
+                )
+            val controller = createBinding(appStore, ipProtectionStore)
+
+            controller.start()
+            runCurrent()
+
+            // assert initial state
+            captureActions.assertLastAction(Evaluate::class) { action ->
+                assertEquals(
+                    createTriggerContext(
+                        authProvider = "fxa",
+                        isReadyToUse = true,
+                        isEnabled = false,
+                        usageResetPromptPending = true,
+                    ),
+                    action.triggerContext,
+                    "Initial state is not as expected",
+                )
+            }
+            captureActions.reset()
+
+            // Ready service status should not cause re-evaluation
+            ipProtectionStore.dispatch(ServiceAction.ServiceStateChanged(ServiceState.Ready))
+            runCurrent()
+            captureActions.assertNoActionDispatched()
+
+            // Same auth provider should not trigger re-evaluation
+            ipProtectionStore.dispatch(ServiceAction.CurrentAuthProviderChanged(CurrentAuthProvider.Fxa))
+            runCurrent()
+            captureActions.assertNoActionDispatched()
+
+            // Same quota reset prompt state should not trigger re-evaluation
+            ipProtectionStore.dispatch(IPProtectionAction.UsageAction.UsageResetPromptPending(pending = true))
+            runCurrent()
+            captureActions.assertNoActionDispatched()
         }
 
     @Test
@@ -203,7 +357,7 @@ class IPProtectionMessagingBindingTest {
             runCurrent()
 
             controller.stop()
-            ipProtectionStore.dispatch(ServiceStateChanged(ServiceState.Ready))
+            ipProtectionStore.dispatch(ServiceAction.ServiceStateChanged(ServiceState.Ready))
             runCurrent()
 
             captureActions.assertNotDispatched(Evaluate::class)
@@ -213,6 +367,9 @@ class IPProtectionMessagingBindingTest {
         serviceStatus: ServiceState,
         authProvider: CurrentAuthProvider,
         accountStatus: AccountStatus,
+        proxyStatus: ProxyStatus = Authorized.Idle,
+        eligibilityStatus: EligibilityStatus = EligibilityStatus.Eligible,
+        usageQuotaResetPromptPending: Boolean = false,
     ): IPProtectionStore =
         IPProtectionStore(
             initialState =
@@ -220,6 +377,9 @@ class IPProtectionMessagingBindingTest {
                     serviceStatus = serviceStatus,
                     currentAuthProvider = authProvider,
                     accountState = AccountState(status = accountStatus),
+                    eligibilityStatus = eligibilityStatus,
+                    proxyStatus = proxyStatus,
+                    usageQuotaResetPromptPending = usageQuotaResetPromptPending,
                 )
         )
 
@@ -245,4 +405,21 @@ class IPProtectionMessagingBindingTest {
             triggerIfAll = emptyList(),
             metadata = Message.Metadata(id = id),
         )
+
+    private fun createTriggerContext(
+        authProvider: String = "fxa",
+        isReadyToUse: Boolean = true,
+        isEnabled: Boolean = false,
+        usageResetPromptPending: Boolean = false,
+    ): Map<String, Any> {
+        return mapOf(
+            "vpn" to
+                mapOf<String, Any>(
+                    "auth_provider" to authProvider,
+                    "is_ready_to_use" to isReadyToUse,
+                    "is_enabled" to isEnabled,
+                    "usage_reset_prompt_pending" to usageResetPromptPending,
+                )
+        )
+    }
 }
