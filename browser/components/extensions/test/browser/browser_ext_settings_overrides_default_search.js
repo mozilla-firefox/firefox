@@ -672,6 +672,7 @@ add_task(async function test_two_addons_with_first_disabled_before_second() {
   let enabledPromise = awaitEvent("ready", EXTENSION1_ID);
   await addon1.enable();
   await enabledPromise;
+  await AddonTestUtils.waitForSearchProviderStartup(ext1);
 
   is(
     (await SearchService.getDefault()).name,
@@ -760,6 +761,7 @@ add_task(async function test_two_addons_with_first_disabled() {
   let enabledPromise = awaitEvent("ready", EXTENSION1_ID);
   await addon1.enable();
   await enabledPromise;
+  await AddonTestUtils.waitForSearchProviderStartup(ext1);
 
   is(
     (await SearchService.getDefault()).name,
