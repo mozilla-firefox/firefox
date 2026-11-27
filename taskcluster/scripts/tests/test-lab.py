@@ -137,8 +137,15 @@ def execute_tests(
     ]
 
     # Add a client details parameter using the repository name
-    matrixLabel = os.environ.get("GECKO_HEAD_REPOSITORY")
-    geckoRev = os.environ.get("GECKO_HEAD_REV")
+    # Treeherder is keyed on the hg mirror, so prefer the hg repo + changeset
+    # (MOZ_SOURCE_*). On git checkouts GECKO_HEAD_* point at the GitHub repo
+    # and a git SHA, which Treeherder can't resolve.
+    matrixLabel = os.environ.get("MOZ_SOURCE_REPO") or os.environ.get(
+        "GECKO_HEAD_REPOSITORY"
+    )
+    geckoRev = os.environ.get("MOZ_SOURCE_CHANGESET") or os.environ.get(
+        "GECKO_HEAD_REV"
+    )
 
     if matrixLabel is not None and geckoRev is not None:
         flank_command.extend([
