@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<title>Animated implicit anchor transform</title>
+<link rel="author" title="David Shin" href="mailto:dshin@mozilla.com">
+<link rel="help" href="https://drafts.csswg.org/css-anchor-position-1/#determining-position">
+<style>
+  #anchor {
+    width: 200px;
+    height: 200px;
+    transform: translateX(0);
+    background: hotpink;
+    border: none;
+    padding: 0;
+  }
+  #anchored {
+    position-anchor: auto;
+    top: anchor(bottom);
+    left: anchor(right);
+    right: anchor(--right left);
+    height: 200px;
+    justify-self: stretch;
+    width: auto;
+    background: cyan;
+    margin: 0;
+    border: none;
+    padding: 0;
+  }
+  #right {
+    width: 10px;
+    height: 10px;
+    left: 400px;
+    anchor-name: --right;
+    position: fixed;
+  }
+  @keyframes anim {
+    from { transform: translateX(0) }
+    to { transform: translateX(200px) }
+  }
+</style>
+<div style="contain: layout; width:400px; height:400px;">
+  <button id="anchor" popovertarget="anchored"></button>
+  <div id="right"></div>
+  <div popover id="anchored"></div>
+</div>
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script>
+  const done = Promise.withResolvers();
+  let got_halfway = false;
+  const observer = new ResizeObserver((entries)=> {
+    assert_equals(entries.length, 1);
+    const inlineSize = entries[0].contentBoxSize[0].inlineSize;
+    if (inlineSize > 30 && inlineSize < 170) {
+      got_halfway = true;
+      done.resolve();
+    }
+  });
+
+  anchor.onanimationend = ()=> { done.reject(); }
+  promise_test(async t => {
+    anchor.click();
+    anchor.style.animation = "2000ms linear anim";
+    observer.observe(anchored);
+    try { await done.promise; } catch(e) {}
+    assert_true(got_halfway, "animation frame somewhere in the middle");
+  }, "Animation being updated");
+</script>

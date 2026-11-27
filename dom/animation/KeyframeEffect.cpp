@@ -1756,6 +1756,13 @@ bool KeyframeEffect::CanAnimateTransformOnCompositor(
     return false;
   }
 
+  // Some anchor-positioned frame may need to anchor to this frame.
+  if (primaryFrame->MaybeAnchorPosAnchorOrAncestorOf()) {
+    aPerformanceWarning =
+        AnimationPerformanceWarning::Type::MaybeAnchorOrAncestorOf;
+    return false;
+  }
+
   return true;
 }
 

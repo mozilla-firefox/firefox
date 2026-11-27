@@ -27,6 +27,39 @@
 <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=1196114"
   target="_blank">Mozilla Bug 1196114</a>
 <div id="log"></div>
+<template id=anchor_template>
+  <div>
+    <style>
+      #anchor {
+        width: 10px;
+        height: 10px;
+        anchor-name: --foo;
+      }
+      #positioned {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        position-anchor: --foo;
+        position-area: bottom right;
+      }
+      #container {
+        position: relative;
+        width: 300px;
+        height: 300px;
+      }
+    </style>
+    <div id="outside">
+      <div id="container">
+        <div id="ancestor">
+          <div id="parent">
+            <div id="anchor"></div>
+          </div>
+        </div>
+        <div id="positioned"></div>
+      </div>
+    </div>
+  </div>
+</template>
 <script>
 'use strict';
 
@@ -1687,6 +1720,66 @@ function testCurrentColor() {
      + 'compositor');
 }
 
+function test_anchor_transform_animation(f, target_id, description) {
+  promise_test(async t => {
+    await waitForFrame();
+    const root = anchor_template.content.cloneNode(true).children[0];
+    document.body.appendChild(root);
+    t.add_cleanup(() => root.remove());
+    await waitForFrame();
+    console.log(root);
+    const target = root.querySelector(`#${target_id}`);
+    target.classList.add("compositable");
+    const animation = target.animate({ transform: ['translate(0px)', 'translate(100px)'] },
+                                     100 * MS_PER_SEC);
+    await waitForPaints();
+    await f(t, animation);
+  }, description);
+}
+
+function testMaybeAnchorOrAncestorOf() {
+  test_anchor_transform_animation(async (t, animation) => {
+    assert_animation_property_state_equals(
+      animation.effect.getProperties(),
+      [ { property: 'transform',
+          runningOnCompositor: false,
+          warning: 'CompositorAnimationWarningMaybeAnchorOrAncestorOf'
+      } ]);
+  },
+  'anchor',
+  'Transform animations on an anchor don\'t run on the compositor.');
+  test_anchor_transform_animation(async (t, animation) => {
+    assert_animation_property_state_equals(
+      animation.effect.getProperties(),
+      [ { property: 'transform',
+          runningOnCompositor: false,
+          warning: 'CompositorAnimationWarningMaybeAnchorOrAncestorOf'
+      } ]);
+  },
+  'parent',
+  'Transform animations on the parent of an anchor don\'t run on the compositor.');
+  test_anchor_transform_animation(async (t, animation) => {
+    assert_animation_property_state_equals(
+      animation.effect.getProperties(),
+      [ { property: 'transform',
+          runningOnCompositor: false,
+          warning: 'CompositorAnimationWarningMaybeAnchorOrAncestorOf'
+      } ]);
+  },
+  'ancestor',
+  'Transform animations on an ancestor of an anchor don\'t run on the compositor.');
+  test_anchor_transform_animation(async (t, animation) => {
+    assert_animation_property_state_equals(
+      animation.effect.getProperties(),
+      [ { property: 'transform',
+          runningOnCompositor: true
+      } ]);
+  },
+  'outside',
+  'Transform animations of a frame outside of the anchor positioned frame\'s ' +
+  'containing block can run on the compositor.');
+}
+
 function start() {
   var bundleService = SpecialPowers.Cc['@mozilla.org/intl/stringbundle;1']
     .getService(SpecialPowers.Ci.nsIStringBundleService);
@@ -1707,6 +1800,7 @@ function start() {
   testTransformSVG();
   testImportantRuleOverride();
   testCurrentColor();
+  testMaybeAnchorOrAncestorOf();
 
   promise_test(async t => {
     await waitForFrame();

@@ -599,8 +599,13 @@ static const nsIFrame* GetAnchorOf(const nsIFrame* aPositioned,
                                    uint32_t aFrameTreeDepth) {
   const auto* presShell = aPositioned->PresShell();
   MOZ_ASSERT(presShell, "No PresShell for frame?");
-  return presShell->GetAnchorPosAnchor(aAnchorName, aPositioned,
-                                       aFrameTreeDepth);
+  auto* anchor =
+      presShell->GetAnchorPosAnchor(aAnchorName, aPositioned, aFrameTreeDepth);
+  if (anchor) {
+    anchor->SetMaybeAnchorPosAnchorOrAncestorOf();
+    // TODO(dshin): Set the flag for ancestors.
+  }
+  return anchor;
 }
 
 Maybe<nsRect> AnchorPositioningUtils::GetAnchorPosRect(
