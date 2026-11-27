@@ -811,7 +811,7 @@ class CDMStorageTest {
   /**
    * 1. Generate some storage data.
    * 2. Find the max mtime |t| in $profileDir/gmp/$platform/gmp-fake/storage/.
-   * 3. Pass |t+1| to clear recent history.
+   * 3. Pass |t+1ms| to clear recent history.
    * 4. Check if all directories in $profileDir/gmp/$platform/gmp-fake/id/ and
    *    $profileDir/gmp/$platform/gmp-fake/storage remain unchanged.
    */
@@ -829,21 +829,41 @@ class CDMStorageTest {
                     "test-storage"_ns);
   }
 
+  /**
+   * 1. Generate some storage data.
+   * 2. Pass one hour ago, as given by PR_Now(), to clear recent history.
+   * 3. Check if all directories in $profileDir/gmp/$platform/gmp-fake/id/ and
+   *    $profileDir/gmp/$platform/gmp-fake/storage are removed.
+   */
+  void TestClearRecentHistory4() {
+    AssertIsOnGMPThread();
+    EXPECT_TRUE(IsCDMStorageIsEmpty());
+
+    // Generate storage data for some site.
+    nsCOMPtr<nsIRunnable> r =
+        NewRunnableMethod("CDMStorageTest::TestClearRecentHistory4_Clear", this,
+                          &CDMStorageTest::TestClearRecentHistory4_Clear);
+    Expect("test-storage complete"_ns, r.forget());
+
+    CreateDecryptor(u"http://example1.com"_ns, u"http://example2.com"_ns, false,
+                    "test-storage"_ns);
+  }
+
   class MaxMTimeFinder {
    public:
-    MaxMTimeFinder() : mMaxTime(0) {}
+    MaxMTimeFinder() : mMaxTimeMs(0) {}
     void operator()(nsIFile* aFile) {
-      PRTime lastModified;
-      nsresult rv = aFile->GetLastModifiedTime(&lastModified);
-      if (NS_SUCCEEDED(rv) && lastModified > mMaxTime) {
-        mMaxTime = lastModified;
+      int64_t lastModifiedMs;
+      nsresult rv = aFile->GetLastModifiedTime(&lastModifiedMs);
+      if (NS_SUCCEEDED(rv) && lastModifiedMs > mMaxTimeMs) {
+        mMaxTimeMs = lastModifiedMs;
       }
       EnumerateDir(aFile, *this);
     }
-    PRTime GetResult() const { return mMaxTime; }
+    PRTime GetResult() const { return PRTime(mMaxTimeMs) * PR_USEC_PER_MSEC; }
 
    private:
-    PRTime mMaxTime;
+    int64_t mMaxTimeMs;
   };
 
   void TestClearRecentHistory1_Clear() {
@@ -879,7 +899,16 @@ class CDMStorageTest {
         "CDMStorageTest::TestClearRecentHistory_CheckNonEmpty", this,
         &CDMStorageTest::TestClearRecentHistory_CheckNonEmpty);
     nsCOMPtr<nsIThread> t(GetGMPThread());
-    ClearCDMStorage(r.forget(), t, f.GetResult() + 1);
+    ClearCDMStorage(r.forget(), t, f.GetResult() + PR_USEC_PER_MSEC);
+  }
+
+  void TestClearRecentHistory4_Clear() {
+    nsCOMPtr<nsIRunnable> r = NewRunnableMethod(
+        "CDMStorageTest::TestClearRecentHistory_CheckEmpty", this,
+        &CDMStorageTest::TestClearRecentHistory_CheckEmpty);
+    nsCOMPtr<nsIThread> t(GetGMPThread());
+    constexpr PRTime kOneHourUsec = PRTime(60 * 60) * PR_USEC_PER_SEC;
+    ClearCDMStorage(r.forget(), t, PR_Now() - kOneHourUsec);
   }
 
   class FileCounter {
@@ -1337,6 +1366,12 @@ TEST(GeckoMediaPlugins, CDMStorageClearRecentHistory3)
 {
   RefPtr<CDMStorageTest> runner = new CDMStorageTest();
   runner->DoTest(&CDMStorageTest::TestClearRecentHistory3);
+}
+
+TEST(GeckoMediaPlugins, CDMStorageClearRecentHistory4)
+{
+  RefPtr<CDMStorageTest> runner = new CDMStorageTest();
+  runner->DoTest(&CDMStorageTest::TestClearRecentHistory4);
 }
 
 TEST(GeckoMediaPlugins, CDMStorageCrossOrigin)
