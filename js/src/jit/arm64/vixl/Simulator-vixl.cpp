@@ -810,8 +810,24 @@ void Simulator::VisitConditionalBranch(const Instruction* instr) {
 }
 
 
+BType Simulator::GetBTypeFromInstruction(const Instruction* instr) const {
+  switch (instr->Mask(UnconditionalBranchToRegisterMask)) {
+    case BLR:
+      return BranchAndLink;
+    case BR:
+      if ((instr->Rn() == 16) || (instr->Rn() == 17) || !PcIsInGuardedPage()) {
+        return BranchFromUnguardedOrToIP;
+      }
+      return BranchFromGuardedNotToIP;
+  }
+  return DefaultBType;
+}
+
+
 void Simulator::VisitUnconditionalBranchToRegister(const Instruction* instr) {
   const Instruction* target = Instruction::Cast(xreg(instr->Rn()));
+
+  WriteNextBType(GetBTypeFromInstruction(instr));
 
   switch (instr->Mask(UnconditionalBranchToRegisterMask)) {
     case BLR:
@@ -2850,6 +2866,18 @@ void Simulator::VisitSystem(const Instruction* instr) {
     switch (instr->ImmHint()) {
       case NOP: break;
       case CSDB: break;
+      case BTI_jc:
+        break;
+      case BTI_c:
+        if (PcIsInGuardedPage() && (ReadBType() == BranchFromGuardedNotToIP)) {
+          VIXL_ABORT_WITH_MSG("Executing BTI c with wrong BType.");
+        }
+        break;
+      case BTI_j:
+        if (PcIsInGuardedPage() && (ReadBType() == BranchAndLink)) {
+          VIXL_ABORT_WITH_MSG("Executing BTI j with wrong BType.");
+        }
+        break;
       default: VIXL_UNIMPLEMENTED();
     }
   } else if (instr->Mask(MemBarrierFMask) == MemBarrierFixed) {

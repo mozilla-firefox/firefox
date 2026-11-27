@@ -598,6 +598,17 @@ class Simulator : public DecoderVisitor {
     pc_modified_ = false;
   }
 
+  BType ReadBType() const { return btype_; }
+  void WriteNextBType(BType btype) { next_btype_ = btype; }
+  void UpdateBType() {
+    btype_ = next_btype_;
+    next_btype_ = DefaultBType;
+  }
+
+  bool PcIsInGuardedPage() const;
+  // Helper function to determine BType for branches.
+  BType GetBTypeFromInstruction(const Instruction* instr) const;
+
   void ExecuteInstruction();
 
   // Declare all Visitor functions.
@@ -2446,6 +2457,11 @@ class Simulator : public DecoderVisitor {
   // automatically incremented.
   bool pc_modified_;
   const Instruction* pc_;
+
+  // Branch type (PSTATE.BTYPE) to be checked by the current instruction.
+  BType btype_;
+  // Branch type set by the current instruction for the next one.
+  BType next_btype_;
 
   static const char* xreg_names[];
   static const char* wreg_names[];

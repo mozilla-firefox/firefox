@@ -32,6 +32,7 @@
 #include "jit/arm64/vixl/MozCachingDecoder.h"
 #include "jit/arm64/vixl/Simulator-vixl.h"
 #include "jit/IonTypes.h"
+#include "jit/ProcessExecutableMemory.h"
 #include "js/UniquePtr.h"
 #include "js/Utility.h"
 #include "threading/LockGuard.h"
@@ -108,6 +109,9 @@ void Simulator::ResetState() {
   }
   // Returning to address 0 exits the Simulator.
   set_lr(kEndOfSimAddress);
+
+  btype_ = DefaultBType;
+  next_btype_ = DefaultBType;
 }
 
 
@@ -241,8 +245,27 @@ void Simulator::ExecuteInstruction() {
       FlushICache();
   }
 #endif
+
+  // On guarded pages, if BType is not zero, take an exception on any
+  // instruction other than BTI, HLT or BRK.
+  if ((ReadBType() != DefaultBType) && PcIsInGuardedPage() && !pc_->IsBti() &&
+      !pc_->IsException()) {
+    VIXL_ABORT_WITH_MSG("Executing non-BTI instruction with wrong BType.");
+  }
+
   decoder_->Decode(pc_);
   increment_pc();
+  UpdateBType();
+}
+
+
+bool Simulator::PcIsInGuardedPage() const {
+#ifdef JS_HW_INDIRECT_TARGETS
+  // All JIT code is treated as if it were mapped with PROT_BTI.
+  return js::jit::AddressIsInExecutableMemory(pc_);
+#else
+  return false;
+#endif
 }
 
 
@@ -330,6 +353,9 @@ int64_t Simulator::call(uint8_t* entry, int argument_count, ...) {
 
   // Call must transition back to native code on exit.
   VIXL_ASSERT(get_lr() == int64_t(kEndOfSimAddress));
+
+  // C++ enters JIT code with an indirect call (BLR).
+  btype_ = BranchAndLink;
 
   // Execute the simulation.
   DebugOnly<int64_t> entryStack = get_sp();

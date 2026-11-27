@@ -350,9 +350,9 @@ def js_hw_indirect_targets(enabled, target, simulator):
             "--enable-js-hardware-indirect-targets is only supported on x86_64 and aarch64"
         )
 
-    if simulator:
+    if simulator and not getattr(simulator, "arm64", None):
         die(
-            "--enable-js-hardware-indirect-targets is not supported with a JIT simulator"
+            "--enable-js-hardware-indirect-targets is supported only with the arm64 JIT simulator"
         )
 
     return True
