@@ -3,9 +3,6 @@
 
 "use strict";
 
-const { AddonManager } = ChromeUtils.importESModule(
-  "resource://gre/modules/AddonManager.sys.mjs"
-);
 const { AddonSettings } = ChromeUtils.importESModule(
   "resource://gre/modules/addons/AddonSettings.sys.mjs"
 );
@@ -17,15 +14,6 @@ const { sinon } = ChromeUtils.importESModule(
 );
 const { WidgetManager } = ChromeUtils.importESModule(
   "moz-src:///toolkit/components/widgets/WidgetManager.sys.mjs"
-);
-
-AddonTestUtils.init(this);
-AddonTestUtils.overrideCertDB();
-AddonTestUtils.createAppInfo(
-  "xpcshell@tests.mozilla.org",
-  "XPCShell",
-  "1",
-  "42"
 );
 
 const EXTENSION_ID = "widget@mochi.test";
@@ -63,12 +51,6 @@ function loadWidgetExtension({
   });
 }
 
-add_setup(async function setup() {
-  WidgetManager.init();
-  await AddonTestUtils.promiseStartupManager();
-  registerCleanupFunction(() => AddonTestUtils.promiseShutdownManager());
-});
-
 add_task(async function test_extension_registers_widget() {
   const extension = loadWidgetExtension();
   await extension.startup();
@@ -96,29 +78,6 @@ add_task(async function test_extension_registers_widget() {
 
   await extension.unload();
   Assert.equal(WidgetManager.getWidgetByID(EXTENSION_ID), null, "Unregistered");
-});
-
-add_task(async function test_uninstall_deletes_prefs() {
-  const extension = loadWidgetExtension();
-  await extension.startup();
-  const widget = WidgetManager.getWidgetByID(EXTENSION_ID);
-  widget.enabled = true;
-  widget.size = "small";
-  await extension.unload();
-
-  const prefsCleanedUp = WidgetManager.once("cleanupPrefsDone");
-  Extension.getBootstrapScope().uninstall({ id: EXTENSION_ID });
-  Assert.equal(await prefsCleanedUp, EXTENSION_ID, "cleanupPrefsDone emitted");
-  Assert.deepEqual(
-    Services.prefs.getChildList("test.widget."),
-    [],
-    "Prefs cleared"
-  );
-  Assert.deepEqual(
-    Services.prefs.getChildList("extensions.widgets.widget_mochi_test."),
-    [],
-    "Custom branch pref cleared"
-  );
 });
 
 add_task(async function test_unprivileged_extension_is_ignored() {
@@ -309,60 +268,4 @@ add_task(async function test_shutdown_before_ready() {
   await extension.startup();
   Assert.equal(WidgetManager.getWidgetByID(EXTENSION_ID), null, "No widget");
   await extension.unload();
-});
-
-add_task(async function test_uninstall_disabled_widget_after_restart() {
-  const id = "restart-widget@mochi.test";
-  await AddonTestUtils.promiseInstallFile(
-    AddonTestUtils.createTempWebExtensionFile({
-      manifest: {
-        browser_specific_settings: { gecko: { id } },
-        builtin_widget: { ...WIDGET, pref_branch: "test.restart" },
-      },
-      files: { "widget.html": "" },
-    })
-  );
-  await TestUtils.waitForCondition(
-    () => WidgetManager.getWidgetByID(id),
-    "Widget registered"
-  );
-  const widget = WidgetManager.getWidgetByID(id);
-  widget.enabled = true;
-  widget.size = "small";
-
-  const addon = await AddonManager.getAddonByID(id);
-  await addon.disable();
-  Assert.equal(WidgetManager.getWidgetByID(id), null, "Unregistered");
-
-  // A new app session starts with an empty WidgetManager and the extension
-  // still disabled.
-  await AddonTestUtils.promiseShutdownManager();
-  WidgetManager.uninit();
-  await AddonTestUtils.promiseStartupManager();
-  Assert.equal(WidgetManager.getWidgetByID(id), null, "Not registered");
-  Assert.equal(
-    Services.prefs.getStringPref(
-      "extensions.widgets.restart-widget_mochi_test.prefBranch"
-    ),
-    "test.restart",
-    "Custom branch kept"
-  );
-
-  const prefsCleanedUp = WidgetManager.once("cleanupPrefsDone");
-  await (await AddonManager.getAddonByID(id)).uninstall();
-  Assert.equal(await prefsCleanedUp, id, "cleanupPrefsDone emitted");
-  Assert.deepEqual(
-    Services.prefs.getChildList("test.restart."),
-    [],
-    "Custom branch prefs cleared"
-  );
-  Assert.deepEqual(
-    Services.prefs.getChildList(
-      "extensions.widgets.restart-widget_mochi_test."
-    ),
-    [],
-    "Custom branch pref cleared"
-  );
-
-  WidgetManager.init();
 });

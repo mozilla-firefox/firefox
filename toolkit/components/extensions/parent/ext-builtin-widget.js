@@ -82,16 +82,4 @@ this.builtinWidget = class extends ExtensionAPI {
       WidgetManager.unregister(extension.id);
     }
   }
-
-  /**
-   * Clears the widget prefs of an uninstalled extension.
-   *
-   * @param {string} id - the id of the uninstalled extension
-   */
-  static onUninstall(id) {
-    // Called for every uninstalled extension, not only widget extensions.
-    if (WidgetManager.hasWidgetPreferences(id)) {
-      WidgetManager.cleanupPrefs(id);
-    }
-  }
 };

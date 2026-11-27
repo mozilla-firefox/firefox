@@ -4,7 +4,7 @@
 
 import React from "react";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
-import { WIDGET_SOURCES, setWidgetEnabled } from "common/WidgetsRegistry.mjs";
+import { WIDGET_SOURCES } from "common/WidgetsRegistry.mjs";
 import { MoveSubmenu } from "./MoveSubmenu";
 import { WidgetHideMenuItem } from "./WidgetPlacement";
 
@@ -20,7 +20,6 @@ export const WidgetMenuFooter = ({
   widgetEnabledMap,
   widgetName,
   enabledPref,
-  extensionID,
   widgetSize,
   learnMoreL10nId,
   sizeSubmenu,
@@ -32,7 +31,10 @@ export const WidgetMenuFooter = ({
 }) => {
   const handleHide = () => {
     dispatch(
-      setWidgetEnabled({ id: widgetId, enabledPref, extensionID }, false)
+      ac.OnlyToMain({
+        type: at.SET_PREF,
+        data: { name: enabledPref, value: false },
+      })
     );
     dispatch(
       ac.OnlyToMain({

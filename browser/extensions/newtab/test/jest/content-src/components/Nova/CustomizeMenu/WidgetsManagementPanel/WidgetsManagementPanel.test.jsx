@@ -889,32 +889,6 @@ describe("<WidgetsManagementPanel>", () => {
       expect(props.setPref).toHaveBeenCalledWith(fixture.enabledPref, true);
     });
 
-    it("leaves out widgets without an enabled pref", async () => {
-      const { container } = await renderPanel(
-        {},
-        { "widgets.generated.enabled": true },
-        {
-          ExtensionWidgets: {
-            "generated@widget": {
-              id: "generated@widget",
-              extensionID: "generated@widget",
-              src: "moz-extension://uuid/widget.html",
-              name: "Tally",
-              validSizes: ["medium"],
-              enabled: true,
-              size: "medium",
-              telemetryName: "generated",
-              generated: true,
-              systemEnabledPref: "widgets.generated.enabled",
-            },
-          },
-        }
-      );
-      expect(
-        container.querySelector('[id="generated@widget-toggle"]')
-      ).toBeNull();
-    });
-
     it("stops the toggle event before it reaches the outer Widgets toggle", async () => {
       const { container } = await renderPanel({}, allWidgetsVisible());
       const outerHandler = jest.fn();

@@ -2,16 +2,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { actionTypes as at } from "common/Actions.mjs";
 import {
   WIDGET_REGISTRY,
-  getHideAllTargets,
   getWidgetOrder,
   getWidgets,
   isWeatherAvailable,
   isWidgetAddable,
   isWidgetEnabled,
-  isWidgetUserEnabled,
   isWidgetToggleVisible,
   isWidgetsContainerVisible,
   resolveWidgetSize,
@@ -31,25 +28,11 @@ import {
   resolvePrivacyDisplayCount,
   resolvePrivacyShowVpnMessages,
   resolvePrivacyCelebrationThreshold,
-  setWidgetEnabled,
-  setWidgetSize,
   PREF_WIDGETS_ORDER,
 } from "common/WidgetsRegistry.mjs";
 
 const registryIds = WIDGET_REGISTRY.map(w => w.id);
 const listsWidget = WIDGET_REGISTRY.find(w => w.id === "lists");
-const generatedWidget = {
-  id: "generated@mozilla.org",
-  extensionID: "generated@mozilla.org",
-  src: "moz-extension://uuid/widget.html",
-  name: "Tally",
-  validSizes: ["medium", "large"],
-  enabled: true,
-  size: "medium",
-  telemetryName: "generated",
-  generated: true,
-  systemEnabledPref: "widgets.generated.enabled",
-};
 
 describe("isWidgetToggleVisible", () => {
   it("is false when nothing enables it", () => {
@@ -335,9 +318,8 @@ describe("getWidgetOrder", () => {
     ]);
   });
 
-  it("keeps unknown IDs from the saved pref", () => {
+  it("filters out unknown IDs from the saved pref", () => {
     expect(getWidgetOrder("unknownWidget,lists,weather")).toEqual([
-      "unknownWidget",
       "lists",
       "weather",
       "pictureOfTheDay",
@@ -351,14 +333,6 @@ describe("getWidgetOrder", () => {
       "solitaire",
       "wrexhamAFC",
     ]);
-  });
-
-  it("keeps an unknown ID once", () => {
-    expect(
-      getWidgetOrder("unknownWidget,lists,unknownWidget").filter(
-        id => id === "unknownWidget"
-      )
-    ).toHaveLength(1);
   });
 
   it("handles partial order with only one ID", () => {
@@ -701,93 +675,6 @@ describe("isWidgetEnabled", () => {
   });
 });
 
-describe("isWidgetUserEnabled", () => {
-  it("reads the enabled pref of a built-in widget", () => {
-    expect(
-      isWidgetUserEnabled(
-        { ...listsWidget, enabled: true },
-        { [listsWidget.enabledPref]: false }
-      )
-    ).toBe(false);
-    expect(
-      isWidgetUserEnabled(listsWidget, { [listsWidget.enabledPref]: true })
-    ).toBe(true);
-  });
-
-  it("reads the enabled field of an extension widget", () => {
-    expect(isWidgetUserEnabled(generatedWidget, {})).toBe(true);
-    expect(
-      isWidgetUserEnabled({ ...generatedWidget, enabled: false }, {})
-    ).toBe(false);
-  });
-});
-
-describe("isWidgetEnabled for an extension widget", () => {
-  it("follows its system pref and enabled field", () => {
-    let prefs = { "widgets.generated.enabled": true };
-    expect(isWidgetEnabled(generatedWidget, prefs, true)).toBe(true);
-    expect(isWidgetEnabled(generatedWidget, {}, true)).toBe(false);
-    expect(
-      isWidgetEnabled({ ...generatedWidget, enabled: false }, prefs, true)
-    ).toBe(false);
-  });
-});
-
-describe("setWidgetEnabled and setWidgetSize", () => {
-  it("set the prefs of a built-in widget", () => {
-    expect(setWidgetEnabled(listsWidget, false)).toMatchObject({
-      type: at.SET_PREF,
-      data: { name: listsWidget.enabledPref, value: false },
-      meta: { skipLocal: true },
-    });
-    expect(setWidgetSize(listsWidget, "large")).toMatchObject({
-      type: at.SET_PREF,
-      data: { name: listsWidget.sizePref, value: "large" },
-      meta: { skipLocal: true },
-    });
-  });
-
-  it("send WIDGETS_EXTENSIONS_SET for an extension widget", () => {
-    expect(setWidgetEnabled(generatedWidget, false)).toMatchObject({
-      type: at.WIDGETS_EXTENSIONS_SET,
-      data: { id: generatedWidget.id, enabled: false },
-      meta: { skipLocal: true },
-    });
-    expect(setWidgetSize(generatedWidget, "large")).toMatchObject({
-      type: at.WIDGETS_EXTENSIONS_SET,
-      data: { id: generatedWidget.id, size: "large" },
-      meta: { skipLocal: true },
-    });
-  });
-});
-
-describe("getHideAllTargets", () => {
-  it("carries each widget", () => {
-    expect(
-      getHideAllTargets(
-        [listsWidget, generatedWidget],
-        {},
-        {
-          [generatedWidget.id]: true,
-        }
-      )
-    ).toContainEqual({
-      widget: generatedWidget,
-      enabledPref: undefined,
-      telemetryName: "generated",
-      active: true,
-    });
-  });
-
-  it("skips an extension widget outside the row", () => {
-    expect(
-      getHideAllTargets([listsWidget, generatedWidget], {}, {}).map(
-        target => target.widget
-      )
-    ).toEqual([listsWidget]);
-  });
-});
-
 describe("getChosenOption and resolveWidgetDisplaySize", () => {
   const VIEW = {
     type: "choice",
@@ -955,10 +842,6 @@ describe("resolveWidgetSize", () => {
         trainhopConfig: { widgets: { [privacy.trainhopSizeKey]: "large" } },
       })
     ).toBe("large");
-  });
-
-  it("returns the size field of an extension widget", () => {
-    expect(resolveWidgetSize(generatedWidget, {})).toBe("medium");
   });
 });
 
@@ -1249,7 +1132,7 @@ describe("getWidgets", () => {
     const src = "moz-extension://test/w.html";
     expect(
       getWidgets([extensionWidget], {
-        [extensionWidget.extensionID]: { id: extensionWidget.extensionID, src },
+        [extensionWidget.extensionID]: { src },
       })
     ).toEqual([{ ...extensionWidget, src }]);
   });
@@ -1258,16 +1141,6 @@ describe("getWidgets", () => {
     expect(getWidgets([listsWidget, extensionWidget], undefined)).toEqual([
       listsWidget,
     ]);
-  });
-
-  it("puts ExtensionWidgets entries no registry entry names last", () => {
-    let src = "moz-extension://test/w.html";
-    expect(
-      getWidgets([listsWidget, extensionWidget], {
-        [extensionWidget.extensionID]: { id: extensionWidget.extensionID, src },
-        [generatedWidget.id]: generatedWidget,
-      })
-    ).toEqual([listsWidget, { ...extensionWidget, src }, generatedWidget]);
   });
 });
 

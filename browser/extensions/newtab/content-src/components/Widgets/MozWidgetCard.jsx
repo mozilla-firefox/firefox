@@ -3,10 +3,10 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import {
   WIDGET_USER_ACTIONS,
   WIDGET_SOURCES,
-  setWidgetSize,
 } from "common/WidgetsRegistry.mjs";
 import { WidgetMenuFooter } from "./WidgetMenuFooter";
 import { SizeSubmenu } from "./SizeSubmenu";
@@ -19,13 +19,14 @@ const USER_ACTION_TYPES = {
 };
 
 /**
- * The moz-widget card of a widget entry drawn by a widget document.
+ * The moz-widget card of a WIDGET_REGISTRY entry drawn by a widget document.
  * Its menu holds the shared widget items, below any menuItems. Without a
  * document, the card shows a placeholder.
  *
  * @param {object} props
  * @param {Function} props.dispatch - Redux dispatch.
- * @param {object} props.entry - the widget entry
+ * @param {object} props.entry - the WIDGET_REGISTRY entry, merged with its
+ *   ExtensionWidget
  * @param {string} props.size - the widget's size
  * @param {string} [props.displaySize] - the size the widget is drawn at, which
  *   can be larger than its size
@@ -128,7 +129,12 @@ export function MozWidgetCard({
 
   const handleChangeSize = useCallback(
     newSize => {
-      dispatch(setWidgetSize(entry, newSize));
+      dispatch(
+        ac.OnlyToMain({
+          type: at.SET_PREF,
+          data: { name: entry.sizePref, value: newSize },
+        })
+      );
       onChangeSize?.(newSize);
       recordUserAction(USER_ACTION_TYPES.CHANGE_SIZE, {
         source: WIDGET_SOURCES.CONTEXT_MENU,
@@ -136,7 +142,7 @@ export function MozWidgetCard({
         size: newSize,
       });
     },
-    [dispatch, entry, onChangeSize, recordUserAction]
+    [dispatch, entry.sizePref, onChangeSize, recordUserAction]
   );
 
   const handleLearnMore = () => {
@@ -188,7 +194,6 @@ export function MozWidgetCard({
           widgetEnabledMap={widgetEnabledMap}
           widgetName={entry.telemetryName}
           enabledPref={entry.enabledPref}
-          extensionID={entry.extensionID}
           widgetSize={size}
           learnMoreL10nId="newtab-widget-section-menu-learn-more"
           onLearnMore={handleLearnMore}

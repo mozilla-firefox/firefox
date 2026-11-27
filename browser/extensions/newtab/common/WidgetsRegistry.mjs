@@ -108,12 +108,11 @@
  * carries no dependency on dev-only feature lists.
  *
  * The widgets.order pref (CSV of widget IDs) persists user-defined order.
- * Written on reorder, and by ExtensionWidgetsFeed when an extension widget is
- * added or uninstalled. Disabling a widget leaves its ID in the pref. See
- * resolveWidgetOrder().
+ * It is only written when the user explicitly reorders widgets — never on
+ * enable/disable. Disabled widgets keep their slot so they reappear in the
+ * same position when re-enabled. See resolveWidgetOrder() below.
  */
 
-import { actionCreators as ac, actionTypes as at } from "./Actions.mjs";
 // @experiment(remove-conditional) { bug 2078816 }
 // Keep for spaces-thematic-v1.
 import { selectFirstSlotWidgetIds } from "./PageLayoutVariants.mjs";
@@ -125,7 +124,6 @@ export const PREF_LISTS_SIZE = "widgets.lists.size";
 export const PREF_FOCUS_TIMER_SIZE = "widgets.focusTimer.size";
 export const PREF_WEATHER_SIZE = "widgets.weather.size";
 export const PREF_WIDGETS_ORDER = "widgets.order";
-export const PREF_WIDGETS_GENERATED_ENABLED = "widgets.generated.enabled";
 // The widgets pinned to Home where a thematic spaces config names a
 // widgetLibrary, as a JSON array of ids.
 export const PREF_HOME_WIDGETS = "widgets.home";
@@ -226,7 +224,7 @@ export const PREF_WREXHAMAFC_VIEW = "widgets.wrexhamAFC.view";
  * @property {boolean} [framed] - When true, the widget's document URL comes from its entry in the Merino framed widgets manifest, which FramedWidgetsFeed stores in the FramedWidgets state under its id; the widget is hidden while it has no enabled entry (see resolveWidgetFrame). A trainhop namespace `iframeSrcOverride` still overrides it, but only when isAllowedFrameUrl accepts it and the widget isn't marked unavailable in the FramedWidgets state. The frame-src CSP in render-activity-stream-html.js must allow the host too.
  * @property {string[]} [frameVariants] - For a framed widget, the variants its document may send with widget_ready. One of them is recorded as widget_variant; any other is dropped (see resolveFrameVariant).
  * @property {{[key: string]: string[]}} [frameUserEvents] - For a framed widget, the user_actions its document may record with a telemetry user_event, each with the action_values it may send ([] for none). Any other is dropped (see isRecordedFrameUserEvent), so text the user types in the frame can't reach telemetry.
- * @property {string} [extensionID] - ID of the extension that provides the widget. WidgetManager stores its enabled state and size. Its enabledPref and sizePref must match the extension's pref_branch.
+ * @property {string} [extensionID] - ID of an extension that provides the widget's document. getWidgets keeps the entry only while the ExtensionWidgets state has this extension.
  * @property {string} [icon] - URL of a 16px image drawn before the widget's name in its MozWidgetCard header.
  * @property {"FramedWidgetCard"} [card] - The name of the card component that draws an entry without its own row component: FramedWidgetCard, for a document a hosted page provides. A web page can report its own state only through FramedWidgetCard. Without it, MozWidgetCard draws the entry.
  * @property {WidgetMenuItem[]} [menu] - Items drawn above the shared items in the widget's card menu. Only FramedWidgetCard reads it, so it needs `card: "FramedWidgetCard"`.
@@ -566,18 +564,22 @@ export const WIDGET_REGISTRY = [
 ];
 
 /**
- * Returns the saved widget IDs, then the remaining registry IDs.
+ * Returns an ordered list of all widget IDs (including disabled ones).
+ * Saved order is respected; any widget IDs not in the saved pref are appended
+ * in registry-default order. Unknown IDs in the saved pref are dropped.
  *
  * @param {string} orderPref - value of the widgets.order pref (CSV string)
- * @returns {string[]}
  */
 export function getWidgetOrder(orderPref) {
   const registryIds = WIDGET_REGISTRY.map(w => w.id);
   if (!orderPref) {
     return registryIds;
   }
-  const saved = [...new Set(orderPref.split(",").filter(id => id))];
-  const appended = registryIds.filter(id => !saved.includes(id));
+  const seen = new Set();
+  const saved = orderPref
+    .split(",")
+    .filter(id => registryIds.includes(id) && !seen.has(id) && seen.add(id));
+  const appended = registryIds.filter(id => !seen.has(id));
   return [...saved, ...appended];
 }
 
@@ -644,24 +646,20 @@ export function isWidgetDataUnavailable(widget, prefs) {
 }
 
 /**
- * Returns the registry widgets, then the extension widgets.
+ * Returns the built-in registry entries and the extension entries present in
+ * extensionWidgets. Each extension entry is merged with its ExtensionWidget.
  *
  * @param {WidgetRegistryEntry[]} registry - WIDGET_REGISTRY
- * @param {object} [extensions] - the ExtensionWidgets state from the
+ * @param {object} [extensionWidgets] - the ExtensionWidgets state from the
  *   Redux store, keyed by extension id
- * @returns {Array<WidgetRegistryEntry & {name?: string, enabled?: boolean, size?: string}>}
+ * @returns {Array<WidgetRegistryEntry & {name?: string}>}
  */
-export function getWidgets(registry, extensions = {}) {
-  let registryWidgets = registry.filter(w => !w.extensionID);
-  let extensionEntries = registry.filter(w => w.extensionID);
-  let registryExtensionIDs = new Set(extensionEntries.map(w => w.extensionID));
-  let extensionWidgets = Object.values(extensions).filter(
-    w => !registryExtensionIDs.has(w.id)
-  );
-  let registryExtensionWidgets = extensionEntries
-    .filter(w => extensions[w.extensionID])
-    .map(w => ({ ...extensions[w.extensionID], ...w }));
-  return [...registryWidgets, ...registryExtensionWidgets, ...extensionWidgets];
+export function getWidgets(registry, extensionWidgets) {
+  return registry
+    .filter(w => !w.extensionID || extensionWidgets?.[w.extensionID])
+    .map(w =>
+      w.extensionID ? { ...extensionWidgets[w.extensionID], ...w } : w
+    );
 }
 
 export const FRAMED_WIDGETS = WIDGET_REGISTRY.filter(w => w.framed);
@@ -923,25 +921,10 @@ export function isWidgetsContainerVisible(prefs) {
 }
 
 /**
- * Returns whether the user has enabled the widget, read from its enabledPref
- * or its ExtensionWidgets enabled field.
+ * Returns true if the widget is currently enabled: the widgets container is
+ * on, the widget is addable, and the user's enabled pref is set.
  *
- * @param {object} widget - a widget entry
- * @param {object} prefs - current pref values from the Redux store
- * @returns {boolean}
- */
-export function isWidgetUserEnabled(widget, prefs) {
-  if (widget.extensionID) {
-    return widget.enabled;
-  }
-  return prefs[widget.enabledPref];
-}
-
-/**
- * Returns true if widgets are on, the widget is addable, and the user enabled
- * it.
- *
- * @param {object} widget - a widget entry
+ * @param {object} widget - a WIDGET_REGISTRY entry
  * @param {object} prefs - current pref values from the Redux store
  * @param {boolean} widgetsEnabled - value of the widgets.enabled container pref
  * @returns {boolean}
@@ -950,50 +933,8 @@ export function isWidgetEnabled(widget, prefs, widgetsEnabled) {
   return Boolean(
     widgetsEnabled &&
     isWidgetAddable(widget, prefs) &&
-    isWidgetUserEnabled(widget, prefs)
+    prefs[widget.enabledPref]
   );
-}
-
-/**
- * Returns a WIDGETS_EXTENSIONS_SET for an extension widget, or a SET_PREF of
- * its enabledPref.
- *
- * @param {object} widget - a widget entry
- * @param {boolean} enabled - whether to turn the widget on
- * @returns {object} an action routed to the main process
- */
-export function setWidgetEnabled(widget, enabled) {
-  if (widget.extensionID) {
-    return ac.OnlyToMain({
-      type: at.WIDGETS_EXTENSIONS_SET,
-      data: { id: widget.extensionID, enabled },
-    });
-  }
-  return ac.OnlyToMain({
-    type: at.SET_PREF,
-    data: { name: widget.enabledPref, value: enabled },
-  });
-}
-
-/**
- * Returns a WIDGETS_EXTENSIONS_SET for an extension widget, or a SET_PREF of
- * its sizePref.
- *
- * @param {object} widget - a widget entry
- * @param {string} size - one of the widget's validSizes
- * @returns {object} an action routed to the main process
- */
-export function setWidgetSize(widget, size) {
-  if (widget.extensionID) {
-    return ac.OnlyToMain({
-      type: at.WIDGETS_EXTENSIONS_SET,
-      data: { id: widget.extensionID, size },
-    });
-  }
-  return ac.OnlyToMain({
-    type: at.SET_PREF,
-    data: { name: widget.sizePref, value: size },
-  });
 }
 
 /**
@@ -1004,9 +945,7 @@ export function setWidgetSize(widget, size) {
  * so trainhop and defaultSize are consulted. Any non-empty value was written
  * by a user action (size picker, maximize/minimize button) and always wins.
  *
- * An extension widget returns its WidgetManager size.
- *
- * @param {object} widget - a widget entry
+ * @param {object} widget - a WIDGET_REGISTRY entry
  * @param {object} prefs - current pref values from the Redux store
  * @returns {string}
  */
@@ -1016,9 +955,6 @@ export function resolveWidgetSize(widget, prefs) {
   // A large widget fits a medium card.
   if (selectFirstSlotWidgetIds(prefs).has(widget.id)) {
     return "large";
-  }
-  if (widget.extensionID) {
-    return widget.size;
   }
   const userPref = prefs[widget.sizePref];
   if (userPref) {
@@ -1330,24 +1266,18 @@ export function resolvePrivacyCelebrationThreshold(prefs) {
 /**
  * Returns the list of widgets to disable when "hide all" is triggered.
  * A widget is included if it has no sidebar variant OR if it is currently
- * in the row (not the sidebar). An extension widget is included only when it
- * is in the row. Each entry carries the widget, its enabledPref, the telemetry
- * name, and whether it was active (for telemetry filtering).
+ * in the row (not the sidebar). Each entry carries the pref to disable,
+ * the telemetry name, and whether it was active (for telemetry filtering).
  *
  * @param {WidgetRegistryEntry[]} widgets - the widgets from getWidgets
  * @param {object} prefs - current pref values from the Redux store
  * @param {object} widgetEnabledMap - map of widget id → boolean (currently active in row)
- * @returns {{ widget: object, enabledPref?: string, telemetryName: string, active: boolean }[]}
+ * @returns {{ enabledPref: string, telemetryName: string, active: boolean }[]}
  */
 export function getHideAllTargets(widgets, prefs, widgetEnabledMap) {
   return widgets
-    .filter(
-      w =>
-        (!resolveWidgetHasSidebar(w, prefs) || widgetEnabledMap[w.id]) &&
-        (!w.extensionID || widgetEnabledMap[w.id])
-    )
+    .filter(w => !resolveWidgetHasSidebar(w, prefs) || widgetEnabledMap[w.id])
     .map(w => ({
-      widget: w,
       enabledPref: w.enabledPref,
       telemetryName: w.telemetryName,
       active: !!widgetEnabledMap[w.id],

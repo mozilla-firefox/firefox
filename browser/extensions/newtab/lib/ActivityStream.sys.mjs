@@ -2125,13 +2125,6 @@ export const PREFS_CONFIG = new Map([
     },
   ],
   [
-    "widgets.generated.enabled",
-    {
-      title: "Makes generated widgets available",
-      value: false,
-    },
-  ],
-  [
     "widgets.privacy.size",
     {
       title: "Size of the privacy widget (medium or large)",

@@ -31,7 +31,7 @@ function WidgetsManagementPanel({ togglePanel, showPanel, setPref }) {
   const dispatch = useDispatch();
 
   const activeWidgets = getWidgets(WIDGET_REGISTRY, extensionWidgets).filter(
-    w => !w.retired && w.enabledPref
+    w => !w.retired
   );
   // Weather also needs the legacy showWeather prefs the widget itself checks.
   const visibleWidgets = activeWidgets.filter(

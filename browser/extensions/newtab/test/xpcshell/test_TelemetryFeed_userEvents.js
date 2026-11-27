@@ -2032,12 +2032,7 @@ add_task(async function test_recordEnabledWidgets_extension_widgets() {
     );
 
     state.ExtensionWidgets = {
-      [extensionWidget.extensionID]: {
-        id: extensionWidget.extensionID,
-        extensionID: extensionWidget.extensionID,
-        src: "moz-extension://uuid/w.html",
-        enabled: true,
-      },
+      [extensionWidget.extensionID]: { src: "moz-extension://uuid/w.html" },
     };
     await instance.onAction({
       type: actionTypes.WIDGETS_EXTENSIONS_UPDATE,

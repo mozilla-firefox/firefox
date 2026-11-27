@@ -31,7 +31,6 @@ import {
   getWidgets,
   isWidgetAddable,
   isWidgetEnabled,
-  isWidgetUserEnabled,
   resolveWidgetSize,
   resolveWidgetDisplaySize,
   resolveWidgetOrder,
@@ -39,8 +38,6 @@ import {
   resolveWidgetFrame,
   resolveSidebarWidget,
   getHideAllTargets,
-  setWidgetEnabled,
-  setWidgetSize,
   PREF_HOME_WIDGETS,
   WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
@@ -328,16 +325,16 @@ function Widgets({ widgetIds, placement }) {
   });
 
   const anyWidgetInRow =
-    widgets.some(w => widgetEnabledMap[w.id]) ||
+    WIDGET_REGISTRY.some(w => widgetEnabledMap[w.id]) ||
     (!novaEnabled && weatherForecastEnabled);
 
   const allWidgetsAdded = widgets
-    .filter(w => isWidgetAddable(w, prefs) && w.enabledPref)
-    .every(w => isWidgetUserEnabled(w, prefs));
+    .filter(w => isWidgetAddable(w, prefs))
+    .every(w => prefs[w.enabledPref]);
 
-  const renderedWidgetSizes = widgets
-    .filter(w => widgetEnabledMap[w.id])
-    .map(w => resolveWidgetSize(w, prefs));
+  const renderedWidgetSizes = WIDGET_REGISTRY.filter(
+    w => widgetEnabledMap[w.id]
+  ).map(w => resolveWidgetSize(w, prefs));
   const addButtonSize = renderedWidgetSizes.includes("large")
     ? "large"
     : "medium";
@@ -460,7 +457,9 @@ function Widgets({ widgetIds, placement }) {
 
   const showsMozWidget =
     novaEnabled &&
-    widgets.some(w => widgetEnabledMap[w.id] && !WIDGET_ROW_COMPONENTS[w.id]);
+    WIDGET_REGISTRY.some(
+      w => widgetEnabledMap[w.id] && !WIDGET_ROW_COMPONENTS[w.id]
+    );
 
   useEffect(() => {
     if (showsMozWidget) {
@@ -487,7 +486,7 @@ function Widgets({ widgetIds, placement }) {
     }
     const targets = getHideAllTargets(widgets, prefs, widgetEnabledMap);
     for (const target of targets) {
-      dispatch(setWidgetEnabled(target.widget, false));
+      dispatch(ac.SetPref(target.enabledPref, false));
     }
     // @nova-cleanup(remove-conditional): Remove the !novaEnabled guard and this branch
     if (!novaEnabled && weatherForecastEnabled) {
@@ -497,10 +496,7 @@ function Widgets({ widgetIds, placement }) {
     dispatch(
       ac.OnlyToMain({
         type: at.WIDGETS_HIDE_ALL,
-        data: {
-          targets: targets.map(({ widget: _widget, ...target }) => target),
-          widget_size: widgetSize,
-        },
+        data: { targets, widget_size: widgetSize },
       })
     );
     // @nova-cleanup(remove-conditional): Remove once weatherForecastEnabled path is removed
@@ -551,7 +547,6 @@ function Widgets({ widgetIds, placement }) {
     // Batch into one SET_MULTIPLE_PREFS so the sizes return in a single broadcast,
     // not one staggered round-trip per widget.
     const prefUpdates = { [PREF_WIDGETS_MAXIMIZED]: newMaximizedState };
-    let extensionSizeActions = [];
 
     // When Nova is enabled, treat the shared header control as a toggle
     // between the default/full widget presentation and the compact one.
@@ -564,21 +559,13 @@ function Widgets({ widgetIds, placement }) {
     // the display state directly and the pre-maximize size isn't retained.
     if (novaEnabled) {
       const targetSize = newMaximizedState ? "large" : "medium";
-      for (const widget of widgets) {
+      for (const widget of WIDGET_REGISTRY) {
         const keepsSmall =
           resolveWidgetHasSidebar(widget, prefs) &&
           resolveWidgetSize(widget, prefs) === "small" &&
-          (widget.id === sidebarWidget?.id ||
+          (widget === sidebarWidget ||
             !isWidgetEnabled(widget, prefs, widgetsEnabled));
-        if (keepsSmall) {
-          continue;
-        }
-        if (widget.extensionID && !isWidgetAddable(widget, prefs)) {
-          continue;
-        }
-        if (widget.extensionID) {
-          extensionSizeActions.push(setWidgetSize(widget, targetSize));
-        } else {
+        if (!keepsSmall) {
           prefUpdates[widget.sizePref] = targetSize;
         }
       }
@@ -591,9 +578,6 @@ function Widgets({ widgetIds, placement }) {
     };
 
     dispatch(ac.SetMultiplePrefs(prefUpdates));
-    for (let action of extensionSizeActions) {
-      dispatch(action);
-    }
     dispatch(
       ac.OnlyToMain({
         type: at.WIDGETS_CONTAINER_ACTION,
@@ -900,7 +884,7 @@ function Widgets({ widgetIds, placement }) {
         key="widgets-add-button"
         type="button"
         className={`widgets-add-button col-4 ${addButtonSize}-widget`}
-        style={{ order: effectiveOrder.length + 1 }}
+        style={{ order: WIDGET_REGISTRY.length + 1 }}
         data-l10n-id="newtab-widget-add-widgets-button"
         onClick={handleManageWidgetsClick}
         tabIndex={-1}

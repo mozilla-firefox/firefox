@@ -23,7 +23,6 @@
     "url": "chrome://extensions/content/parent/ext-builtin-widget.js",
     "schema": "chrome://extensions/content/schemas/builtin_widget.json",
     "scopes": ["addon_parent"],
-    "events": ["uninstall"],
     "manifest": ["builtin_widget", "generated_widget"]
   },
   "captivePortal": {
