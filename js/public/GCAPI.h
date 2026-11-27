@@ -1074,9 +1074,12 @@ class JS_PUBLIC_API AutoRequireNoGC {
  *
  * This works by entering a GC unsafe region, which is checked on allocation and
  * on GC.
+ *
+ * (DEBUG implies MOZ_DIAGNOSTIC_ASSERT_ENABLED but the latter isn't exposed in
+ * embedder builds.)
  */
 class JS_PUBLIC_API AutoAssertNoGC : public AutoRequireNoGC {
-#ifdef MOZ_DIAGNOSTIC_ASSERT_ENABLED
+#if defined(DEBUG) || defined(MOZ_DIAGNOSTIC_ASSERT_ENABLED)
  protected:
   JSContext* cx_;  // nullptr if inactive.
 
@@ -1161,12 +1164,8 @@ class JS_PUBLIC_API AutoAssertGCCallback : public AutoSuppressGCAnalysis {
 class JS_PUBLIC_API AutoCheckCannotGC : public AutoAssertNoGC {
  public:
   explicit AutoCheckCannotGC(JSContext* cx = nullptr) : AutoAssertNoGC(cx) {}
-#  ifdef MOZ_DIAGNOSTIC_ASSERT_ENABLED
   AutoCheckCannotGC(const AutoCheckCannotGC& other)
       : AutoCheckCannotGC(other.cx_) {}
-#  else
-  AutoCheckCannotGC(const AutoCheckCannotGC& other) : AutoCheckCannotGC() {}
-#  endif
   AutoCheckCannotGC(AutoCheckCannotGC&& other)
       : AutoAssertNoGC(std::forward<AutoAssertNoGC>(other)) {}
 #else
