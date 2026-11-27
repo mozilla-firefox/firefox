@@ -547,6 +547,13 @@ NS_IMETHODIMP
 NSSSocketControl::SetHandshakeCallbackListener(
     nsITlsHandshakeCallbackListener* callback) {
   COMMON_SOCKET_CONTROL_ASSERT_ON_OWNING_THREAD();
+  // A listener registered after SetHandshakeCompleted() (e.g. by TCPSocket once
+  // it handles STATUS_CONNECTED_TO) would otherwise never be notified.
+  if (callback && mHandshakeCompleted) {
+    MOZ_ASSERT(!mTlsHandshakeCallback);
+    (void)callback->HandshakeDone();
+    return NS_OK;
+  }
   mTlsHandshakeCallback = callback;
   return NS_OK;
 }
