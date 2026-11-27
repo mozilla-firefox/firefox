@@ -51,6 +51,44 @@ export const SYSTEM_COLORS = [
 ];
 
 /**
+ * The deprecated system colors, which SYSTEM_COLORS leaves out so that no rule
+ * suggests them, but which still resolve to system colors.
+ */
+export const DEPRECATED_SYSTEM_COLORS = new Set([
+  "activeborder",
+  "activecaption",
+  "appworkspace",
+  "background",
+  "buttonhighlight",
+  "buttonshadow",
+  "captiontext",
+  "inactiveborder",
+  "inactivecaption",
+  "inactivecaptiontext",
+  "infobackground",
+  "infotext",
+  "menu",
+  "menutext",
+  "scrollbar",
+  "threeddarkshadow",
+  "threedface",
+  "threedhighlight",
+  "threedlightshadow",
+  "threedshadow",
+  "window",
+  "windowframe",
+  "windowtext",
+]);
+
+export const CSS_WIDE_KEYWORDS = new Set([
+  "inherit",
+  "initial",
+  "revert",
+  "revert-layer",
+  "unset",
+]);
+
+/**
  * Our namespace used to prefix Mozilla stylelint rules.
  */
 const MOZILLA_NAMESPACE = "stylelint-plugin-mozilla";
