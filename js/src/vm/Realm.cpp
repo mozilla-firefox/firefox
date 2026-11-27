@@ -248,6 +248,8 @@ void Realm::traceGlobalData(JSTracer* trc) {
   // Trace things reachable from the realm's global. Note that these edges
   // must be swept too in case the realm is live but the global is not.
 
+  savedStacks_.trace(trc);
+
   DebugAPI::traceFromRealm(trc, this);
 }
 
@@ -380,7 +382,6 @@ void Realm::purge() {
   plainObjectAssignCache.purge();
   plainObjectSpreadCache.purge();
   objects_.iteratorCache.clearAndCompact();
-  savedStacks_.purgePCLocationMap();
 }
 
 void Realm::enableAllocationMetadataBuilder() {

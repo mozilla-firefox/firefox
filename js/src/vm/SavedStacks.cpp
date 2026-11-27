@@ -313,8 +313,8 @@ HashNumber SavedFrame::HashPolicy::calculateHash(const Lookup& lookup,
   // interest.  If that assumption changes, we'll just need to start with 0
   // and add another overload of AddToHash with more arguments.
   return AddToHash(lookup.line, lookup.column.rawValue(), lookup.source,
-                   lookup.sourceId, lookup.functionDisplayName,
-                   lookup.asyncCause, lookup.mutedErrors, parentHash,
+                   lookup.functionDisplayName, lookup.asyncCause,
+                   lookup.mutedErrors, parentHash,
                    JSPrincipalsPtrHasher::hash(lookup.principals));
 }
 
@@ -340,10 +340,6 @@ bool SavedFrame::HashPolicy::match(SavedFrame* existing, const Lookup& lookup) {
 
   JSAtom* source = existing->getSource();
   if (source != lookup.source) {
-    return false;
-  }
-
-  if (existing->getSourceId() != lookup.sourceId) {
     return false;
   }
 
@@ -1369,6 +1365,8 @@ void SavedStacks::traceWeak(JSTracer* trc) {
   frames.traceWeak(trc);
   pcLocationMap.traceWeak(trc);
 }
+
+void SavedStacks::trace(JSTracer* trc) { pcLocationMap.trace(trc); }
 
 uint32_t SavedStacks::count() { return frames.count(); }
 

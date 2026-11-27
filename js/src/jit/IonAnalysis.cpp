@@ -677,36 +677,19 @@ struct BoundsCheckInfo {
   uint32_t validEnd;
 };
 
-// Key for BoundsCheckMap. For an MBoundsCheck instruction of the form
-// |MBoundsCheck(indexTerm + constant, length)|, the key stores the indexTerm
-// and length operands. Bounds checks whose indexes differ only by a constant
-// will map to the same entry.
-struct BoundsCheckKey {
-  MDefinition* indexTerm;
-  MDefinition* length;
+using BoundsCheckMap =
+    HashMap<uint32_t, BoundsCheckInfo, DefaultHasher<uint32_t>, JitAllocPolicy>;
 
-  BoundsCheckKey(MDefinition* indexTerm, MDefinition* length)
-      : indexTerm(indexTerm), length(length) {}
-
-  bool operator==(const BoundsCheckKey& other) const = default;
-
-  struct Hasher {
-    using Lookup = BoundsCheckKey;
-    static HashNumber hash(const BoundsCheckKey& key) {
-      return mozilla::HashGeneric(key.indexTerm, key.length);
-    }
-    static bool match(const BoundsCheckKey& a, const BoundsCheckKey& b) {
-      return a == b;
-    }
-  };
-};
-
-using BoundsCheckMap = HashMap<BoundsCheckKey, BoundsCheckInfo,
-                               BoundsCheckKey::Hasher, JitAllocPolicy>;
+// Compute a hash for bounds checks which ignores constant offsets in the index.
+static HashNumber BoundsCheckHashIgnoreOffset(MBoundsCheck* check) {
+  SimpleLinearSum indexSum = ExtractLinearSum(check->index());
+  uintptr_t index = indexSum.term ? uintptr_t(indexSum.term) : 0;
+  uintptr_t length = uintptr_t(check->length());
+  return index ^ length;
+}
 
 static MBoundsCheck* FindDominatingBoundsCheck(BoundsCheckMap& checks,
                                                MBoundsCheck* check,
-                                               const SimpleLinearSum& indexSum,
                                                size_t index) {
   // Since we are traversing the dominator tree in pre-order, when we
   // are looking at the |index|-th block, the next numDominated() blocks
@@ -715,21 +698,15 @@ static MBoundsCheck* FindDominatingBoundsCheck(BoundsCheckMap& checks,
   // So, this value is visible in all blocks if:
   // index <= index + ins->block->numDominated()
   // and becomes invalid after that.
-  BoundsCheckKey key(indexSum.term, check->length());
-  BoundsCheckMap::AddPtr p = checks.lookupForAdd(key);
+  HashNumber hash = BoundsCheckHashIgnoreOffset(check);
+  BoundsCheckMap::Ptr p = checks.lookup(hash);
   if (!p || index >= p->value().validEnd) {
     // We didn't find a dominating bounds check.
     BoundsCheckInfo info;
     info.check = check;
     info.validEnd = index + check->block()->numDominated();
 
-    if (p) {
-      p->value() = info;
-    } else {
-      if (!checks.add(p, key, info)) {
-        return nullptr;
-      }
-    }
+    if (!checks.put(hash, info)) return nullptr;
 
     return check;
   }
@@ -944,9 +921,8 @@ static bool TryEliminateBoundsCheck(BoundsCheckMap& checks, size_t blockIndex,
     return true;
   }
 
-  const SimpleLinearSum dominatedSum = ExtractLinearSum(dominated->index());
   MBoundsCheck* dominating =
-      FindDominatingBoundsCheck(checks, dominated, dominatedSum, blockIndex);
+      FindDominatingBoundsCheck(checks, dominated, blockIndex);
   if (!dominating) {
     return false;
   }
@@ -956,34 +932,39 @@ static bool TryEliminateBoundsCheck(BoundsCheckMap& checks, size_t blockIndex,
     return true;
   }
 
-  MOZ_RELEASE_ASSERT(dominating->length() == dominated->length());
+  // We found two bounds checks with the same hash number, but we still have
+  // to make sure the lengths and index terms are equal.
+  if (dominating->length() != dominated->length()) {
+    return true;
+  }
 
-  const SimpleLinearSum dominatingSum = ExtractLinearSum(dominating->index());
-  MOZ_RELEASE_ASSERT(dominatingSum.term == dominatedSum.term);
+  SimpleLinearSum sumA = ExtractLinearSum(dominating->index());
+  SimpleLinearSum sumB = ExtractLinearSum(dominated->index());
+
+  // Both terms should be nullptr or the same definition.
+  if (sumA.term != sumB.term) {
+    return true;
+  }
 
   // This bounds check is redundant.
   *eliminated = true;
 
   // Normalize the ranges according to the constant offsets in the two indexes.
-  int32_t dominatingMin, dominatingMax, dominatedMin, dominatedMax;
-  if (!mozilla::SafeAdd(dominatingSum.constant, dominating->minimum(),
-                        &dominatingMin) ||
-      !mozilla::SafeAdd(dominatingSum.constant, dominating->maximum(),
-                        &dominatingMax) ||
-      !mozilla::SafeAdd(dominatedSum.constant, dominated->minimum(),
-                        &dominatedMin) ||
-      !mozilla::SafeAdd(dominatedSum.constant, dominated->maximum(),
-                        &dominatedMax)) {
+  int32_t minimumA, maximumA, minimumB, maximumB;
+  if (!mozilla::SafeAdd(sumA.constant, dominating->minimum(), &minimumA) ||
+      !mozilla::SafeAdd(sumA.constant, dominating->maximum(), &maximumA) ||
+      !mozilla::SafeAdd(sumB.constant, dominated->minimum(), &minimumB) ||
+      !mozilla::SafeAdd(sumB.constant, dominated->maximum(), &maximumB)) {
     return false;
   }
 
   // Update the dominating check to cover both ranges, denormalizing the
   // result per the constant offset in the index.
   int32_t newMinimum, newMaximum;
-  if (!mozilla::SafeSub(std::min(dominatingMin, dominatedMin),
-                        dominatingSum.constant, &newMinimum) ||
-      !mozilla::SafeSub(std::max(dominatingMax, dominatedMax),
-                        dominatingSum.constant, &newMaximum)) {
+  if (!mozilla::SafeSub(std::min(minimumA, minimumB), sumA.constant,
+                        &newMinimum) ||
+      !mozilla::SafeSub(std::max(maximumA, maximumB), sumA.constant,
+                        &newMaximum)) {
     return false;
   }
 
@@ -1001,8 +982,9 @@ static bool TryEliminateBoundsCheck(BoundsCheckMap& checks, size_t blockIndex,
 // In this case we eliminate the redundant bounds check and update the other one
 // to cover the ranges of both checks.
 //
-// Bounds checks are added to a hash map and since the key ignores differences
-// in constant offset, this offers a fast way to find redundant checks.
+// Bounds checks are added to a hash map and since the hash function ignores
+// differences in constant offset, this offers a fast way to find redundant
+// checks.
 bool jit::EliminateRedundantChecks(MIRGraph& graph) {
   BoundsCheckMap checks(graph.alloc());
 

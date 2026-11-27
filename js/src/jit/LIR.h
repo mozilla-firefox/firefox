@@ -11,7 +11,6 @@
 #include "mozilla/Array.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/Casting.h"
-#include "mozilla/HashFunctions.h"
 
 #include "jit/Bailouts.h"
 #include "jit/FixedList.h"
@@ -2185,9 +2184,7 @@ bool LDefinition::isSafepointGCType(LNode* ins) const {
 class LIRGraph {
   struct ValueHasher {
     using Lookup = Value;
-    static HashNumber hash(const Value& v) {
-      return mozilla::HashGeneric(v.asRawBits());
-    }
+    static HashNumber hash(const Value& v) { return HashNumber(v.asRawBits()); }
     static bool match(const Value& lhs, const Value& rhs) { return lhs == rhs; }
   };
 

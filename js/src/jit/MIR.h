@@ -4454,7 +4454,7 @@ class MMinMax : public MBinaryInstruction, public ArithPolicy::Data {
   bool isMax() const { return isMax_; }
 
   bool congruentTo(const MDefinition* ins) const override {
-    if (!binaryCongruentTo(ins)) {
+    if (!congruentIfOperandsEqual(ins)) {
       return false;
     }
     const MMinMax* other = ins->toMinMax();
@@ -7643,9 +7643,6 @@ class MLoadFixedSlotAndUnbox : public MUnaryInstruction,
   size_t slot() const { return slot_; }
   MUnbox::Mode mode() const { return mode_; }
   bool fallible() const { return mode_ != MUnbox::Infallible; }
-
-  HashNumber valueHash() const override;
-
   bool congruentTo(const MDefinition* ins) const override {
     if (!ins->isLoadFixedSlotAndUnbox() ||
         slot() != ins->toLoadFixedSlotAndUnbox()->slot() ||
@@ -7699,8 +7696,6 @@ class MLoadDynamicSlotAndUnbox : public MUnaryInstruction,
   size_t slot() const { return slot_; }
   MUnbox::Mode mode() const { return mode_; }
   bool fallible() const { return mode_ != MUnbox::Infallible; }
-
-  HashNumber valueHash() const override;
 
   bool congruentTo(const MDefinition* ins) const override {
     if (!ins->isLoadDynamicSlotAndUnbox() ||

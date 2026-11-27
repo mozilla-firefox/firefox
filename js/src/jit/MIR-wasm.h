@@ -2215,7 +2215,7 @@ class MWasmBinarySimd128 : public MBinaryInstruction,
 
   AliasSet getAliasSet() const override { return AliasSet::None(); }
   bool congruentTo(const MDefinition* ins) const override {
-    return binaryCongruentTo(ins) &&
+    return congruentIfOperandsEqual(ins) &&
            ins->toWasmBinarySimd128()->simdOp() == simdOp_;
   }
 #ifdef ENABLE_JIT_SIMD
@@ -3438,7 +3438,7 @@ class MWasmMulI64WideHI64 : public MBinaryInstruction,
   bool isSigned() const { return isSigned_; }
   AliasSet getAliasSet() const override { return AliasSet::None(); }
   bool congruentTo(const MDefinition* ins) const override {
-    return binaryCongruentTo(ins) &&
+    return ins->isWasmMulI64WideHI64() && congruentIfOperandsEqual(ins) &&
            ins->toWasmMulI64WideHI64()->isSigned() == isSigned();
   }
 
