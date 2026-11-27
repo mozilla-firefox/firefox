@@ -727,6 +727,15 @@ run-if = [
 
 ["test_dns_stress.js"]
 
+["test_dns_svcb.js"]
+prefs = [
+  "network.dns.native_https_query=true",
+  "network.dns.native_https_query_win10=true",
+]
+skip-if = [
+  "os == 'win' && msix", # native DNS override is unavailable in MSIX sandbox
+]
+
 ["test_domain_eviction.js"]
 
 ["test_dooh.js"]

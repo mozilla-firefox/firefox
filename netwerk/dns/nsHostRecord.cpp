@@ -609,7 +609,11 @@ uint32_t TypeHostRecord::GetType() {
         return nsIDNSService::RESOLVE_TYPE_DEFAULT;
       },
       [](TypeRecordTxt&) { return nsIDNSService::RESOLVE_TYPE_TXT; },
-      [](TypeRecordHTTPSSVC&) { return nsIDNSService::RESOLVE_TYPE_HTTPSSVC; });
+      [&](TypeRecordHTTPSSVC&) {
+        return type == nsIDNSService::RESOLVE_TYPE_SVCB
+                   ? nsIDNSService::RESOLVE_TYPE_SVCB
+                   : nsIDNSService::RESOLVE_TYPE_HTTPSSVC;
+      });
 }
 
 TypeRecordResultType TypeHostRecord::GetResults() {
@@ -733,6 +737,18 @@ TypeHostRecord::GetTtl(uint32_t* aResult) {
   return NS_OK;
 }
 
+NS_IMETHODIMP
+TypeHostRecord::GetResolverAddrs(nsTArray<nsCString>& aResult) {
+  MutexAutoLock lock(mResultsLock);
+  aResult.Clear();
+  for (const auto& addr : mResolverAddrs) {
+    nsCString str;
+    addr.ToString(str);
+    aResult.AppendElement(std::move(str));
+  }
+  return NS_OK;
+}
+
 void TypeHostRecord::ResolveComplete() {
   if (IsRelevantTRRSkipReason(mTRRSkippedReason)) {
     glean::dns::trr_relevant_skip_reason_trr_first_type_rec
@@ -742,6 +758,9 @@ void TypeHostRecord::ResolveComplete() {
 
   // Record the lookup time, keyed by whether it was resolved over DoH/TRR or
   // natively; failed lookups go to a separate metric.
+  if (type == nsIDNSService::RESOLVE_TYPE_SVCB) {
+    return;
+  }
   if (mTRRSuccess) {
     glean::dns::https_rr_lookup_time.Get("doh"_ns).AccumulateRawDuration(
         mTrrDuration);

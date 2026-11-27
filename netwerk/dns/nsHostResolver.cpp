@@ -1099,7 +1099,8 @@ nsresult nsHostResolver::NativeLookup(nsHostRecord* aRec) {
   }
   LOG(("NativeLookup host:%s af:%" PRId16, aRec->host.get(), aRec->af));
 
-  // If this is not a A/AAAA request, make sure native HTTPS is enabled.
+  // If this is not a A/AAAA request, make sure native by-type resolution is
+  // enabled.
   MOZ_ASSERT(aRec->IsAddrRecord() || IsNativeHTTPSEnabled());
   mQueue.mLock.AssertCurrentThreadOwns();
 
@@ -1741,6 +1742,10 @@ nsHostResolver::LookupStatus nsHostResolver::CompleteLookupByTypeLocked(
     MOZ_ASSERT(aResult.is<TypeRecordEmpty>());
     status = NS_ERROR_UNKNOWN_HOST;
     typeRec->negative = true;
+    {
+      MutexAutoLock typeLock(typeRec->mResultsLock);
+      typeRec->mResolverAddrs.Clear();
+    }
     if (aReason != TRRSkippedReason::TRR_UNSET) {
       typeRec->RecordReason(aReason);
     } else {
@@ -1760,6 +1765,9 @@ nsHostResolver::LookupStatus nsHostResolver::CompleteLookupByTypeLocked(
          typeRec.get(), typeRec->host.get(), recordCount));
     MutexAutoLock typeLock(typeRec->mResultsLock);
     typeRec->mResults = aResult;
+    if (!rec->LoadNative()) {
+      typeRec->mResolverAddrs.Clear();
+    }
     typeRec->SetExpiration(
         TimeStamp::NowLoRes(), aTtl,
         StaticPrefs::network_dnsCacheExpirationGracePeriod());
@@ -1885,17 +1893,30 @@ void nsHostResolver::ResolveHostTask() {
       TypeRecordResultType result = AsVariant(mozilla::Nothing());
       uint32_t ttl = UINT32_MAX;
       Maybe<nsCString> originHost;
-      if (RefPtr<TypeHostRecord> typeRec = do_QueryObject(rec)) {
+      RefPtr<TypeHostRecord> typeRec = do_QueryObject(rec);
+      if (typeRec) {
         MutexAutoLock lock(typeRec->mResultsLock);
         originHost = typeRec->mOriginHost;
       }
+      // Only HTTPS and SVCB can be resolved natively.
+      bool isSVCB = rec->type == nsIDNSService::RESOLVE_TYPE_SVCB;
+      nsTArray<NetAddr> resolverAddrs;
       nsresult status =
-          ResolveHTTPSRecord(rec->host, rec->flags, result, ttl, originHost);
-      mozilla::glean::networking::dns_native_count
-          .EnumGet(rec->pb
-                       ? glean::networking::DnsNativeCountLabel::eHttpsPrivate
-                       : glean::networking::DnsNativeCountLabel::eHttpsRegular)
-          .Add(1);
+          ResolveHTTPSRecord(rec->host, rec->flags, result, ttl, originHost,
+                             isSVCB ? nsIDNSService::RESOLVE_TYPE_SVCB
+                                    : nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
+                             isSVCB ? &resolverAddrs : nullptr);
+      if (typeRec) {
+        MutexAutoLock lock(typeRec->mResultsLock);
+        typeRec->mResolverAddrs = std::move(resolverAddrs);
+      }
+      if (!isSVCB) {
+        mozilla::glean::networking::dns_native_count
+            .EnumGet(
+                rec->pb ? glean::networking::DnsNativeCountLabel::eHttpsPrivate
+                        : glean::networking::DnsNativeCountLabel::eHttpsRegular)
+            .Add(1);
+      }
       // Capture native success/duration; ResolveComplete records it as the
       // HTTPS RR lookup time (keyed "native").
       rec->mNativeSuccess = NS_SUCCEEDED(status);

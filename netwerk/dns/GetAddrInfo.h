@@ -88,16 +88,18 @@ struct __res_state* GetThreadResState();
 #endif
 
 /**
- * Resolves a HTTPS record. Will check overrides before calling the
- * native OS implementation.
+ * Resolves a HTTPS (type 65) or SVCB (type 64) record depending on aType. Will
+ * check overrides before calling the native OS implementation.
  *
  * aOriginHost is set when aHost is a port-prefixed name; it is then used as
  * the TargetName of ServiceMode records whose TargetName is ".".
  */
-nsresult ResolveHTTPSRecord(const nsACString& aHost,
-                            nsIDNSService::DNSFlags aFlags,
-                            TypeRecordResultType& aResult, uint32_t& aTTL,
-                            const Maybe<nsCString>& aOriginHost = Nothing());
+nsresult ResolveHTTPSRecord(
+    const nsACString& aHost, nsIDNSService::DNSFlags aFlags,
+    TypeRecordResultType& aResult, uint32_t& aTTL,
+    const Maybe<nsCString>& aOriginHost = Nothing(),
+    uint16_t aType = nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
+    nsTArray<NetAddr>* aResolverAddrs = nullptr);
 
 /**
  * A target name that could not be resolved within the same response, along with
@@ -112,31 +114,35 @@ struct HTTPSAliasTarget {
 };
 
 /**
- * The platform specific implementation of HTTPS resolution.
+ * The platform specific implementation of HTTPS/SVCB resolution. When
+ * aResolverAddrs is non-null it is filled with the addresses of the unencrypted
+ * resolvers configured on the system (used for RFC 9462 DDR verification).
  *
  * If the record for aHost could not be resolved within the same response,
  * aAlias is set to the target name so the caller can issue a fresh lookup.
  */
-nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
-                                const Maybe<nsCString>& aOriginHost,
-                                nsIDNSService::DNSFlags aFlags,
-                                TypeRecordResultType& aResult, uint32_t& aTTL,
-                                HTTPSAliasTarget& aAlias);
+nsresult ResolveHTTPSRecordImpl(
+    const nsACString& aHost, const Maybe<nsCString>& aOriginHost,
+    nsIDNSService::DNSFlags aFlags, TypeRecordResultType& aResult,
+    uint32_t& aTTL, HTTPSAliasTarget& aAlias,
+    uint16_t aType = nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
+    nsTArray<NetAddr>* aResolverAddrs = nullptr);
 
-nsresult ParseHTTPSRecord(nsCString& aHost, DNSPacket& aDNSPacket,
-                          TypeRecordResultType& aResult, uint32_t& aTTL,
-                          HTTPSAliasTarget& aAlias);
+nsresult ParseHTTPSRecord(
+    nsCString& aHost, DNSPacket& aDNSPacket, TypeRecordResultType& aResult,
+    uint32_t& aTTL, HTTPSAliasTarget& aAlias,
+    uint16_t aType = nsIDNSService::RESOLVE_TYPE_HTTPSSVC);
 
 #ifdef DNSQUERY_AVAILABLE
 /**
  * Extracts the HTTPS records for aHost from the record list returned by
  * DnsQuery_A, following CNAME and AliasMode targets present in the list.
  */
-nsresult ParseHTTPSRecordList(const _DnsRecordA* aRecords,
-                              const nsACString& aHost,
-                              const Maybe<nsCString>& aOriginHost,
-                              TypeRecordResultType& aResult, uint32_t& aTTL,
-                              HTTPSAliasTarget& aAlias);
+nsresult ParseHTTPSRecordList(
+    const _DnsRecordA* aRecords, const nsACString& aHost,
+    const Maybe<nsCString>& aOriginHost, TypeRecordResultType& aResult,
+    uint32_t& aTTL, HTTPSAliasTarget& aAlias,
+    uint16_t aType = nsIDNSService::RESOLVE_TYPE_HTTPSSVC);
 #endif
 
 // Use the provided aHost to create a mock HTTPS record.
@@ -169,7 +175,7 @@ class NativeDNSResolverOverride : public nsINativeDNSResolverOverride {
   friend bool FindHTTPSRecordOverride(const nsACString& aHost,
                                       const Maybe<nsCString>& aOriginHost,
                                       TypeRecordResultType& aResult,
-                                      HTTPSAliasTarget& aAlias);
+                                      HTTPSAliasTarget& aAlias, uint16_t aType);
 };
 
 }  // namespace net

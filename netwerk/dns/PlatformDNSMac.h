@@ -9,6 +9,7 @@
 
 #include "mozilla/Maybe.h"
 #include "mozilla/net/DNSByTypeRecord.h"
+#include "nsIDNSService.h"
 #include "nsString.h"
 
 namespace mozilla::net {
@@ -20,9 +21,12 @@ struct DNSContext {
   nsCString mHost;
   Maybe<nsCString> mOriginHost;
   uint32_t* mTTL;
+  // The record type that was queried; other types returned by
+  // kDNSServiceFlagsReturnIntermediates are ignored.
+  uint16_t mType = nsIDNSService::RESOLVE_TYPE_HTTPSSVC;
   // Set to the TargetName when the response is an HTTPS AliasMode record.
   nsCString mAliasName;
-  // Set once the HTTPS RRSet has been delivered. Intermediate records such as
+  // Set once the queried RRSet has been delivered. Intermediate records such as
   // CNAMEs arrive in earlier callbacks and don't complete the query.
   bool mDone = false;
 

@@ -476,6 +476,11 @@ nsDNSByTypeRecord::GetFromStaleCache(bool* aResult) {
 NS_IMETHODIMP
 nsDNSByTypeRecord::GetTtl(uint32_t* aTtl) { return mHostRecord->GetTtl(aTtl); }
 
+NS_IMETHODIMP
+nsDNSByTypeRecord::GetResolverAddrs(nsTArray<nsCString>& aResult) {
+  return mHostRecord->GetResolverAddrs(aResult);
+}
+
 //-----------------------------------------------------------------------------
 
 class nsDNSAsyncRequest final : public nsResolveHostCallback,
@@ -1002,7 +1007,7 @@ nsresult nsDNSService::AsyncResolveInternal(
   }
 
   if ((type != RESOLVE_TYPE_DEFAULT) && (type != RESOLVE_TYPE_TXT) &&
-      (type != RESOLVE_TYPE_HTTPSSVC)) {
+      (type != RESOLVE_TYPE_HTTPSSVC) && (type != RESOLVE_TYPE_SVCB)) {
     return NS_ERROR_INVALID_ARG;
   }
 

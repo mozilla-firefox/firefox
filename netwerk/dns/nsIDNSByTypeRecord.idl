@@ -109,6 +109,8 @@ interface nsISVCBRecord : nsISupports {
   readonly attribute ACString selectedAlpn;
   readonly attribute ACString echConfig;
   readonly attribute ACString ODoHConfig;
+  // RFC 9461 dohpath URI template, empty when the record has no dohpath.
+  readonly attribute ACString dohPath;
   readonly attribute boolean hasIPHintAddress;
   readonly attribute Array<nsISVCParam> values;
 };
@@ -135,6 +137,15 @@ interface nsIDNSHTTPSSVCRecord : nsISupports
    * Returns the ttl of this record.
    */
   readonly attribute uint32_t ttl;
+
+  /**
+   * For a native SVCB query (RFC 9462 DDR), the addresses of the unencrypted
+   * resolvers configured on the system, as strings. Any of them may have
+   * answered the query, so DDR verification accepts a designated resolver whose
+   * certificate covers any one of these addresses. Empty otherwise.
+   * Throws NS_ERROR_NOT_AVAILABLE in child processes.
+   */
+  readonly attribute Array<ACString> resolverAddrs;
 
   /**
    * Record retreived with TRR.

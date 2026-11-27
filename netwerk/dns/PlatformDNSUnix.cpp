@@ -69,7 +69,8 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
                                 const Maybe<nsCString>& aOriginHost,
                                 nsIDNSService::DNSFlags aFlags,
                                 TypeRecordResultType& aResult, uint32_t& aTTL,
-                                HTTPSAliasTarget& aAlias) {
+                                HTTPSAliasTarget& aAlias, uint16_t aType,
+                                nsTArray<NetAddr>* aResolverAddrs) {
   DNSPacket packet;
   nsAutoCString host(aHost);
   nsAutoCString cname;
@@ -94,17 +95,17 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
         int len = 0;
         TimeStamp startTime = TimeStamp::Now();
 #if defined(HAVE_RES_NINIT)
-        len = res_nquery(res, host.get(), ns_c_in,
-                         nsIDNSService::RESOLVE_TYPE_HTTPSSVC, response,
+        len = res_nquery(res, host.get(), ns_c_in, aType, response,
                          DNSPacket::MAX_SIZE);
 #else
-        len =
-            res_query(host.get(), ns_c_in, nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
-                      response, DNSPacket::MAX_SIZE);
+        len = res_query(host.get(), ns_c_in, aType, response,
+                        DNSPacket::MAX_SIZE);
 #endif
 
-        mozilla::glean::networking::dns_native_https_call_time
-            .AccumulateRawDuration(TimeStamp::Now() - startTime);
+        if (aType == nsIDNSService::RESOLVE_TYPE_HTTPSSVC) {
+          mozilla::glean::networking::dns_native_https_call_time
+              .AccumulateRawDuration(TimeStamp::Now() - startTime);
+        }
         if (len < 0) {
           LOG("DNS query failed");
         }
@@ -115,7 +116,7 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
   }
 
   packet.SetOriginHost(aOriginHost);
-  return ParseHTTPSRecord(host, packet, aResult, aTTL, aAlias);
+  return ParseHTTPSRecord(host, packet, aResult, aTTL, aAlias, aType);
 }
 
 void DNSThreadShutdown() {
