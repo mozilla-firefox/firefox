@@ -18,15 +18,10 @@ add_task(async function test_change_title_from_BookmarkStar() {
   });
 
   const win = await BrowserTestUtils.openNewBrowserWindow();
-  let tab = await BrowserTestUtils.openNewForegroundTab({
+  await BrowserTestUtils.openNewForegroundTab({
     gBrowser: win.gBrowser,
     opening: TEST_URL,
     waitForStateStop: true,
-  });
-
-  registerCleanupFunction(async () => {
-    BrowserTestUtils.removeTab(tab);
-    await BrowserTestUtils.closeWindow(win);
   });
 
   win.StarUI._createPanelIfNeeded();
@@ -72,9 +67,11 @@ add_task(async function test_change_title_from_BookmarkStar() {
     "Should have updated the bookmark title in the database"
   );
   await PlacesUtils.bookmarks.remove(originalBm.guid);
+  await BrowserTestUtils.closeWindow(win);
 });
 
 add_task(async function test_change_title_from_Toolbar() {
+  await SimpleTest.promiseFocus(window);
   let toolbarBookmark = await PlacesUtils.bookmarks.insert({
     parentGuid: PlacesUtils.bookmarks.toolbarGuid,
     title: titleAfterFirstUpdate,
