@@ -61,11 +61,11 @@ class HTMLDNSPrefetch {
                                 Element& aElement, Priority aPriority);
   static void SendRequest(Element& aElement, nsIDNSService::DNSFlags aFlags);
   static nsresult Prefetch(
-      const nsAString& host, bool isHttps,
+      const nsACString& host, bool isHttps,
       const OriginAttributes& aPartitionedPrincipalOriginAttributes,
       nsIRequest::TRRMode aTRRMode, Priority);
   static nsresult CancelPrefetch(
-      const nsAString& host, bool isHttps,
+      const nsACString& host, bool isHttps,
       const OriginAttributes& aPartitionedPrincipalOriginAttributes,
       nsIRequest::TRRMode aTRRMode, Priority, nsresult aReason);
   static nsresult CancelPrefetch(SupportsDNSPrefetch&, Element&, Priority,
@@ -76,11 +76,11 @@ class HTMLDNSPrefetch {
 
  private:
   static nsresult Prefetch(
-      const nsAString& host, bool isHttps,
+      const nsACString& host, bool isHttps,
       const OriginAttributes& aPartitionedPrincipalOriginAttributes,
       nsIDNSService::DNSFlags flags);
   static nsresult CancelPrefetch(
-      const nsAString& hostname, bool isHttps,
+      const nsACString& hostname, bool isHttps,
       const OriginAttributes& aPartitionedPrincipalOriginAttributes,
       nsIDNSService::DNSFlags flags, nsresult aReason);
 

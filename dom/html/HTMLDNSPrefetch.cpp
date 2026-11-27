@@ -270,14 +270,13 @@ static nsresult CancelSpeculativeAddrPrefetch(
 }
 
 nsresult HTMLDNSPrefetch::Prefetch(
-    const nsAString& hostname, bool isHttps,
+    const nsACString& hostname, bool isHttps,
     const OriginAttributes& aPartitionedPrincipalOriginAttributes,
     nsIDNSService::DNSFlags flags) {
   if (IsNeckoChild()) {
     // We need to check IsEmpty() because net_IsValidDNSHost()
     // considers empty strings to be valid hostnames
-    if (!hostname.IsEmpty() &&
-        net_IsValidDNSHost(NS_ConvertUTF16toUTF8(hostname))) {
+    if (!hostname.IsEmpty() && net_IsValidDNSHost(hostname)) {
       // during shutdown gNeckoChild might be null
       if (gNeckoChild) {
         gNeckoChild->SendHTMLDNSPrefetch(
@@ -294,18 +293,18 @@ nsresult HTMLDNSPrefetch::Prefetch(
       StaticPrefs::network_dns_use_https_rr_as_altsvc()) {
     nsCOMPtr<nsICancelable> tmpOutstanding;
     (void)sDNSService->AsyncResolveNative(
-        NS_ConvertUTF16toUTF8(hostname), nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
+        hostname, nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
         flags | nsIDNSService::RESOLVE_SPECULATE, nullptr, sDNSListener,
         nullptr, aPartitionedPrincipalOriginAttributes,
         getter_AddRefs(tmpOutstanding));
   }
 
-  return IssueSpeculativeAddrPrefetch(NS_ConvertUTF16toUTF8(hostname), flags,
+  return IssueSpeculativeAddrPrefetch(hostname, flags,
                                       aPartitionedPrincipalOriginAttributes);
 }
 
 nsresult HTMLDNSPrefetch::Prefetch(
-    const nsAString& hostname, bool isHttps,
+    const nsACString& hostname, bool isHttps,
     const OriginAttributes& aPartitionedPrincipalOriginAttributes,
     nsIRequest::TRRMode aMode, Priority aPriority) {
   return Prefetch(hostname, isHttps, aPartitionedPrincipalOriginAttributes,
@@ -340,20 +339,18 @@ nsresult HTMLDNSPrefetch::CancelPrefetch(SupportsDNSPrefetch& aSupports,
   StoragePrincipalHelper::GetOriginAttributesForNetworkState(
       aElement.OwnerDoc(), oa);
 
-  return CancelPrefetch(NS_ConvertUTF8toUTF16(hostname), isHttps, oa, flags,
-                        aReason);
+  return CancelPrefetch(hostname, isHttps, oa, flags, aReason);
 }
 
 nsresult HTMLDNSPrefetch::CancelPrefetch(
-    const nsAString& hostname, bool isHttps,
+    const nsACString& hostname, bool isHttps,
     const OriginAttributes& aPartitionedPrincipalOriginAttributes,
     nsIDNSService::DNSFlags flags, nsresult aReason) {
   // Forward this request to Necko Parent if we're a child process
   if (IsNeckoChild()) {
     // We need to check IsEmpty() because net_IsValidDNSHost()
     // considers empty strings to be valid hostnames
-    if (!hostname.IsEmpty() &&
-        net_IsValidDNSHost(NS_ConvertUTF16toUTF8(hostname))) {
+    if (!hostname.IsEmpty() && net_IsValidDNSHost(hostname)) {
       // during shutdown gNeckoChild might be null
       if (gNeckoChild && gNeckoChild->CanSend()) {
         gNeckoChild->SendCancelHTMLDNSPrefetch(
@@ -370,13 +367,12 @@ nsresult HTMLDNSPrefetch::CancelPrefetch(
 
   // Forward cancellation to DNS service
   nsresult rv = CancelSpeculativeAddrPrefetch(
-      NS_ConvertUTF16toUTF8(hostname), flags, aReason,
-      aPartitionedPrincipalOriginAttributes);
+      hostname, flags, aReason, aPartitionedPrincipalOriginAttributes);
 
   if (StaticPrefs::network_dns_upgrade_with_https_rr() ||
       StaticPrefs::network_dns_use_https_rr_as_altsvc()) {
     (void)sDNSService->CancelAsyncResolveNative(
-        NS_ConvertUTF16toUTF8(hostname), nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
+        hostname, nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
         flags | nsIDNSService::RESOLVE_SPECULATE,
         nullptr,  // AdditionalInfo
         sDNSListener, aReason, aPartitionedPrincipalOriginAttributes);
@@ -385,7 +381,7 @@ nsresult HTMLDNSPrefetch::CancelPrefetch(
 }
 
 nsresult HTMLDNSPrefetch::CancelPrefetch(
-    const nsAString& hostname, bool isHttps,
+    const nsACString& hostname, bool isHttps,
     const OriginAttributes& aPartitionedPrincipalOriginAttributes,
     nsIRequest::TRRMode aTRRMode, Priority aPriority, nsresult aReason) {
   return CancelPrefetch(hostname, isHttps,
@@ -436,8 +432,7 @@ void HTMLDNSPrefetch::SendRequest(Element& aElement,
   if (IsNeckoChild()) {
     // during shutdown gNeckoChild might be null
     if (gNeckoChild) {
-      gNeckoChild->SendHTMLDNSPrefetch(NS_ConvertUTF8toUTF16(hostName), isHttps,
-                                       oa, aFlags);
+      gNeckoChild->SendHTMLDNSPrefetch(hostName, isHttps, oa, aFlags);
     }
   } else {
     // Fetch HTTPS RR if needed.
@@ -572,8 +567,7 @@ static bool BuildPrefetchArgs(SupportsDNSPrefetch& aSupports, Element& aElement,
   OriginAttributes oa;
   StoragePrincipalHelper::GetOriginAttributesForNetworkState(
       aElement.OwnerDoc(), oa);
-  aOut = HTMLDNSPrefetchArgs(NS_ConvertUTF8toUTF16(hostName),
-                             uri->SchemeIs("https"), oa, aFlags);
+  aOut = HTMLDNSPrefetchArgs(hostName, uri->SchemeIs("https"), oa, aFlags);
   return true;
 }
 

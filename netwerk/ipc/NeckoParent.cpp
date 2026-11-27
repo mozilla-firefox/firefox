@@ -519,7 +519,7 @@ mozilla::ipc::IPCResult NeckoParent::RecvSpeculativeConnect(
 }
 
 mozilla::ipc::IPCResult NeckoParent::RecvHTMLDNSPrefetch(
-    const nsAString& hostname, const bool& isHttps,
+    const nsACString& hostname, const bool& isHttps,
     const OriginAttributes& aOriginAttributes,
     const nsIDNSService::DNSFlags& flags) {
   dom::HTMLDNSPrefetch::Prefetch(hostname, isHttps, aOriginAttributes, flags);
@@ -536,7 +536,7 @@ mozilla::ipc::IPCResult NeckoParent::RecvHTMLDNSPrefetchBatch(
 }
 
 mozilla::ipc::IPCResult NeckoParent::RecvCancelHTMLDNSPrefetch(
-    const nsAString& hostname, const bool& isHttps,
+    const nsACString& hostname, const bool& isHttps,
     const OriginAttributes& aOriginAttributes,
     const nsIDNSService::DNSFlags& flags, const nsresult& reason) {
   dom::HTMLDNSPrefetch::CancelPrefetch(hostname, isHttps, aOriginAttributes,

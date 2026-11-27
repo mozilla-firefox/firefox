@@ -515,11 +515,11 @@ void nsContentSink::PreloadModule(
 }
 
 void nsContentSink::PrefetchDNS(const nsAString& aHref) {
-  nsAutoString hostname;
+  nsAutoCString hostname;
   bool isHttps = false;
 
   if (StringBeginsWith(aHref, u"//"_ns)) {
-    hostname = Substring(aHref, 2);
+    CopyUTF16toUTF8(Substring(aHref, 2), hostname);
   } else {
     nsCOMPtr<nsIURI> uri;
     NS_NewURI(getter_AddRefs(uri), aHref);
@@ -531,9 +531,7 @@ void nsContentSink::PrefetchDNS(const nsAString& aHref) {
     rv = NS_URIChainHasFlags(uri, nsIProtocolHandler::URI_IS_LOCAL_RESOURCE,
                              &isLocalResource);
     if (NS_SUCCEEDED(rv) && !isLocalResource) {
-      nsAutoCString host;
-      uri->GetHost(host);
-      CopyUTF8toUTF16(host, hostname);
+      uri->GetHost(hostname);
     }
     isHttps = uri->SchemeIs("https");
   }

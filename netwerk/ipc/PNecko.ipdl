@@ -40,7 +40,7 @@ namespace mozilla {
 namespace net {
 
 struct HTMLDNSPrefetchArgs {
-  nsString hostname;
+  nsCString hostname;
   bool isHttps;
   OriginAttributes originAttributes;
   DNSFlags flags;
@@ -96,10 +96,10 @@ parent:
                            [NoTaint="Bug 2089486"] nullable nsIPrincipal principal,
                            OriginAttributes? originAttributes,
                            bool anonymous);
-  async HTMLDNSPrefetch(nsString hostname, bool isHttps,
+  async HTMLDNSPrefetch(nsCString hostname, bool isHttps,
                         OriginAttributes originAttributes, DNSFlags flags);
   async HTMLDNSPrefetchBatch(HTMLDNSPrefetchArgs[] prefetches);
-  async CancelHTMLDNSPrefetch(nsString hostname, bool isHttps,
+  async CancelHTMLDNSPrefetch(nsCString hostname, bool isHttps,
                               OriginAttributes originAttributes,
                               DNSFlags flags, nsresult reason);
 
