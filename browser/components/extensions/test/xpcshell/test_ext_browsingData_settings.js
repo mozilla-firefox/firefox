@@ -98,10 +98,10 @@ add_task(async function testSettingsProperties() {
 add_task(async function testSettingsSince() {
   const TIMESPAN_PREF = "privacy.sanitize.timeSpan";
   const TEST_DATA = {
-    TIMESPAN_5MIN: Date.now() - 5 * 60 * 1000,
-    TIMESPAN_HOUR: Date.now() - 60 * 60 * 1000,
-    TIMESPAN_2HOURS: Date.now() - 2 * 60 * 60 * 1000,
-    TIMESPAN_EVERYTHING: 0,
+    TIMESPAN_5MIN: 5 * 60 * 1000,
+    TIMESPAN_HOUR: 60 * 60 * 1000,
+    TIMESPAN_2HOURS: 2 * 60 * 60 * 1000,
+    TIMESPAN_EVERYTHING: null,
   };
 
   function background() {
@@ -128,15 +128,31 @@ add_task(async function testSettingsSince() {
   for (let timespan in TEST_DATA) {
     Services.prefs.setIntPref(TIMESPAN_PREF, Sanitizer[timespan]);
 
+    let before = Date.now();
     extension.sendMessage("settings");
     let settings = await extension.awaitMessage("settings");
+    let after = Date.now();
 
-    // Because it is based on the current timestamp, we cannot know the exact
-    // value to expect for since, so allow a 10s variance.
-    Assert.less(
-      Math.abs(settings.options.since - TEST_DATA[timespan]),
-      10000,
-      "settings.options contains the expected since value."
+    if (TEST_DATA[timespan] === null) {
+      Assert.equal(
+        settings.options.since,
+        0,
+        `settings.options contains the expected since value for ${timespan}.`
+      );
+      continue;
+    }
+
+    // since is computed from the current time when settings() runs, so it
+    // lies between the times the message was sent and the reply received.
+    Assert.greaterOrEqual(
+      settings.options.since,
+      before - TEST_DATA[timespan],
+      `settings.options.since is not earlier than expected for ${timespan}.`
+    );
+    Assert.lessOrEqual(
+      settings.options.since,
+      after - TEST_DATA[timespan],
+      `settings.options.since is not later than expected for ${timespan}.`
     );
   }
 
