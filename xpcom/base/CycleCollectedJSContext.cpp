@@ -1028,7 +1028,7 @@ void RunJSMicroTask(JSContext* aCx, CycleCollectedJSContext* aCCJS,
       mozilla::Maybe<AutoHandlingUserInputStatePusher> userInputStateSwitcher;
       // A new scope is used to make sure the UserInputState is reset before
       // potentially draining more microtasks.
-      if (NS_IsMainThread()) {
+      if (isMainThread) {
         bool propagate = ShouldPropagateUserInputEventHandlingState(aMicroTask);
         userInputStateSwitcher.emplace(propagate);
       }
@@ -1136,7 +1136,7 @@ void RunJSMicroTask(JSContext* aCx, CycleCollectedJSContext* aCCJS,
       }
 
       mozilla::Maybe<AutoHandlingUserInputStatePusher> userInputStateSwitcher;
-      if (NS_IsMainThread()) {
+      if (isMainThread) {
         bool propagate = ShouldPropagateUserInputEventHandlingState(aMicroTask);
         userInputStateSwitcher.emplace(propagate);
       }
