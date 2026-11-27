@@ -45,8 +45,9 @@ async def test_request_body(
         [None, "{'a': 123}"],
         ["{'a': 1}", "{'a': 12345678}"],
         ["{'a': 12345678}", "{'a': 1}"],
+        ["{'a': 1}", ""],
     ],
-    ids=["no original body", "longer", "shorter"],
+    ids=["no original body", "longer", "shorter", "empty"],
 )
 async def test_request_body_received_by_server(
     bidi_session,
