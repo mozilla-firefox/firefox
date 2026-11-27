@@ -474,3 +474,36 @@ add_task(async function test_generated_widgets_drawn() {
   Assert.deepEqual(ids(), [b], "Remaining card");
   SidebarController.hide();
 });
+
+add_task(async function test_add_to_homepage_button() {
+  registerCleanupFunction(() => Services.prefs.clearUserPref(ORDER_PREF));
+  let panel = await openWidgetsSidebar();
+  let id = await installGeneratedWidget({ name: "Widget A" });
+  let card = () => panel.querySelector(`moz-widget[widget-id="${id}"]`);
+  let button = () => panel.querySelector(".add-to-homepage-button");
+  await TestUtils.waitForCondition(() => card()?.frame, "Card drawn");
+  ok(!button(), "Hidden without focus");
+
+  card().frame.focus();
+  await TestUtils.waitForCondition(button, "Shown on focus");
+
+  panel.composer.focus();
+  await TestUtils.waitForCondition(() => !button(), "Hidden on focus outside");
+
+  card().frame.focus();
+  await TestUtils.waitForCondition(button, "Shown on focus again");
+
+  button().scrollIntoView();
+  let win = panel.documentGlobal;
+  EventUtils.synthesizeMouseAtCenter(button(), { type: "mousedown" }, win);
+  await panel.updateComplete;
+  ok(button(), "Shown while pressed");
+  EventUtils.synthesizeMouseAtCenter(button(), { type: "mouseup" }, win);
+  await TestUtils.waitForCondition(() => !button(), "Hidden once enabled");
+  is(win.document.activeElement, card().frame, "Card focused");
+  let { WidgetManager } = ChromeUtils.importESModule(
+    "moz-src:///toolkit/components/widgets/WidgetManager.sys.mjs"
+  );
+  ok(WidgetManager.getWidgetByID(id).enabled, "Enabled");
+  SidebarController.hide();
+});

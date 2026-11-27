@@ -32,6 +32,10 @@ preferences-ai-controls-block-confirmation-custom-widgets = Custom widgets
 widget-studio-compose-button =
   .label = Create a widget
 
+# Moves the focused widget to the homepage.
+widget-studio-move-to-homepage-button =
+  .label = Move to homepage
+
 # Opens Mozilla Connect to share feedback about custom widgets.
 widget-studio-menu-share-feedback = Share Feedback
 

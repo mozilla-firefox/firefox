@@ -32,6 +32,10 @@
   inline-size: 100%;
 }
 
+::slotted(.add-to-homepage) {
+  align-self: center;
+}
+
 widget-placeholder {
   margin-block-end: var(--space-large);
   margin-inline: var(--space-large);

@@ -55,6 +55,7 @@ function calendarDayState(day) {
 export class SidebarWidgetStudio extends SidebarPage {
   static properties = {
     composing: { type: Boolean, state: true },
+    focusedWidgetId: { type: String, state: true },
   };
 
   static shadowRootOptions = {
@@ -82,6 +83,7 @@ export class SidebarWidgetStudio extends SidebarPage {
   constructor() {
     super();
     this.composing = true;
+    this.focusedWidgetId = null;
   }
 
   connectedCallback() {
@@ -89,12 +91,54 @@ export class SidebarWidgetStudio extends SidebarPage {
     this.composing = !this.widgets.generating && !this.widgets.failed;
     this.#mountHeaderMenu();
     this.addSidebarFocusedListeners();
+    this.addEventListener("focusin", this.#onFocusIn);
+    this.addEventListener("focusout", this.#onFocusOut);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this.#unmountHeaderMenu();
     this.removeSidebarFocusedListeners();
+    this.removeEventListener("focusin", this.#onFocusIn);
+    this.removeEventListener("focusout", this.#onFocusOut);
+  }
+
+  #onFocusIn = event => {
+    this.focusedWidgetId =
+      event.target.closest("[widget-id]")?.getAttribute("widget-id") ?? null;
+  };
+
+  #onFocusOut = event => {
+    if (!event.relatedTarget) {
+      this.focusedWidgetId = null;
+    }
+  };
+
+  #addToHomepage(widget) {
+    widget.enabled = true;
+    this.querySelector(
+      `moz-widget[widget-id="${CSS.escape(widget.id)}"]`
+    )?.frame?.focus();
+  }
+
+  #addToHomepageTemplate(widget) {
+    if (widget.enabled || widget.id != this.focusedWidgetId) {
+      return nothing;
+    }
+    // Clicks focus this wrapper which keeps the button shown.
+    return html`<div
+      class="add-to-homepage"
+      tabindex="-1"
+      widget-id=${widget.id}
+    >
+      <moz-button
+        class="add-to-homepage-button"
+        type="primary"
+        iconsrc="chrome://global/skin/icons/plus.svg"
+        data-l10n-id="widget-studio-move-to-homepage-button"
+        @click=${() => this.#addToHomepage(widget)}
+      ></moz-button>
+    </div>`;
   }
 
   handleSidebarFocusedEvent() {
@@ -217,22 +261,26 @@ export class SidebarWidgetStudio extends SidebarPage {
     return widget.size;
   }
 
+  widgetCardTemplate(widget) {
+    return html`<moz-widget
+        widget-id=${widget.id}
+        .title=${widget.name}
+        padded
+        remote-type=${lazy.E10SUtils.EXTENSION_REMOTE_TYPE}
+        group-id=${ifDefined(
+          WebExtensionPolicy.getByID(widget.id)?.browsingContextGroupId
+        )}
+        src=${widget.src}
+        size=${this.#sizeOf(widget)}
+      ></moz-widget>
+      ${this.#addToHomepageTemplate(widget)}`;
+  }
+
   cardsTemplate() {
     return repeat(
       this.widgets.all,
       widget => widget.id,
-      widget =>
-        html`<moz-widget
-          widget-id=${widget.id}
-          .title=${widget.name}
-          padded
-          remote-type=${lazy.E10SUtils.EXTENSION_REMOTE_TYPE}
-          group-id=${ifDefined(
-            WebExtensionPolicy.getByID(widget.id)?.browsingContextGroupId
-          )}
-          src=${widget.src}
-          size=${this.#sizeOf(widget)}
-        ></moz-widget>`
+      widget => this.widgetCardTemplate(widget)
     );
   }
 
