@@ -285,7 +285,6 @@ use_fat_lto = cxx_compiler.try_link(
     "MOZ_LD64_KNOWN_GOOD",
     target,
     "--enable-profile-generate",
-    pass_manager.enabled,
     "--enable-profile-use",
     moz_automation,
     use_fat_lto,
@@ -298,7 +297,6 @@ def lto(
     ld64_known_good,
     target,
     instrumented_build,
-    pass_manager,
     pgo_build,
     moz_automation,
     fat,
@@ -430,21 +428,14 @@ def lto(
     elif c_compiler.type == "clang":
         ldflags.append("-Wl,-plugin-opt=-import-instr-limit=10")
 
-    # If we're using the new pass manager, we can also enable the new PM
-    # during LTO. Further we can use the resulting size savings to increase
-    # the import limit in hot functions.
-    if pass_manager:
-        if c_compiler.type == "clang-cl":
-            if c_compiler.version >= "12.0.0" and c_compiler.version < "13.0.0":
-                ldflags.append("-opt:ltonewpassmanager")
-            if c_compiler.version >= "12.0.0":
-                ldflags.append("-mllvm:-import-hot-multiplier=30")
-        elif target.kernel == "Darwin":
-            ldflags.append("-Wl,-mllvm,-import-hot-multiplier=30")
-        else:
-            if c_compiler.version < "13.0.0":
-                ldflags.append("-Wl,-plugin-opt=new-pass-manager")
-            ldflags.append("-Wl,-plugin-opt=-import-hot-multiplier=30")
+    # Use the size savings from the new pass manager to increase the import
+    # limit in hot functions.
+    if c_compiler.type == "clang-cl":
+        ldflags.append("-mllvm:-import-hot-multiplier=30")
+    elif target.kernel == "Darwin":
+        ldflags.append("-Wl,-mllvm,-import-hot-multiplier=30")
+    elif c_compiler.type == "clang":
+        ldflags.append("-Wl,-plugin-opt=-import-hot-multiplier=30")
 
     # Pick Rust LTO mode in case of cross lTO. Thin is the default.
     if "cross" in values:

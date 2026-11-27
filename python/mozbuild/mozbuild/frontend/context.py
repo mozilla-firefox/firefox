@@ -727,11 +727,6 @@ class CompileFlags(TargetCompileFlags):
                 ("CXXFLAGS", "CFLAGS"),
             ),
             (
-                "PASS_MANAGER",
-                context.config.substs.get("MOZ_PASS_MANAGER_FLAGS"),
-                ("CXXFLAGS", "CFLAGS"),
-            ),
-            (
                 "FILE_PREFIX_MAP",
                 context.config.substs.get("MOZ_FILE_PREFIX_MAP_FLAGS"),
                 ("CXXFLAGS", "CFLAGS"),
@@ -814,11 +809,6 @@ class WasmFlags(TargetCompileFlags):
             ("WASM_DEFINES", None, ("WASM_CFLAGS", "WASM_CXXFLAGS")),
             ("MOZBUILD_WASM_CFLAGS", None, ("WASM_CFLAGS",)),
             ("MOZBUILD_WASM_CXXFLAGS", None, ("WASM_CXXFLAGS",)),
-            (
-                "NEWPM",
-                context.config.substs.get("MOZ_NEW_PASS_MANAGER_FLAGS"),
-                ("WASM_CFLAGS", "WASM_CXXFLAGS"),
-            ),
             (
                 "FILE_PREFIX_MAP",
                 context.config.substs.get("MOZ_FILE_PREFIX_MAP_FLAGS"),
