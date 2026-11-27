@@ -5682,6 +5682,26 @@ static bool IsAvxPresent(JSContext* cx, unsigned argc, Value* vp) {
   return true;
 }
 
+static bool IsBmiPresent(JSContext* cx, unsigned argc, Value* vp) {
+  CallArgs args = CallArgsFromVp(argc, vp);
+#if defined(JS_CODEGEN_X64) || defined(JS_CODEGEN_X86)
+  int minVersion = 1;
+  if (argc > 0 && args.get(0).isNumber()) {
+    minVersion = std::max(1, int(args[0].toNumber()));
+  }
+  switch (minVersion) {
+    case 1:
+      args.rval().setBoolean(jit::Assembler::HasBMI1());
+      return true;
+    case 2:
+      args.rval().setBoolean(jit::Assembler::HasBMI2());
+      return true;
+  }
+#endif
+  args.rval().setBoolean(false);
+  return true;
+}
+
 static bool GetAllocationMetadata(JSContext* cx, unsigned argc, Value* vp) {
   CallArgs args = CallArgsFromVp(argc, vp);
   if (args.length() != 1 || !args[0].isObject()) {
@@ -10974,6 +10994,11 @@ gc::ZealModeHelpText),
 "isAvxPresent([minVersion])",
 "  Returns whether AVX is present and enabled. If minVersion specified,\n"
 "  use 1 - to check if AVX is enabled (default), 2 - if AVX2 is enabled."),
+
+    JS_FN_HELP("isBmiPresent", IsBmiPresent, 0, 0,
+"isBmiPresent([minVersion])",
+"  Returns whether BMI is present and enabled. If minVersion specified,\n"
+"  use 1 - to check if BMI1 is enabled (default), 2 - if BMI2 is enabled."),
 
     JS_FN_HELP("wasmIsSupported", WasmIsSupported, 0, 0,
 "wasmIsSupported()",
