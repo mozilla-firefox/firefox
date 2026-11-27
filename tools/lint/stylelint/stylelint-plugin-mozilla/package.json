@@ -11,6 +11,7 @@
     "@csstools/media-query-list-parser": "4.0.2"
   },
   "devDependencies": {
+    "postcss-scss": "4.0.9",
     "postcss-value-parser": "4.2.0",
     "stylelint-test-rule-node": "0.4.0"
   },

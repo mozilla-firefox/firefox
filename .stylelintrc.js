@@ -283,6 +283,7 @@ module.exports = {
     "stylelint-plugin-mozilla/media-query-no-invalid": true,
     "stylelint-plugin-mozilla/no-base-design-tokens": true,
     "stylelint-plugin-mozilla/no-has-selector": true,
+    "stylelint-plugin-mozilla/use-boolean-forced-colors-query": true,
     "stylelint-plugin-mozilla/use-design-tokens": true,
     "stylelint-plugin-mozilla/use-paired-color-tokens": true,
   },
