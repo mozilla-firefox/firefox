@@ -7643,6 +7643,9 @@ class MLoadFixedSlotAndUnbox : public MUnaryInstruction,
   size_t slot() const { return slot_; }
   MUnbox::Mode mode() const { return mode_; }
   bool fallible() const { return mode_ != MUnbox::Infallible; }
+
+  HashNumber valueHash() const override;
+
   bool congruentTo(const MDefinition* ins) const override {
     if (!ins->isLoadFixedSlotAndUnbox() ||
         slot() != ins->toLoadFixedSlotAndUnbox()->slot() ||
@@ -7696,6 +7699,8 @@ class MLoadDynamicSlotAndUnbox : public MUnaryInstruction,
   size_t slot() const { return slot_; }
   MUnbox::Mode mode() const { return mode_; }
   bool fallible() const { return mode_ != MUnbox::Infallible; }
+
+  HashNumber valueHash() const override;
 
   bool congruentTo(const MDefinition* ins) const override {
     if (!ins->isLoadDynamicSlotAndUnbox() ||
