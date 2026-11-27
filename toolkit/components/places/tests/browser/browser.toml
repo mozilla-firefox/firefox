@@ -91,6 +91,8 @@ support-files = [
 
 ["browser_upgrade.js"]
 
+["browser_visited_invalid_punycode_host.js"]
+
 ["browser_visited_notfound.js"]
 
 ["browser_visited_status_after_history_clear.js"]
