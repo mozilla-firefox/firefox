@@ -175,17 +175,6 @@
 // which implies that all Nightly and dev-edition versions of
 // Firefox/SpiderMonkey contain this instrumentation.
 //
-// ** Memory protection
-//
-// LifoAlloc chunks are holding a lot of memory. When the memory is known to be
-// unused, unchanged for some period of time, such as moving from one thread to
-// another. Then the memory can be set as read-only with LifoAlloc::setReadOnly
-// and reset as read-write with LifoAlloc::setReadWrite.
-//
-// This code is guarded by LIFO_CHUNK_PROTECT and at the moment only enabled in
-// DEBUG builds in order to avoid the fragmentation of the TLB which might run
-// out-of-memory when calling mprotect.
-//
 
 #include "js/UniquePtr.h"
 #include "util/Memory.h"
@@ -416,10 +405,6 @@ class BumpChunk : public SingleLinkedListElement<BumpChunk> {
   static constexpr uintptr_t magicNumber = uintptr_t(0x4c6966);
 #endif
 
-#if defined(DEBUG)
-#  define LIFO_CHUNK_PROTECT 1
-#endif
-
   // Poison the memory with memset, in order to catch errors due to
   // use-after-free, with JS_LIFO_UNDEFINED_PATTERN pattern, or to catch
   // use-before-init with JS_LIFO_UNINITIALIZED_PATTERN.
@@ -643,14 +628,6 @@ class BumpChunk : public SingleLinkedListElement<BumpChunk> {
     setBump(newBump);
     return aligned;
   }
-
-#ifdef LIFO_CHUNK_PROTECT
-  void setReadOnly();
-  void setReadWrite();
-#else
-  void setReadOnly() const {}
-  void setReadWrite() const {}
-#endif
 };
 
 // Space reserved for the BumpChunk internal data, and the alignment of the
@@ -993,15 +970,6 @@ class LifoAlloc {
       decrementCurSize(bc->computedSizeOfIncludingThis());
     }
   }
-
-  // Protect the content of the LifoAlloc chunks.
-#ifdef LIFO_CHUNK_PROTECT
-  void setReadOnly();
-  void setReadWrite();
-#else
-  void setReadOnly() const {}
-  void setReadWrite() const {}
-#endif
 
   // Get the total "used" (occupied bytes) count for the arena chunks.
   size_t used() const {

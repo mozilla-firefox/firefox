@@ -539,9 +539,7 @@ void GlobalHelperThreadState::trace(JSTracer* trc) {
     }
 
     for (auto task : ionWorklist(lock)) {
-      task->alloc().lifoAlloc()->setReadWrite();
       task->trace(trc);
-      task->alloc().lifoAlloc()->setReadOnly();
     }
     for (auto task : ionFinishedList(lock)) {
       task->trace(trc);
@@ -549,9 +547,7 @@ void GlobalHelperThreadState::trace(JSTracer* trc) {
 
     for (auto* helper : helperTasks(lock)) {
       if (helper->is<jit::IonCompileTask>()) {
-        jit::IonCompileTask* ionCompileTask = helper->as<jit::IonCompileTask>();
-        ionCompileTask->alloc().lifoAlloc()->setReadWrite();
-        ionCompileTask->trace(trc);
+        helper->as<jit::IonCompileTask>()->trace(trc);
       } else if (helper->is<jit::BaselineCompileTask>()) {
         helper->as<jit::BaselineCompileTask>()->trace(trc);
       }
@@ -780,10 +776,6 @@ bool GlobalHelperThreadState::submitTask(
     return false;
   }
 
-  // The build is moving off-thread. Freeze the LifoAlloc to prevent any
-  // unwanted mutations.
-  task->alloc().lifoAlloc()->setReadOnly();
-
   dispatch(locked);
   return true;
 }
@@ -876,11 +868,6 @@ void GlobalHelperThreadState::cancelOffThreadIonCompile(
     for (size_t i = 0; i < worklist.length(); i++) {
       jit::IonCompileTask* task = worklist[i];
       if (IonCompileTaskMatches(selector, task)) {
-        // Once finished, tasks are added to a Linked list which is
-        // allocated with the IonCompileTask class. The IonCompileTask is
-        // allocated in the LifoAlloc so we need the LifoAlloc to be mutable.
-        worklist[i]->alloc().lifoAlloc()->setReadWrite();
-
         FinishOffThreadIonCompile(task, lock);
         remove(worklist, &i);
       }
@@ -897,7 +884,6 @@ void GlobalHelperThreadState::cancelOffThreadIonCompile(
 
         jit::IonCompileTask* ionCompileTask = helper->as<jit::IonCompileTask>();
         if (IonCompileTaskMatches(selector, ionCompileTask)) {
-          ionCompileTask->alloc().lifoAlloc()->setReadWrite();
           ionCompileTask->mirGen().cancel();
           cancelled = true;
         }

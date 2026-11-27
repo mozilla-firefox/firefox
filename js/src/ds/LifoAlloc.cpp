@@ -9,10 +9,6 @@
 #include <algorithm>
 #include <bit>
 
-#ifdef LIFO_CHUNK_PROTECT
-#  include "gc/Memory.h"
-#endif
-
 using namespace js;
 
 namespace js {
@@ -34,58 +30,6 @@ UniquePtr<BumpChunk> BumpChunk::newWithCapacity(size_t size, arena_id_t arena) {
   MOZ_ASSERT(AlignPtr(result->begin()) == result->begin());
   return result;
 }
-
-#ifdef LIFO_CHUNK_PROTECT
-
-static uint8_t* AlignPtrUp(uint8_t* ptr, uintptr_t align) {
-  MOZ_ASSERT(std::has_single_bit(align));
-  uintptr_t uptr = uintptr_t(ptr);
-  uintptr_t diff = uptr & (align - 1);
-  diff = (align - diff) & (align - 1);
-  uptr = uptr + diff;
-  return (uint8_t*)uptr;
-}
-
-static uint8_t* AlignPtrDown(uint8_t* ptr, uintptr_t align) {
-  MOZ_ASSERT(std::has_single_bit(align));
-  uintptr_t uptr = uintptr_t(ptr);
-  uptr = uptr & ~(align - 1);
-  return (uint8_t*)uptr;
-}
-
-void BumpChunk::setReadOnly() {
-  uintptr_t pageSize = gc::SystemPageSize();
-  // The allocated chunks might not be aligned on page boundaries. This code
-  // is used to ensure that we are changing the memory protection of pointers
-  // which are within the range of the BumpChunk, or that the range formed by
-  // [b .. e] is empty.
-  uint8_t* b = base();
-  uint8_t* e = capacity_;
-  b = AlignPtrUp(b, pageSize);
-  e = AlignPtrDown(e, pageSize);
-  if (e <= b) {
-    return;
-  }
-  gc::MakePagesReadOnly(b, e - b);
-}
-
-void BumpChunk::setReadWrite() {
-  uintptr_t pageSize = gc::SystemPageSize();
-  // The allocated chunks might not be aligned on page boundaries. This code
-  // is used to ensure that we are changing the memory protection of pointers
-  // which are within the range of the BumpChunk, or that the range formed by
-  // [b .. e] is empty.
-  uint8_t* b = base();
-  uint8_t* e = capacity_;
-  b = AlignPtrUp(b, pageSize);
-  e = AlignPtrDown(e, pageSize);
-  if (e <= b) {
-    return;
-  }
-  gc::UnprotectPages(b, e - b);
-}
-
-#endif
 
 }  // namespace detail
 }  // namespace js
@@ -402,29 +346,3 @@ void LifoAlloc::transferUnusedFrom(LifoAlloc* other) {
   incrementCurSize(size);
   other->decrementCurSize(size);
 }
-
-#ifdef LIFO_CHUNK_PROTECT
-void LifoAlloc::setReadOnly() {
-  for (detail::BumpChunk& bc : chunks_) {
-    bc.setReadOnly();
-  }
-  for (detail::BumpChunk& bc : oversize_) {
-    bc.setReadOnly();
-  }
-  for (detail::BumpChunk& bc : unused_) {
-    bc.setReadOnly();
-  }
-}
-
-void LifoAlloc::setReadWrite() {
-  for (detail::BumpChunk& bc : chunks_) {
-    bc.setReadWrite();
-  }
-  for (detail::BumpChunk& bc : oversize_) {
-    bc.setReadWrite();
-  }
-  for (detail::BumpChunk& bc : unused_) {
-    bc.setReadWrite();
-  }
-}
-#endif

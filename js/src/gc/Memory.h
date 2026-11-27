@@ -114,7 +114,6 @@ void DeallocateMappedContent(void* region, size_t length);
 void* TestMapAlignedPagesLastDitch(size_t length, size_t alignment);
 
 void ProtectPages(void* region, size_t length);
-void MakePagesReadOnly(void* region, size_t length);
 void UnprotectPages(void* region, size_t length);
 
 // Track mapped memory so we can report it to the profiler.
