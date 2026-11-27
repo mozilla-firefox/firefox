@@ -161,7 +161,7 @@ class MediaSessionFullscreenFeatureTest {
         }
 
     @Test
-    fun `GIVEN the currently selected tab plays landscape media WHEN it enters fullscreen THEN set orientation to landscape`() =
+    fun `GIVEN the currently selected tab plays landscape media WHEN it enters fullscreen THEN follow the user rotation setting`() =
         runTest {
             val activity: Activity = mock()
             val window: Window = mock()
@@ -198,7 +198,7 @@ class MediaSessionFullscreenFeatureTest {
             feature.start()
             testScheduler.advanceUntilIdle()
 
-            verify(activity).setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE)
+            verify(activity).setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER)
         }
 
     @Suppress("Deprecation")

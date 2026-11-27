@@ -68,7 +68,7 @@ class MediaSessionFullscreenFeature(
                 if (activity.isInPictureInPictureMode) {
                     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
                 } else {
-                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_USER
                 }
 
             null -> activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_USER
