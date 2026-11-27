@@ -135,7 +135,7 @@ ENameValueFlag HTMLSelectOptionAccessible::NativeName(nsString& aName) const {
     return eNameFromSubtree;
   }
   if (auto* group = dom::HTMLOptGroupElement::FromNode(mContent)) {
-    group->GetLabel(aName);
+    group->GetRenderedLabel(aName);
     return aName.IsEmpty() ? eNameOK : eNameFromSubtree;
   }
   MOZ_ASSERT_UNREACHABLE("What content do we have?");

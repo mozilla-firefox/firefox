@@ -122,6 +122,44 @@ checkReflection(option, "label");
      "A nonempty option label takes precedence over its contents");
 }
 
+{
+  const group = document.createElement("optgroup");
+  const legend = document.createElement("legend");
+  const image = document.createElement("img");
+  image.alt = "b";
+  image.append("hidden image text");
+  const script = document.createElement("script");
+  script.textContent = "hidden script text";
+  const svgScript = document.createElementNS("http://www.w3.org/2000/svg", "script");
+  svgScript.textContent = "hidden SVG script text";
+  legend.append(" \ta", image, script, svgScript, "c\n ");
+  group.append(" \n", document.createComment("before legend"), legend);
+  group.label = "attribute";
+  is(group.label, "attribute", "The optgroup label IDL attribute still reflects");
+  is(SpecialPowers.wrap(group).renderedLabel, "abc",
+     "A first element child legend supplies the HTML-aware group label");
+
+  image.alt = " \tb\n ";
+  is(SpecialPowers.wrap(group).renderedLabel, "a b c",
+     "Whitespace in image alternative text is stripped and collapsed");
+  image.removeAttribute("alt");
+  is(SpecialPowers.wrap(group).renderedLabel, "ac",
+     "An image without alternative text still has its descendants skipped");
+  image.alt = "";
+  is(SpecialPowers.wrap(group).renderedLabel, "ac",
+     "An empty alternative text adds no spaces");
+
+  group.prepend(document.createElement("span"));
+  is(SpecialPowers.wrap(group).renderedLabel, "attribute",
+     "A later legend does not override the label attribute");
+  group.label = "";
+  is(SpecialPowers.wrap(group).renderedLabel, "",
+     "An empty label stays empty when the first element child is not a legend");
+  group.removeAttribute("label");
+  is(SpecialPowers.wrap(group).renderedLabel, "",
+     "A missing label yields an empty label when the first child is not a legend");
+}
+
 </script>
 </pre>
 </body>

@@ -388,3 +388,64 @@ addAccessibleTask(
   },
   { chrome: true, topLevel: true }
 );
+
+/**
+ * Test that an optgroup name follows its first element child legend as the
+ * legend and the optgroup's children change.
+ */
+addAccessibleTask(
+  `
+<select id="listbox" size="3">
+  <optgroup id="listboxGroup" label="attr">
+    <legend>a<img alt="b">c</legend>
+    <option>x</option>
+  </optgroup>
+</select>
+  `,
+  async function testOptGroupLegend(browser, docAcc) {
+    const groupAcc = findAccessibleChildByID(docAcc, "listboxGroup");
+    ok(groupAcc, "Listbox optgroup accessible exists");
+    testName(groupAcc, "abc");
+
+    const steps = [
+      ["Changing legend text", "dbc"],
+      ["Changing legend image alt", "dec"],
+      ["Prepending a span", "attr"],
+      ["Removing the span", "dec"],
+      ["Removing the legend", "attr"],
+      ["Prepending a legend", "f"],
+    ];
+    for (const [step, [description, expected]] of steps.entries()) {
+      info(description);
+      const nameChanged = waitForEvent(EVENT_NAME_CHANGE, "listboxGroup");
+      await invokeContentTask(browser, [step], contentStep => {
+        const doc = content.document;
+        const group = doc.getElementById("listboxGroup");
+        switch (contentStep) {
+          case 0:
+            group.firstElementChild.firstChild.data = "d";
+            break;
+          case 1:
+            group.querySelector("img").alt = "e";
+            break;
+          case 2:
+            group.prepend(doc.createElement("span"));
+            break;
+          case 3:
+          case 4:
+            group.firstElementChild.remove();
+            break;
+          case 5: {
+            const legend = doc.createElement("legend");
+            legend.textContent = "f";
+            group.prepend(legend);
+            break;
+          }
+        }
+      });
+      await nameChanged;
+      testName(groupAcc, expected);
+    }
+  },
+  { chrome: true, topLevel: true }
+);

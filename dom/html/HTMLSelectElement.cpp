@@ -1634,6 +1634,15 @@ static void OptionValueMightHaveChanged(nsIContent* aMutatingNode) {
 #endif
 }
 
+static void OptGroupLabelMightHaveChanged(nsIContent* aMutatingNode) {
+#ifdef ACCESSIBILITY
+  if (nsAccessibilityService* acc = GetAccService()) {
+    acc->OptGroupLabelMaybeChanged(aMutatingNode->OwnerDoc()->GetPresShell(),
+                                   aMutatingNode);
+  }
+#endif
+}
+
 void HTMLSelectElement::SelectedContentTextMightHaveChanged(
     bool aNotify, IgnoredOptionList aIgnored) {
   RefPtr textNode = GetSelectedContentText();
@@ -1712,19 +1721,24 @@ void HTMLSelectElement::AttributeChanged(dom::Element* aElement,
     return;
   }
   if (aElement->IsHTMLElement(nsGkAtoms::img) && aAttribute == nsGkAtoms::alt &&
-      IsInComposedDoc() && IsCombobox() &&
       nsContentUtils::IsInSameAnonymousTree(this, aElement)) {
-    OptionValueMightHaveChanged(aElement);
-    if (InsideSelectedOption(aElement, this)) {
-      SelectedContentTextMightHaveChanged();
+    OptGroupLabelMightHaveChanged(aElement);
+    if (IsInComposedDoc() && IsCombobox()) {
+      OptionValueMightHaveChanged(aElement);
+      if (InsideSelectedOption(aElement, this)) {
+        SelectedContentTextMightHaveChanged();
+      }
     }
   }
 }
 
 void HTMLSelectElement::CharacterDataChanged(nsIContent* aContent,
                                              const CharacterDataChangeInfo&) {
-  if (IsInComposedDoc() && IsCombobox() &&
-      nsContentUtils::IsInSameAnonymousTree(this, aContent)) {
+  if (!nsContentUtils::IsInSameAnonymousTree(this, aContent)) {
+    return;
+  }
+  OptGroupLabelMightHaveChanged(aContent);
+  if (IsInComposedDoc() && IsCombobox()) {
     OptionValueMightHaveChanged(aContent);
     if (InsideSelectedOption(aContent, this)) {
       // We deliberately only refresh the select button text here, not the
@@ -1771,6 +1785,7 @@ void HTMLSelectElement::ContentWillBeRemoved(nsIContent* aChild,
   if (!nsContentUtils::IsInSameAnonymousTree(this, aChild)) {
     return;
   }
+  OptGroupLabelMightHaveChanged(aChild);
   MutatedOptions options;
   const bool anySelected = CollectOptions(*this, aChild, options);
   const bool combobox = IsCombobox();
@@ -1826,6 +1841,7 @@ void HTMLSelectElement::ContentAppendedOrInserted(nsIContent* aFirstNewContent,
   bool anySelected = false;
   for (auto* cur = aFirstNewContent; cur; cur = cur->GetNextSibling()) {
     anySelected |= CollectOptions(*this, cur, options);
+    OptGroupLabelMightHaveChanged(cur);
     if (!aIsAppend) {
       break;
     }
