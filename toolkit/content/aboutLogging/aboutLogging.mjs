@@ -202,6 +202,13 @@ const gLoggingPresets = {
     profilerPreset: "firefox-platform",
     javascriptTracing: true,
   },
+  ime: {
+    modules: "IMEHandler:4,KeyboardHandler:4",
+    l10nIds: {
+      label: "about-logging-preset-ime-label",
+      description: "about-logging-preset-ime-description",
+    },
+  },
   ...gOsSpecificLoggingPresets,
   custom: {
     modules: "",

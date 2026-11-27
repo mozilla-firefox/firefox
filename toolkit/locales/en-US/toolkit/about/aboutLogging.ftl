@@ -68,6 +68,11 @@ about-logging-preset-gfx-description = Log modules to diagnose graphics issues
 # This is specifically "Microsoft Windows". Microsoft normally doesn't localize it, and we should follow their convention here.
 about-logging-preset-windows-label = Windows
 about-logging-preset-windows-description = Log modules to diagnose issues specific to Microsoft Windows
+# Input Method refers to the IME.
+# IME is a component of the operating system used to input Asian languages.
+about-logging-preset-ime-label = Input Method
+# IME is a component of the operating system used to input Asian languages.
+about-logging-preset-ime-description = Log modules to diagnose keyboard issues, including Input Method Editor (IME)
 about-logging-preset-custom-label = Custom
 about-logging-preset-custom-description = Log modules manually selected
 
