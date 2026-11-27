@@ -519,28 +519,26 @@ mozilla::ipc::IPCResult NeckoParent::RecvSpeculativeConnect(
 }
 
 mozilla::ipc::IPCResult NeckoParent::RecvHTMLDNSPrefetch(
-    const nsACString& hostname, const bool& isHttps,
-    const OriginAttributes& aOriginAttributes,
+    const nsACString& hostname, const OriginAttributes& aOriginAttributes,
     const nsIDNSService::DNSFlags& flags) {
-  dom::HTMLDNSPrefetch::Prefetch(hostname, isHttps, aOriginAttributes, flags);
+  dom::HTMLDNSPrefetch::Prefetch(hostname, aOriginAttributes, flags);
   return IPC_OK();
 }
 
 mozilla::ipc::IPCResult NeckoParent::RecvHTMLDNSPrefetchBatch(
     nsTArray<HTMLDNSPrefetchArgs>&& aPrefetches) {
   for (const auto& entry : aPrefetches) {
-    dom::HTMLDNSPrefetch::Prefetch(entry.hostname(), entry.isHttps(),
-                                   entry.originAttributes(), entry.flags());
+    dom::HTMLDNSPrefetch::Prefetch(entry.hostname(), entry.originAttributes(),
+                                   entry.flags());
   }
   return IPC_OK();
 }
 
 mozilla::ipc::IPCResult NeckoParent::RecvCancelHTMLDNSPrefetch(
-    const nsACString& hostname, const bool& isHttps,
-    const OriginAttributes& aOriginAttributes,
+    const nsACString& hostname, const OriginAttributes& aOriginAttributes,
     const nsIDNSService::DNSFlags& flags, const nsresult& reason) {
-  dom::HTMLDNSPrefetch::CancelPrefetch(hostname, isHttps, aOriginAttributes,
-                                       flags, reason);
+  dom::HTMLDNSPrefetch::CancelPrefetch(hostname, aOriginAttributes, flags,
+                                       reason);
   return IPC_OK();
 }
 

@@ -141,14 +141,12 @@ class NeckoParent : public PNeckoParent {
       nsIURI* aURI, nsIPrincipal* aPrincipal,
       Maybe<OriginAttributes>&& aOriginAttributes, const bool& aAnonymous);
   mozilla::ipc::IPCResult RecvHTMLDNSPrefetch(
-      const nsACString& hostname, const bool& isHttps,
-      const OriginAttributes& aOriginAttributes,
+      const nsACString& hostname, const OriginAttributes& aOriginAttributes,
       const nsIDNSService::DNSFlags& flags);
   mozilla::ipc::IPCResult RecvHTMLDNSPrefetchBatch(
       nsTArray<HTMLDNSPrefetchArgs>&& aPrefetches);
   mozilla::ipc::IPCResult RecvCancelHTMLDNSPrefetch(
-      const nsACString& hostname, const bool& isHttps,
-      const OriginAttributes& aOriginAttributes,
+      const nsACString& hostname, const OriginAttributes& aOriginAttributes,
       const nsIDNSService::DNSFlags& flags, const nsresult& reason);
   PWebSocketEventListenerParent* AllocPWebSocketEventListenerParent(
       const uint64_t& aInnerWindowID);
