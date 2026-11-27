@@ -1,0 +1,20 @@
+# A path clip's origin must not be clamped when it is far from the origin of
+# its spatial node (bug 2098329).
+---
+root:
+  items:
+    - type: stacking-context
+      transform: translate(0, -1000000)
+      items:
+        - type: clip
+          id: 1
+          path:
+            rect: [20, 1000020, 100, 100]
+            data: "M 0 0 L 100 0 L 100 40 L 0 40 Z M 0 60 L 100 60 L 100 100 L 0 100 Z"
+        - type: clip-chain
+          id: 101
+          clips: [1]
+        - type: rect
+          bounds: [0, 1000000, 200, 200]
+          color: green
+          clip-chain: 101

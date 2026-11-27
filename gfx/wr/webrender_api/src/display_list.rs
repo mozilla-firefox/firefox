@@ -3158,7 +3158,7 @@ impl DisplayListBuilder {
         let rect = self.normalize_rect(rect, spatial_id);
         let path = self.interners.intern(path);
         let clip = self.interners.intern(&ClipItemKey {
-            kind: ClipItemKeyKind::Path(path, fill_rule, rect.min.to_au()),
+            kind: ClipItemKeyKind::Path(path, fill_rule, rect.min.into()),
         });
 
         self.push_item(&di::DisplayItem::PathClip(di::PathClipDisplayItem {
