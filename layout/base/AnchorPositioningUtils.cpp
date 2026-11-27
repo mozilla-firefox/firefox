@@ -602,8 +602,15 @@ static const nsIFrame* GetAnchorOf(const nsIFrame* aPositioned,
   auto* anchor =
       presShell->GetAnchorPosAnchor(aAnchorName, aPositioned, aFrameTreeDepth);
   if (anchor) {
-    anchor->SetMaybeAnchorPosAnchorOrAncestorOf();
-    // TODO(dshin): Set the flag for ancestors.
+    const auto* positionedCb = aPositioned->GetParent();
+    // Mark up to the positioned frame's containing block, to avoid marking
+    // up the chain as much as possible.
+    // Frame traversal is ok because we already know this is a valid anchor.
+    // Note(dshin, bug 1985654): See bug for why `GetContainingBlock` is not
+    // suitable for this.
+    for (auto* f = anchor; f && f != positionedCb; f = f->GetParent()) {
+      f->SetMaybeAnchorPosAnchorOrAncestorOf();
+    }
   }
   return anchor;
 }
