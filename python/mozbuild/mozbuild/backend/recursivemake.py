@@ -930,6 +930,10 @@ class RecursiveMakeBackend(MakeBackend):
             if not dep:
                 continue
             producer_dir, producer_tier = dep
+            # A root directory file that reads another root directory file
+            # already has it as a prerequisite in the root `backend.mk`.
+            if not relobjdir and not producer_dir:
+                continue
             if producer_dir:
                 prerequisite = mozpath.join(producer_dir, producer_tier)
             else:

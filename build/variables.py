@@ -14,6 +14,24 @@ def get_buildid():
     return buildid
 
 
+def buildid_file(output):
+    import buildconfig
+
+    output.avoid_writing_to_file()
+    if not os.path.exists(output.name):
+        from mozbuild.controller.building import write_buildid
+
+        write_buildid(buildconfig.topobjdir, buildconfig.substs, os.environ)
+
+
+def source_repo_file(output):
+    import buildconfig
+    from mozbuild.controller.building import write_source_repo
+
+    output.avoid_writing_to_file()
+    write_source_repo(buildconfig.topobjdir, buildconfig.topsrcdir, buildconfig.substs)
+
+
 def buildid_header(output, buildid_file):
     with open(buildid_file, encoding="utf-8") as fh:
         buildid = fh.read().rstrip()

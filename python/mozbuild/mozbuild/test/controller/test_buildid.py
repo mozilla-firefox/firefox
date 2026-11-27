@@ -5,10 +5,14 @@
 import os
 import tempfile
 import unittest
+from unittest import mock
 
+import buildconfig
 import mozunit
+import variables
 
 from mozbuild.controller.building import BUILDID_FILE, write_buildid
+from mozbuild.util import FileAvoidWrite
 
 _SUBSTS = {"MOZ_BUILD_APP": "browser"}
 
@@ -88,6 +92,24 @@ class TestWriteBuildid(unittest.TestCase):
         substs = {"MOZ_BUILD_APP": "mobile/android"}
         write_buildid(self.topobjdir, substs, {"MOZ_BUILD_DATE": "20260926120000"})
         write_buildid(self.topobjdir, substs, {"MOZ_BUILD_DATE": "20260927120000"})
+
+        self.assertEqual(self._read(), "20260926120000\n")
+
+    def _generate(self, build_date):
+        with mock.patch.multiple(
+            buildconfig, topobjdir=self.topobjdir, substs=_SUBSTS
+        ), mock.patch.dict(os.environ, {"MOZ_BUILD_DATE": build_date}):
+            with FileAvoidWrite(self.path, readmode="rb") as output:
+                variables.buildid_file(output)
+
+    def test_generated_file_missing(self):
+        self._generate("20260926120000")
+
+        self.assertEqual(self._read(), "20260926120000\n")
+
+    def test_generated_file_keeps_id(self):
+        write_buildid(self.topobjdir, _SUBSTS, {"MOZ_BUILD_DATE": "20260926120000"})
+        self._generate("20260927120000")
 
         self.assertEqual(self._read(), "20260926120000\n")
 

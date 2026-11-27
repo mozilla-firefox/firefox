@@ -304,13 +304,17 @@ if not CONFIG["JS_STANDALONE"] or not CONFIG["MOZ_BUILD_APP"]:
 
     GENERATED_FILES += [
         "buildid.h",
+        "buildid.txt",
         "source-repo.h",
+        "source-repo.txt",
     ]
 
     GENERATED_FILES["buildid.h"].script = "build/variables.py:buildid_header"
     GENERATED_FILES["buildid.h"].inputs = ["!/buildid.txt"]
+    GENERATED_FILES["buildid.txt"].script = "build/variables.py:buildid_file"
     GENERATED_FILES["source-repo.h"].script = "build/variables.py:source_repo_header"
     GENERATED_FILES["source-repo.h"].inputs = ["!/source-repo.txt"]
+    GENERATED_FILES["source-repo.txt"].script = "build/variables.py:source_repo_file"
 
 if CONFIG["MOZ_BUILD_APP"]:
     # Bring in the configuration for the configured application.
