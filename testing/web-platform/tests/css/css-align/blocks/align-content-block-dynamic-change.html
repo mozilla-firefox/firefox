@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<link rel="help" href="https://drafts.csswg.org/css-align/#distribution-block">
+<link rel="help" href="https://bugzilla.mozilla.org/show_bug.cgi?id=2092951">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<style>
+body {
+  margin: 0;
+}
+</style>
+
+<div id="container" style="height: 200px;">
+  <div style="height: 60px;" id="content"></div>
+</div>
+
+<script>
+for (let value of ["normal", "start", "flex-start"]) {
+  test(() => {
+    container.style.alignContent = value;
+    assert_equals(content.offsetTop, 0);
+    container.style.alignContent = "center";
+    assert_equals(content.offsetTop, (200 - 60) / 2);
+    container.style.alignContent = value;
+    assert_equals(content.offsetTop, 0);
+    container.style.alignContent = "end";
+    assert_equals(content.offsetTop, 200 - 60);
+    container.style.alignContent = value;
+    assert_equals(content.offsetTop, 0);
+  }, `Changing align-content from center or end to ${value} resets the content position`);
+}
+</script>

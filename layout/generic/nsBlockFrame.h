@@ -579,7 +579,7 @@ class nsBlockFrame : public nsContainerFrame {
 
  protected:
   nscoord GetAlignContentShift() const {
-    return IsContentAligned() ? GetProperty(AlignContentShift()) : 0;
+    return GetProperty(AlignContentShift());
   }
 
   /**
