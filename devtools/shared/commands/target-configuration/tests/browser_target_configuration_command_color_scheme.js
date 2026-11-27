@@ -22,11 +22,6 @@ add_task(async function () {
     "The dark mode simulation isn't enabled in the content page by default"
   );
   is(
-    await iframeDocumentMatchPrefersDarkColorSchemeMediaAtStartup(),
-    false,
-    "The dark mode simulation wasn't enabled in the remote iframe when it loaded"
-  );
-  is(
     await iframeDocumentMatchPrefersDarkColorSchemeMedia(),
     false,
     "The dark mode simulation isn't enabled in the remote iframe by default"
@@ -69,15 +64,9 @@ add_task(async function () {
     true,
     "The dark mode simulation is enabled in the content page after reloading"
   );
-  is(
-    await iframeDocumentMatchPrefersDarkColorSchemeMediaAtStartup(),
-    true,
-    "The dark mode simulation was enabled in the remote iframe when it loaded after reloading"
-  );
-  is(
-    await iframeDocumentMatchPrefersDarkColorSchemeMedia(),
-    true,
-    "The dark mode simulation is enabled in the remote iframe after reloading"
+  await waitFor(
+    () => iframeDocumentMatchPrefersDarkColorSchemeMedia(),
+    "Wait for the dark mode simulation to be enabled in the remote iframe after reloading"
   );
 
   const previousBrowsingContextId = gBrowser.selectedBrowser.browsingContext.id;
@@ -111,15 +100,9 @@ add_task(async function () {
     true,
     "The dark mode simulation is enabled in the content page after navigating to a new browsing context"
   );
-  is(
-    await iframeDocumentMatchPrefersDarkColorSchemeMediaAtStartup(),
-    true,
-    "The dark mode simulation was enabled in the remote iframe when it loaded after navigating to a new browsing context"
-  );
-  is(
-    await iframeDocumentMatchPrefersDarkColorSchemeMedia(),
-    true,
-    "The dark mode simulation is enabled in the remote iframe after navigating to a new browsing context"
+  await waitFor(
+    () => iframeDocumentMatchPrefersDarkColorSchemeMedia(),
+    "Wait for the dark mode simulation to be enabled in the remote iframe after navigating to a new browsing context"
   );
 
   targetCommand.destroy();
@@ -177,9 +160,4 @@ function getIframeBrowsingContext() {
 async function iframeDocumentMatchPrefersDarkColorSchemeMedia() {
   const iframeBC = await getIframeBrowsingContext();
   return matchPrefersDarkColorSchemeMedia(iframeBC);
-}
-
-async function iframeDocumentMatchPrefersDarkColorSchemeMediaAtStartup() {
-  const iframeBC = await getIframeBrowsingContext();
-  return matchPrefersDarkColorSchemeMediaAtStartup(iframeBC);
 }

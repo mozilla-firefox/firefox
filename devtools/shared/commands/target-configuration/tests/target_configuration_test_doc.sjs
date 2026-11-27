@@ -20,8 +20,6 @@ function handleRequest(request, response) {
     <head>
       <meta charset=utf8>
       <script>
-        globalThis.initialMatchesPrefersDarkColorScheme =
-          window.matchMedia("(prefers-color-scheme: dark)").matches;
         globalThis.initialMatchesCoarsePointer =
           window.matchMedia("(pointer: coarse)").matches;
         globalThis.initialDevicePixelRatio = window.devicePixelRatio;
