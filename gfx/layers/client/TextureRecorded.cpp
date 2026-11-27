@@ -48,20 +48,22 @@ bool RecordedTextureData::Lock(OpenMode aMode) {
     return false;
   }
 
-  if (!mDT && mInited) {
+  if (!mDT && mDrawTargetCreationAttempted) {
+    // A failed creation attempt is final for this texture.
     return false;
   }
 
-  // If modifying the texture, then allocate a new remote texture id.
+  // A write requires a new remote texture ID the next time we serialize.
   if (aMode & OpenMode::OPEN_WRITE) {
     mUsedRemoteTexture = false;
   }
 
-  bool wasInvalidContents = mInvalidContents;
+  const bool wasInvalidContents = mInvalidContents;
   mInvalidContents = false;
 
-  if (!mDT && !mInited) {
-    mInited = true;
+  if (!mDT) {
+    mDrawTargetCreationAttempted = true;
+    // The canvas draw target creation event locks the remote texture on replay.
     mDT = mCanvasChild->CreateDrawTarget(mRemoteTextureOwnerId, mSize, mFormat,
                                          mPreferAcceleration);
     if (!mDT) {
@@ -69,14 +71,11 @@ bool RecordedTextureData::Lock(OpenMode aMode) {
     }
 
     mDT->AttachTextureData(this);
-
-    // We lock the TextureData when we create it to get the remote DrawTarget.
-    mLockedMode = aMode;
-    return true;
+  } else {
+    mCanvasChild->RecordEvent(
+        RecordedTextureLock(mRemoteTextureOwnerId, aMode, wasInvalidContents));
   }
 
-  mCanvasChild->RecordEvent(
-      RecordedTextureLock(mRemoteTextureOwnerId, aMode, wasInvalidContents));
   mLockedMode = aMode;
   return true;
 }

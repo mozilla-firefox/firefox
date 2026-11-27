@@ -23,7 +23,7 @@ class RecordedTextureData final : public TextureData {
 
   // Must be called before the first Lock, which creates the remote DrawTarget.
   void SetPreferAcceleration(bool aPreferAcceleration) {
-    MOZ_ASSERT(!mInited);
+    MOZ_ASSERT(!mDrawTargetCreationAttempted);
     mPreferAcceleration = aPreferAcceleration;
   }
 
@@ -85,7 +85,7 @@ class RecordedTextureData final : public TextureData {
   RefPtr<layers::FwdTransactionTracker> mFwdTransactionTracker;
   bool mUsedRemoteTexture = false;
   bool mInvalidContents = true;
-  bool mInited = false;
+  bool mDrawTargetCreationAttempted = false;
   bool mPreferAcceleration = false;
 };
 
