@@ -9,7 +9,3 @@ support-files = [
 tags = "webextensions"
 
 ["test_ext_all_apis.html"]
-skip-if = [
-  "http2",
-  "http3",
-]

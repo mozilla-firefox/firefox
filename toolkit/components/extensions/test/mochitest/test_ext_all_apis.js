@@ -182,7 +182,7 @@ add_task(async function test_enumerate_content_script_apis() {
     manifest: {
       content_scripts: [
         {
-          matches: ["http://mochi.test/*/file_sample.html"],
+          matches: ["*://mochi.test/*/file_sample.html"],
           js: ["contentscript.js"],
           run_at: "document_start",
         },
