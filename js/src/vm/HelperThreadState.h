@@ -434,8 +434,6 @@ class GlobalHelperThreadState {
 
   void runPendingSourceCompressions(JSRuntime* runtime);
 
-  void trace(JSTracer* trc);
-
   void waitForAllTasks();
   void waitForAllTasksLocked(AutoLockHelperThreadState&);
 

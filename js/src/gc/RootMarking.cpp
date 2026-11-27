@@ -17,7 +17,6 @@
 #include "js/ValueArray.h"
 #include "vm/BigIntType.h"
 #include "vm/Compartment.h"
-#include "vm/HelperThreadState.h"
 #include "vm/JSContext.h"
 
 using namespace js;
@@ -367,8 +366,10 @@ void js::gc::GCRuntime::traceRuntimeCommon(JSTracer* trc,
     }
   }
 
-  // Trace helper thread roots.
-  HelperThreadState().trace(trc);
+  // Trace off-thread compilation roots.
+  if (jit::JitRuntime* jitRuntime = rt->jitRuntime()) {
+    jitRuntime->traceOffThreadCompilations(trc);
+  }
 
   // Trace Debugger.Frames that have live hooks, since dropping them would be
   // observable. In effect, they are rooted by the stack frames.

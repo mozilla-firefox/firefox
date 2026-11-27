@@ -1212,13 +1212,6 @@ template void MarkingTracerT<
 template void MarkingTracerT<
     MarkingOptions::MarkRootCompartments>::markAndTraverse(JSObject* thing);
 
-#ifdef DEBUG
-void GCMarker::setCheckAtomMarking(bool check) {
-  MOZ_ASSERT(check != checkAtomMarking);
-  checkAtomMarking = check;
-}
-#endif
-
 template <typename S, typename T>
 inline void GCMarker::checkTraversedEdge(S source, T* target) {
 #ifdef DEBUG
@@ -1248,8 +1241,7 @@ inline void GCMarker::checkTraversedEdge(S source, T* target) {
 
   // If we are marking an atom, that atom must be marked in the source zone's
   // atom bitmap.
-  if (checkAtomMarking && !sourceZone->isAtomsZone() &&
-      targetZone->isAtomsZone()) {
+  if (!sourceZone->isAtomsZone() && targetZone->isAtomsZone()) {
     GCRuntime* gc = &target->runtimeFromAnyThread()->gc;
     TenuredCell* atom = &target->asTenured();
     MOZ_ASSERT(gc->atomReferences.hasRef(sourceZone, atom));
@@ -2577,7 +2569,6 @@ GCMarker::GCMarker(JSRuntime* rt)
       random(js::GenerateRandomSeed(), js::GenerateRandomSeed())
 #ifdef DEBUG
       ,
-      checkAtomMarking(true),
       strictCompartmentChecking(false)
 #endif
 {
