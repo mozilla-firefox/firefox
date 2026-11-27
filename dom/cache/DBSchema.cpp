@@ -2032,13 +2032,18 @@ nsresult InsertEntry(mozIStorageConnection& aConn, CacheId aCacheId,
 
     nsAutoCString serializedInfo;
     // We only allow content serviceworkers right now.
-    if (nsIPrincipal* principal = aResponse.principal()) {
-      MOZ_DIAGNOSTIC_ASSERT(principal->GetIsContentPrincipal());
+    if (aResponse.principalInfo().isSome()) {
+      const mozilla::ipc::PrincipalInfo& principalInfo =
+          aResponse.principalInfo().ref();
+      MOZ_DIAGNOSTIC_ASSERT(principalInfo.type() ==
+                            mozilla::ipc::PrincipalInfo::TContentPrincipalInfo);
+      const mozilla::ipc::ContentPrincipalInfo& cInfo =
+          principalInfo.get_ContentPrincipalInfo();
 
-      QM_TRY(MOZ_TO_RESULT(principal->GetAsciiSpec(serializedInfo)));
+      serializedInfo.Append(cInfo.spec());
 
       nsAutoCString suffix;
-      principal->OriginAttributesRef().CreateSuffix(suffix);
+      cInfo.attrs().CreateSuffix(suffix);
       serializedInfo.Append(suffix);
     }
 
@@ -2210,7 +2215,7 @@ Result<SavedResponse, nsresult> ReadResponse(mozIStorageConnection& aConn,
                  MOZ_TO_RESULT_INVOKE_MEMBER_TYPED(nsAutoCString, *state,
                                                    GetUTF8String, 5));
 
-  savedResponse.mValue.principal() = nullptr;
+  savedResponse.mValue.principalInfo() = Nothing();
   if (!serializedInfo.IsEmpty()) {
     nsAutoCString specNoSuffix;
     OriginAttributes attrs;
@@ -2252,7 +2257,15 @@ Result<SavedResponse, nsresult> ReadResponse(mozIStorageConnection& aConn,
       return Err(NS_ERROR_NULL_POINTER);
     }
 
-    savedResponse.mValue.principal() = principal.forget();
+    nsCString origin;
+    QM_TRY(MOZ_TO_RESULT(principal->GetOriginNoSuffix(origin)));
+
+    nsCString baseDomain;
+    QM_TRY(MOZ_TO_RESULT(principal->GetBaseDomain(baseDomain)));
+
+    savedResponse.mValue.principalInfo() =
+        Some(mozilla::ipc::ContentPrincipalInfo(attrs, origin, specNoSuffix,
+                                                Nothing(), baseDomain));
   }
 
   QM_TRY_INSPECT(const bool& nullPadding,

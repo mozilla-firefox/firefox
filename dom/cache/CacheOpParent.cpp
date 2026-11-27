@@ -13,7 +13,6 @@
 #include "mozilla/dom/cache/SavedTypes.h"
 #include "mozilla/ipc/IPCStreamUtils.h"
 #include "mozilla/ipc/InputStreamUtils.h"
-#include "nsIPrincipal.h"
 
 namespace mozilla::dom::cache {
 
@@ -226,12 +225,12 @@ void CacheOpParent::ProcessCrossOriginResourcePolicyHeader(
   // Only checking for match/matchAll.
   nsILoadInfo::CrossOriginEmbedderPolicy loadingCOEP =
       nsILoadInfo::EMBEDDER_POLICY_NULL;
-  nsCOMPtr<nsIPrincipal> requestPrincipal;
+  Maybe<mozilla::ipc::PrincipalInfo> principalInfo;
   switch (mOpArgs.type()) {
     case CacheOpArgs::TCacheMatchArgs: {
       const auto& request = mOpArgs.get_CacheMatchArgs().request();
       loadingCOEP = request.loadingEmbedderPolicy();
-      requestPrincipal = request.principal();
+      principalInfo = request.principalInfo();
       break;
     }
     case CacheOpArgs::TCacheMatchAllArgs: {
@@ -239,7 +238,7 @@ void CacheOpParent::ProcessCrossOriginResourcePolicyHeader(
         const auto& request =
             mOpArgs.get_CacheMatchAllArgs().maybeRequest().ref();
         loadingCOEP = request.loadingEmbedderPolicy();
-        requestPrincipal = request.principal();
+        principalInfo = request.principalInfo();
       }
       break;
     }
@@ -250,9 +249,13 @@ void CacheOpParent::ProcessCrossOriginResourcePolicyHeader(
 
   // skip checking if the request has no principal for same-origin/same-site
   // checking.
-  if (!requestPrincipal || !requestPrincipal->GetIsContentPrincipal()) {
+  if (principalInfo.isNothing() ||
+      principalInfo.ref().type() !=
+          mozilla::ipc::PrincipalInfo::TContentPrincipalInfo) {
     return;
   }
+  const mozilla::ipc::ContentPrincipalInfo& contentPrincipalInfo =
+      principalInfo.ref().get_ContentPrincipalInfo();
 
   for (auto it = aResponses.cbegin(); it != aResponses.cend(); ++it) {
     if (it->mValue.type() != ResponseType::Opaque &&
@@ -281,10 +284,14 @@ void CacheOpParent::ProcessCrossOriginResourcePolicyHeader(
 
     // Skip the case if the response has no principal for same-origin/same-site
     // checking.
-    nsIPrincipal* responsePrincipal = it->mValue.principal();
-    if (!responsePrincipal || !responsePrincipal->GetIsContentPrincipal()) {
+    if (it->mValue.principalInfo().isNothing() ||
+        it->mValue.principalInfo().ref().type() !=
+            mozilla::ipc::PrincipalInfo::TContentPrincipalInfo) {
       continue;
     }
+
+    const mozilla::ipc::ContentPrincipalInfo& responseContentPrincipalInfo =
+        it->mValue.principalInfo().ref().get_ContentPrincipalInfo();
 
     nsCString corp =
         corpHeaderIt == headers.cend() ? EmptyCString() : corpHeaderIt->value();
@@ -301,16 +308,13 @@ void CacheOpParent::ProcessCrossOriginResourcePolicyHeader(
     }
 
     if (corp.EqualsLiteral("same-origin")) {
-      if (!responsePrincipal->Equals(requestPrincipal)) {
+      if (responseContentPrincipalInfo != contentPrincipalInfo) {
         aRv.ThrowTypeError("Response is expected from same origin.");
         return;
       }
     } else if (corp.EqualsLiteral("same-site")) {
-      nsAutoCString requestBaseDomain;
-      nsAutoCString responseBaseDomain;
-      if (NS_FAILED(requestPrincipal->GetBaseDomain(requestBaseDomain)) ||
-          NS_FAILED(responsePrincipal->GetBaseDomain(responseBaseDomain)) ||
-          !responseBaseDomain.Equals(requestBaseDomain)) {
+      if (!responseContentPrincipalInfo.baseDomain().Equals(
+              contentPrincipalInfo.baseDomain())) {
         aRv.ThrowTypeError("Response is expected from same site.");
         return;
       }

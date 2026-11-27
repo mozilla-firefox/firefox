@@ -80,7 +80,7 @@ struct IPCInternalRequest {
   bool keepalive;
   bool hasStreamBody;
   nsCString fragment;
-  nullable nsIPrincipal principal;
+  PrincipalInfo? principalInfo;
   nullable nsIPrincipal interceptionTriggeringPrincipal;
   nsContentPolicyType interceptionContentPolicyType;
   RedirectHistoryEntryInfo[] interceptionRedirectChain;
@@ -98,7 +98,7 @@ struct InternalResponseMetadata {
   nsresult errorCode;
   nsCString alternativeDataType;
   nullable nsITransportSecurityInfo securityInfo;
-  nullable nsIPrincipal principal;
+  PrincipalInfo? principalInfo;
   nullable BlobImpl bodyBlobImpl;
   nsString bodyLocalPath;
   RequestCredentials credentialsMode;

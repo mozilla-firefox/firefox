@@ -31,6 +31,7 @@
 #include "mozilla/dom/ServiceWorkerInterceptController.h"
 #include "mozilla/dom/UserActivation.h"
 #include "mozilla/dom/WorkerCommon.h"
+#include "mozilla/ipc/PBackgroundSharedTypes.h"
 #include "mozilla/net/ChannelClassifierUtils.h"
 #include "mozilla/net/ContentRange.h"
 #include "mozilla/net/HttpBaseChannel.h"
@@ -450,7 +451,13 @@ nsresult FetchDriver::Fetch(AbortSignalImpl* aSignalImpl,
   MOZ_RELEASE_ASSERT(!mRequest->IsSynchronous(),
                      "Synchronous fetch not supported");
 
-  mRequest->SetPrincipal(mPrincipal);
+  auto principalInfo = std::make_unique<mozilla::ipc::PrincipalInfo>();
+  nsresult rv = PrincipalToPrincipalInfo(mPrincipal, principalInfo.get());
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
+  mRequest->SetPrincipalInfo(std::move(principalInfo));
 
   // If the signal is aborted, it's time to inform the observer and terminate
   // the operation.
@@ -463,7 +470,7 @@ nsresult FetchDriver::Fetch(AbortSignalImpl* aSignalImpl,
     Follow(aSignalImpl);
   }
 
-  nsresult rv = HttpFetch(mRequest->GetPreferredAlternativeDataType());
+  rv = HttpFetch(mRequest->GetPreferredAlternativeDataType());
   if (NS_FAILED(rv)) {
     FailWithNetworkError(rv);
   }
@@ -1173,7 +1180,13 @@ FetchDriver::OnStartRequest(nsIRequest* aRequest) MOZ_CAN_RUN_SCRIPT_BOUNDARY {
     response = MakeSafeRefPtr<InternalResponse>(responseStatus, statusText,
                                                 mRequest->GetCredentialsMode());
 
-    response->SetPrincipal(mPrincipal);
+    auto principalInfo = std::make_unique<mozilla::ipc::PrincipalInfo>();
+    nsresult rv = PrincipalToPrincipalInfo(mPrincipal, principalInfo.get());
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      return rv;
+    }
+
+    response->SetPrincipalInfo(std::move(principalInfo));
 
     response->Headers()->FillResponseHeaders(httpChannel);
 

@@ -4,6 +4,8 @@
 
 #include "Request.h"
 
+#include <memory>
+
 #include "js/Value.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/StaticPrefs_dom.h"
@@ -22,6 +24,7 @@
 #include "mozilla/dom/WorkerPrivate.h"
 #include "mozilla/dom/WorkerRunnable.h"
 #include "mozilla/dom/WritableStream.h"
+#include "mozilla/ipc/PBackgroundSharedTypes.h"
 #include "nsIURI.h"
 #include "nsNetUtil.h"
 #include "nsPIDOMWindow.h"
@@ -277,7 +280,7 @@ SafeRefPtr<Request> Request::Constructor(
     request->SetPriorityMode(aInit.mPriority.Value());
   }
 
-  nsCOMPtr<nsIPrincipal> principal;
+  UniquePtr<mozilla::ipc::PrincipalInfo> principalInfo;
   nsILoadInfo::CrossOriginEmbedderPolicy coep =
       nsILoadInfo::EMBEDDER_POLICY_NULL;
 
@@ -288,7 +291,14 @@ SafeRefPtr<Request> Request::Constructor(
       doc = window->GetExtantDoc();
       if (doc) {
         request->SetEnvironmentReferrerPolicy(doc->GetReferrerPolicy());
-        principal = doc->NodePrincipal();
+
+        principalInfo = std::make_unique<mozilla::ipc::PrincipalInfo>();
+        nsresult rv =
+            PrincipalToPrincipalInfo(doc->NodePrincipal(), principalInfo.get());
+        if (NS_WARN_IF(NS_FAILED(rv))) {
+          aRv.ThrowTypeError<MSG_FETCH_BODY_CONSUMED_ERROR>();
+          return nullptr;
+        }
       }
       if (window->GetWindowContext()) {
         coep = window->GetWindowContext()->GetEmbedderPolicy();
@@ -299,7 +309,8 @@ SafeRefPtr<Request> Request::Constructor(
     if (worker) {
       worker->AssertIsOnWorkerThread();
       request->SetEnvironmentReferrerPolicy(worker->GetReferrerPolicy());
-      principal = worker->GetPrincipal();
+      principalInfo = std::make_unique<mozilla::ipc::PrincipalInfo>(
+          worker->GetPrincipalInfo());
       coep = worker->GetEmbedderPolicy();
       // For dedicated worker, the response must respect the owner's COEP.
       if (coep == nsILoadInfo::EMBEDDER_POLICY_NULL &&
@@ -309,7 +320,7 @@ SafeRefPtr<Request> Request::Constructor(
     }
   }
 
-  request->SetPrincipal(principal);
+  request->SetPrincipalInfo(std::move(principalInfo));
   request->SetEmbedderPolicy(coep);
 
   if (mode.isSome()) {

@@ -19,6 +19,8 @@
 #include "mozilla/dom/WorkerCommon.h"
 #include "mozilla/dom/cache/Cache.h"
 #include "mozilla/dom/cache/CacheStorage.h"
+#include "mozilla/ipc/BackgroundUtils.h"
+#include "mozilla/ipc/PBackgroundSharedTypes.h"
 #include "mozilla/net/CookieJarSettings.h"
 #include "nsContentUtils.h"
 #include "nsICacheInfoChannel.h"
@@ -36,6 +38,7 @@
 
 using mozilla::dom::cache::Cache;
 using mozilla::dom::cache::CacheStorage;
+using mozilla::ipc::PrincipalInfo;
 
 namespace mozilla::dom::serviceWorkerScriptCache {
 
@@ -134,7 +137,9 @@ class CompareNetwork final : public nsIStreamLoaderObserver,
     return internalHeaders.forget();
   }
 
-  nsIPrincipal* GetPrincipal() const { return mPrincipal; }
+  UniquePtr<PrincipalInfo> TakePrincipalInfo() {
+    return std::move(mPrincipalInfo);
+  }
 
   bool Succeeded() const { return NS_SUCCEEDED(mNetworkResult); }
 
@@ -148,6 +153,8 @@ class CompareNetwork final : public nsIStreamLoaderObserver,
 
   void Finish();
 
+  nsresult SetPrincipalInfo(nsIChannel* aChannel);
+
   RefPtr<CompareManager> mManager;
   RefPtr<CompareCache> mCC;
   RefPtr<ServiceWorkerRegistrationInfo> mRegistration;
@@ -157,7 +164,7 @@ class CompareNetwork final : public nsIStreamLoaderObserver,
   nsCString mURL;
   ChannelInfo mChannelInfo;
   RefPtr<InternalHeaders> mInternalHeaders;
-  nsCOMPtr<nsIPrincipal> mPrincipal;
+  UniquePtr<PrincipalInfo> mPrincipalInfo;
   nsTArray<NotNull<RefPtr<nsIURI>>> mURLList;
 
   nsCString mMaxScope;
@@ -556,7 +563,10 @@ class CompareManager final : public PromiseNativeHandler {
     ir->SetURLList(aCN->URLList());
 
     ir->InitChannelInfo(aCN->GetChannelInfo());
-    ir->SetPrincipal(aCN->GetPrincipal());
+    UniquePtr<PrincipalInfo> principalInfo = aCN->TakePrincipalInfo();
+    if (principalInfo) {
+      ir->SetPrincipalInfo(std::move(principalInfo));
+    }
 
     RefPtr<InternalHeaders> internalHeaders = aCN->GetInternalHeaders();
     ir->Headers()->Fill(*(internalHeaders.get()), IgnoreErrors());
@@ -836,23 +846,42 @@ CompareNetwork::OnStartRequest(nsIRequest* aRequest) {
   MOZ_ASSERT(!mChannelInfo.IsInitialized());
   mChannelInfo.InitFromChannel(mChannel);
 
-  if (nsCOMPtr<nsICacheInfoChannel> cacheChannel = do_QueryInterface(channel)) {
-    cacheChannel->IsFromCache(&mIsFromCache);
-  }
-
-  nsIScriptSecurityManager* ssm = nsContentUtils::GetSecurityManager();
-  if (!ssm) {
-    return NS_ERROR_FAILURE;
-  }
-
-  nsresult rv =
-      ssm->GetChannelResultPrincipal(mChannel, getter_AddRefs(mPrincipal));
+  nsresult rv = SetPrincipalInfo(mChannel);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return rv;
   }
 
   mInternalHeaders->FillResponseHeaders(mChannel);
 
+  nsCOMPtr<nsICacheInfoChannel> cacheChannel(do_QueryInterface(channel));
+  if (cacheChannel) {
+    cacheChannel->IsFromCache(&mIsFromCache);
+  }
+
+  return NS_OK;
+}
+
+nsresult CompareNetwork::SetPrincipalInfo(nsIChannel* aChannel) {
+  nsIScriptSecurityManager* ssm = nsContentUtils::GetSecurityManager();
+  if (!ssm) {
+    return NS_ERROR_FAILURE;
+  }
+
+  nsCOMPtr<nsIPrincipal> channelPrincipal;
+  nsresult rv = ssm->GetChannelResultPrincipal(
+      aChannel, getter_AddRefs(channelPrincipal));
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
+  auto principalInfo = std::make_unique<PrincipalInfo>();
+  rv = PrincipalToPrincipalInfo(channelPrincipal, principalInfo.get());
+
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    return rv;
+  }
+
+  mPrincipalInfo = std::move(principalInfo);
   return NS_OK;
 }
 

@@ -5,6 +5,7 @@
 #include "mozilla/dom/cache/TypeUtils.h"
 
 #include <algorithm>
+#include <memory>
 
 #include "mozilla/StaticPrefs_extensions.h"
 #include "mozilla/dom/CacheBinding.h"
@@ -17,7 +18,6 @@
 #include "mozilla/dom/cache/CacheTypes.h"
 #include "mozilla/dom/cache/ReadStream.h"
 #include "mozilla/ipc/BackgroundChild.h"
-#include "mozilla/ipc/BackgroundUtils.h"
 #include "mozilla/ipc/IPCStreamUtils.h"
 #include "mozilla/ipc/InputStreamUtils.h"
 #include "mozilla/ipc/PBackgroundChild.h"
@@ -160,7 +160,11 @@ void TypeUtils::ToCacheRequest(CacheRequest& aOut, const InternalRequest& aIn,
 
   aOut.integrity() = aIn.GetIntegrity();
   aOut.loadingEmbedderPolicy() = aIn.GetEmbedderPolicy();
-  aOut.principal() = aIn.GetPrincipal();
+  const mozilla::UniquePtr<mozilla::ipc::PrincipalInfo>& principalInfo =
+      aIn.GetPrincipalInfo();
+  if (principalInfo) {
+    aOut.principalInfo() = Some(*(principalInfo.get()));
+  }
 
   if (aBodyAction == IgnoreBody) {
     aOut.body() = Nothing();
@@ -197,7 +201,11 @@ void TypeUtils::ToCacheResponseWithoutBody(CacheResponse& aOut,
   aOut.headers() = ToHeadersEntryList(headers);
   aOut.headersGuard() = headers->Guard();
   aOut.securityInfo() = aIn.GetChannelInfo().SecurityInfo();
-  aOut.principal() = aIn.GetPrincipal();
+  if (aIn.GetPrincipalInfo()) {
+    aOut.principalInfo() = Some(*aIn.GetPrincipalInfo());
+  } else {
+    aOut.principalInfo() = Nothing();
+  }
 
   aOut.paddingInfo() = aIn.GetPaddingInfo();
   aOut.paddingSize() = aIn.GetPaddingSize();
@@ -279,7 +287,11 @@ already_AddRefed<Response> TypeUtils::ToResponse(const CacheResponse& aIn) {
   MOZ_DIAGNOSTIC_ASSERT(!result.Failed());
 
   ir->InitChannelInfo(aIn.securityInfo());
-  ir->SetPrincipal(aIn.principal());
+  if (aIn.principalInfo().isSome()) {
+    auto info = std::make_unique<mozilla::ipc::PrincipalInfo>(
+        aIn.principalInfo().ref());
+    ir->SetPrincipalInfo(std::move(info));
+  }
 
   nsCOMPtr<nsIInputStream> stream = ReadStream::Create(aIn.body());
   ir->SetBody(stream, InternalResponse::UNKNOWN_BODY_SIZE);
