@@ -160,16 +160,7 @@ void TypeUtils::ToCacheRequest(CacheRequest& aOut, const InternalRequest& aIn,
 
   aOut.integrity() = aIn.GetIntegrity();
   aOut.loadingEmbedderPolicy() = aIn.GetEmbedderPolicy();
-  if (nsIPrincipal* principal = aIn.GetPrincipal()) {
-    mozilla::ipc::PrincipalInfo principalInfo;
-    nsresult rv =
-        mozilla::ipc::PrincipalToPrincipalInfo(principal, &principalInfo);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      aRv.Throw(rv);
-      return;
-    }
-    aOut.principalInfo() = Some(std::move(principalInfo));
-  }
+  aOut.principal() = aIn.GetPrincipal();
 
   if (aBodyAction == IgnoreBody) {
     aOut.body() = Nothing();
@@ -206,18 +197,7 @@ void TypeUtils::ToCacheResponseWithoutBody(CacheResponse& aOut,
   aOut.headers() = ToHeadersEntryList(headers);
   aOut.headersGuard() = headers->Guard();
   aOut.securityInfo() = aIn.GetChannelInfo().SecurityInfo();
-  if (nsIPrincipal* principal = aIn.GetPrincipal()) {
-    mozilla::ipc::PrincipalInfo principalInfo;
-    nsresult rv =
-        mozilla::ipc::PrincipalToPrincipalInfo(principal, &principalInfo);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      aRv.Throw(rv);
-      return;
-    }
-    aOut.principalInfo() = Some(std::move(principalInfo));
-  } else {
-    aOut.principalInfo() = Nothing();
-  }
+  aOut.principal() = aIn.GetPrincipal();
 
   aOut.paddingInfo() = aIn.GetPaddingInfo();
   aOut.paddingSize() = aIn.GetPaddingSize();
@@ -299,13 +279,7 @@ already_AddRefed<Response> TypeUtils::ToResponse(const CacheResponse& aIn) {
   MOZ_DIAGNOSTIC_ASSERT(!result.Failed());
 
   ir->InitChannelInfo(aIn.securityInfo());
-  if (aIn.principalInfo().isSome()) {
-    auto principalOrErr =
-        mozilla::ipc::PrincipalInfoToPrincipal(aIn.principalInfo().ref());
-    if (principalOrErr.isOk()) {
-      ir->SetPrincipal(principalOrErr.inspect());
-    }
-  }
+  ir->SetPrincipal(aIn.principal());
 
   nsCOMPtr<nsIInputStream> stream = ReadStream::Create(aIn.body());
   ir->SetBody(stream, InternalResponse::UNKNOWN_BODY_SIZE);
