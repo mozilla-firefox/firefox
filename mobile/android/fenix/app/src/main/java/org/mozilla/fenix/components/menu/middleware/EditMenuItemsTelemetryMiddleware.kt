@@ -90,7 +90,16 @@ class EditMenuItemsTelemetryMiddleware(private val sectionId: String) :
                         hidden = to.isHidden,
                     )
                 )
-            !from.isHidden && to.isHidden -> Unit
+            !from.isHidden && to.isHidden ->
+                CustomizeMenu.itemHidden.record(
+                    CustomizeMenu.ItemHiddenExtra(
+                        section = sectionId,
+                        item = movedId,
+                        fromContainer = from.containerId,
+                        toContainer = to.containerId,
+                        position = to.position,
+                    )
+                )
             else -> Unit
         }
     }

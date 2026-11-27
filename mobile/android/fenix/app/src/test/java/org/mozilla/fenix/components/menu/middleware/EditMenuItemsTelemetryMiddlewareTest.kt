@@ -243,6 +243,7 @@ class EditMenuItemsTelemetryMiddlewareTest {
 
         assertMoveRefusedRecorded(section = TOOLS_GROUP_ID, item = Extensions.id, reason = "inside_item")
         assertNull(CustomizeMenu.itemReordered.testGetValue())
+        assertNull(CustomizeMenu.itemHidden.testGetValue())
     }
 
     @Test
@@ -254,6 +255,7 @@ class EditMenuItemsTelemetryMiddlewareTest {
 
         assertMoveRefusedRecorded(section = TOOLS_GROUP_ID, item = DesktopSite.id, reason = "last_shown_item")
         assertNull(CustomizeMenu.itemReordered.testGetValue())
+        assertNull(CustomizeMenu.itemHidden.testGetValue())
     }
 
     @Test
@@ -625,6 +627,118 @@ class EditMenuItemsTelemetryMiddlewareTest {
         )
     }
 
+    @Test
+    fun `WHEN the user hides a shown item from the section THEN record that it was hidden with its position among the hidden items`() {
+        val store =
+            createStore(
+                initialState =
+                    CustomizableMenuItemsState(
+                        items = listOf(item(FindInPage.id), item(DesktopSite.id)),
+                        hiddenItems = listOf(item(SaveAsPdf.id)),
+                    )
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(item(FindInPage.id)),
+                hiddenItems = listOf(item(SaveAsPdf.id), item(DesktopSite.id)),
+                movedItemId = DesktopSite.id,
+            )
+        )
+
+        assertItemHiddenRecorded(
+            section = TOOLS_GROUP_ID,
+            item = DesktopSite.id,
+            fromContainer = TOOLS_GROUP_ID,
+            toContainer = TOOLS_GROUP_ID,
+            position = 2,
+        )
+    }
+
+    @Test
+    fun `WHEN the user hides a shown item from More THEN record that it was hidden from More`() {
+        val store =
+            createStore(
+                initialState =
+                    CustomizableMenuItemsState(
+                        items = listOf(item(FindInPage.id), expandable(moreId, item(Translate.id), item(Print.id))),
+                        hiddenItems = listOf(item(SaveAsPdf.id)),
+                    )
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(item(FindInPage.id), expandable(moreId, item(Print.id))),
+                hiddenItems = listOf(item(Translate.id), item(SaveAsPdf.id)),
+                movedItemId = Translate.id,
+            )
+        )
+
+        assertItemHiddenRecorded(
+            section = TOOLS_GROUP_ID,
+            item = Translate.id,
+            fromContainer = moreId,
+            toContainer = TOOLS_GROUP_ID,
+            position = 1,
+        )
+    }
+
+    @Test
+    fun `WHEN the user hides More THEN record only More with its position among hidden items without counting sub-items`() {
+        val store =
+            createStore(
+                initialState =
+                    CustomizableMenuItemsState(
+                        items = listOf(item(FindInPage.id), expandable(moreId, item(Translate.id), item(Print.id))),
+                        hiddenItems = listOf(item(DesktopSite.id)),
+                    )
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(item(FindInPage.id)),
+                hiddenItems = listOf(item(DesktopSite.id), expandable(moreId, item(Translate.id), item(Print.id))),
+                movedItemId = moreId,
+            )
+        )
+
+        assertItemHiddenRecorded(
+            section = TOOLS_GROUP_ID,
+            item = moreId,
+            fromContainer = TOOLS_GROUP_ID,
+            toContainer = TOOLS_GROUP_ID,
+            position = 2,
+        )
+    }
+
+    @Test
+    fun `WHEN the user hides a shown item into an expanded hidden More THEN record that it was hidden into More with its index among More's items`() {
+        val store =
+            createStore(
+                initialState =
+                    CustomizableMenuItemsState(
+                        items = listOf(item(FindInPage.id), item(DesktopSite.id)),
+                        hiddenItems = listOf(item(SaveAsPdf.id), expandable(moreId, item(Translate.id))),
+                    )
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(item(FindInPage.id)),
+                hiddenItems = listOf(item(SaveAsPdf.id), expandable(moreId, item(Translate.id), item(DesktopSite.id))),
+                movedItemId = DesktopSite.id,
+            )
+        )
+
+        assertItemHiddenRecorded(
+            section = TOOLS_GROUP_ID,
+            item = DesktopSite.id,
+            fromContainer = TOOLS_GROUP_ID,
+            toContainer = moreId,
+            position = 2,
+        )
+    }
+
     private fun createStore(
         sectionId: String = TOOLS_GROUP_ID,
         initialState: CustomizableMenuItemsState = CustomizableMenuItemsState(),
@@ -693,5 +807,23 @@ class EditMenuItemsTelemetryMiddlewareTest {
         assertEquals(toContainer, extras?.getValue("to_container"))
         assertEquals(position.toString(), extras?.getValue("position"))
         assertEquals(hidden.toString(), extras?.getValue("hidden"))
+    }
+
+    private fun assertItemHiddenRecorded(
+        section: String,
+        item: String,
+        fromContainer: String,
+        toContainer: String,
+        position: Int,
+    ) {
+        val events = CustomizeMenu.itemHidden.testGetValue()
+        assertNotNull(events)
+
+        val extras = events.single().extra
+        assertEquals(section, extras?.getValue("section"))
+        assertEquals(item, extras?.getValue("item"))
+        assertEquals(fromContainer, extras?.getValue("from_container"))
+        assertEquals(toContainer, extras?.getValue("to_container"))
+        assertEquals(position.toString(), extras?.getValue("position"))
     }
 }
