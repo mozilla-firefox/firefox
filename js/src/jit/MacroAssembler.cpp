@@ -6369,6 +6369,15 @@ void MacroAssembler::appendAndVerify(const wasm::MemoryAccessDesc& access,
 
 FaultingCodeRange MacroAssembler::wasmTrap(
     wasm::Trap trap, const wasm::TrapSiteDesc& trapSiteDesc) {
+#ifdef JS_CODEGEN_ARM64
+  // A constant pool between a resumable trap and its landing pad would leave
+  // the pool's header at the resume address.
+  mozilla::Maybe<AutoForbidPoolsAndNops> afp;
+  if (wasm::TrapMightResume(trap)) {
+    afp.emplace(this, /* max number of instructions in scope = */ 2);
+  }
+#endif
+
   FaultingCodeRange fcr = wasmTrapInstruction();
   MOZ_ASSERT_IF(!oom(),
                 currentOffset() - fcr.get() == WasmTrapInstructionLength);

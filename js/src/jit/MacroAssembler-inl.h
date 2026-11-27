@@ -121,6 +121,23 @@ void MacroAssembler::PopRegs(const Regs&... regs) {
 // Indirect call/jump targets.
 
 CodeOffset MacroAssembler::indirectTarget(TargetKind kind) {
+#if defined(JS_HW_INDIRECT_TARGETS) && defined(JS_CODEGEN_ARM64)
+  BufferOffset offset;
+  switch (kind) {
+    case TargetKind::None:
+      break;
+    case TargetKind::Call:
+      offset = hint(vixl::BTI_c);
+      break;
+    case TargetKind::Jump:
+      offset = hint(vixl::BTI_j);
+      break;
+  }
+
+  if (offset.assigned()) {
+    return CodeOffset(offset.getOffset());
+  }
+#endif
   return CodeOffset(currentOffset());
 }
 

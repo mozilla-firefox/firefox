@@ -12,6 +12,7 @@
 // On entry to the JIT code, save every register.
 void PrepareJit(js::jit::MacroAssembler& masm) {
   using namespace js::jit;
+  masm.indirectTarget(TargetKind::Call);
 #if defined(JS_CODEGEN_ARM64)
   masm.Mov(PseudoStackPointer64, sp);
   masm.SetStackPointer64(PseudoStackPointer64);

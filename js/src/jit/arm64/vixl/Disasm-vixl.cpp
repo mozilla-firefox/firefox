@@ -1563,6 +1563,16 @@ void Disassembler::VisitSystem(const Instruction* instr) {
         form = NULL;
         break;
       }
+      case BTI_c: {
+        mnemonic = "bti";
+        form = "c";
+        break;
+      }
+      case BTI_j: {
+        mnemonic = "bti";
+        form = "j";
+        break;
+      }
     }
   } else if (instr->Mask(MemBarrierFMask) == MemBarrierFixed) {
     switch (instr->Mask(MemBarrierMask)) {

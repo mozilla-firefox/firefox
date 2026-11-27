@@ -434,6 +434,16 @@ static void PatchBaselineFramesForDebugMode(
         auto* site = cx->runtime()->jitRuntime()->lookupDebugModeOSRReturnSite(
             prev->returnAddress());
         MOZ_RELEASE_ASSERT(site);
+#ifdef JS_CODEGEN_ARM64
+        // A constant pool may have been placed between the call and the
+        // landing pad at its return address, so resume after any pool.
+        auto* resumeInst = vixl::Instruction::CastConst(retAddr)->skipPool();
+#  ifdef JS_HW_INDIRECT_TARGETS
+        MOZ_ASSERT(resumeInst->IsBti());
+#  endif
+        retAddr =
+            const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(resumeInst));
+#endif
         site->setResumeAddr(retAddr);
 
         if (entry.needsNewReturnSite()) {

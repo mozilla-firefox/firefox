@@ -89,6 +89,7 @@ const archOptions =
            // into the frame for debug checks -- see WasmFrame.h.
            prefix: `mov x29, sp
                     mov x20, sp(
+                    bti j)?(
                     str x23, \\[x29, #16\\])?`,
            suffix: `ldp x29, x30, \\[sp\\], #16`
        },

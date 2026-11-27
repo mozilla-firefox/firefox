@@ -222,7 +222,9 @@ void BaselineCodeGen<Handler>::emitDebugModeOSRResumeTarget(
   if (handler.shouldEmitDebugModeOSRResumeTarget(kind)) {
     mozilla::DebugOnly<uint32_t> targetOffset =
         masm.indirectTarget(TargetKind::Jump).offset();
-    MOZ_ASSERT_IF(!masm.oom(), targetOffset == returnOffset);
+    // On ARM64, a constant pool may be placed between the call and the landing
+    // pad. BaselineDebugModeOSR resumes after it.
+    MOZ_ASSERT_IF(!masm.oom(), targetOffset >= returnOffset);
   }
 }
 

@@ -10,6 +10,7 @@ const arm64_arch = {
     prefix: `
 mov     x29, sp
 mov     x20, sp(
+bti     j)?(
 str     x23, \\[x29, #16\\])?
 `,
 
