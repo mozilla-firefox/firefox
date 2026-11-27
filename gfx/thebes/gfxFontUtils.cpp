@@ -13,9 +13,9 @@
 #include "mozilla/EndianUtils.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/ServoStyleConsts.h"
 #include "mozilla/ServoStyleSet.h"
 #include "mozilla/Sprintf.h"
-#include "mozilla/dom/WorkerCommon.h"
 #include "nsCOMPtr.h"
 #include "nsIUUIDGenerator.h"
 #include "nsServiceManagerUtils.h"
@@ -1838,34 +1838,25 @@ bool gfxFontUtils::IsCffFont(const uint8_t* aFontData) {
 #endif
 
 /* static */ bool gfxFontUtils::IsInServoTraversal() {
-  if (NS_IsMainThread()) {
-    return ServoStyleSet::IsInServoTraversal();
-  }
-
-  if (dom::GetCurrentThreadWorkerPrivate()) {
-    return false;
-  }
-
-  // The only permissible threads are the main thread, the worker thread, the
-  // servo threads. If the latter, we must be traversing.
-  bool traversing = ServoStyleSet::IsInServoTraversal();
-  MOZ_ASSERT(traversing);
-  return traversing;
+  // A DOM worker thread can never be in a style traversal.
+  return (NS_IsMainThread() || Servo_IsWorkerThread()) &&
+         ServoStyleSet::IsInServoTraversal();
 }
 
 /* static */ ServoStyleSet* gfxFontUtils::CurrentServoStyleSet() {
-  // If we are on a worker thread, we must not check for the current set since
-  // the main/servo threads may be busy in parallel.
-  if (dom::GetCurrentThreadWorkerPrivate()) {
-    return nullptr;
-  }
-
-  return ServoStyleSet::Current();
+  // If we are on a DOM worker thread, we must not check for the current set
+  // since the main/servo threads may be busy in parallel.
+  return (NS_IsMainThread() || Servo_IsWorkerThread())
+             ? ServoStyleSet::Current()
+             : nullptr;
 }
 
 #ifdef DEBUG
 /* static */ void gfxFontUtils::AssertSafeThreadOrServoFFILocked() {
-  if (!dom::GetCurrentThreadWorkerPrivate()) {
+  // Only main and Servo threads are checked. DOM workers cannot be
+  // identified reliably here, since GetCurrentThreadWorkerPrivate() returns
+  // null during ~CycleCollectedJSContext(), so other threads are not checked.
+  if (NS_IsMainThread() || Servo_IsWorkerThread()) {
     mozilla::AssertIsMainThreadOrServoFFILocked();
   }
 }
