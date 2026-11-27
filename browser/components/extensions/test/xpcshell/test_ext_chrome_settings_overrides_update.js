@@ -672,6 +672,10 @@ async function test_default_search_on_updating_addons_installed_before_bug175776
   const file = Services.dirsvc.get("ProfD", Ci.nsIFile);
   file.append("extension-settings.json");
 
+  // Write the settings store's pending changes now, as otherwise its deferred
+  // save could land after the mock data and overwrite it.
+  await ExtensionSettingsStore._reloadFile();
+
   info(`writing mock settings data into ${file.path}`);
   await IOUtils.writeJSON(file.path, extensionSettingsData);
   await ExtensionSettingsStore._reloadFile(false);
