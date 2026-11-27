@@ -32,6 +32,8 @@
 #include "wasm/WasmIonCompile.h"
 #include "wasm/WasmStubs.h"
 
+#include "jit/MacroAssembler-inl.h"
+
 using namespace js;
 using namespace js::jit;
 using namespace js::wasm;
@@ -263,7 +265,7 @@ bool ModuleGenerator::linkCallSites() {
             existingCallFarJumps.lookupForAdd(target.funcIndex());
         if (!p) {
           Offsets offsets;
-          offsets.begin = masm_->currentOffset();
+          offsets.begin = masm_->indirectTarget(TargetKind::ImmCall).offset();
           if (!callFarJumps_.emplaceBack(target.funcIndex(),
                                          masm_->farJumpWithPatch().offset())) {
             return false;

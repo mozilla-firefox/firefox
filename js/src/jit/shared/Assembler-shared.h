@@ -543,10 +543,10 @@ enum class TargetKind {
 // enabled, reaching an unmarked indirect target will fault.
 
 // An ImmCall/ImmJump target is reached by a call or jump to an immediate
-// address given as a TrampolinePtr or ImmPtr, e.g. call(TrampolinePtr) or
-// jump(ImmPtr). On x86/x64, all JIT code is in a single reservation smaller
-// than 2GB, so these are direct rel32 branches. On other architectures, they
-// may be indirect (e.g. BLR, or an extended jump table entry on ARM64).
+// address, e.g. call(TrampolinePtr), jump(ImmPtr) or farJumpWithPatch(). On
+// x86/x64, all JIT code is in a single reservation smaller than 2GB, so these
+// are direct rel32 branches. On other architectures, they may be indirect (e.g.
+// BLR, or an extended jump table entry on ARM64).
 #if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
   ImmCall = None,
   ImmJump = None,
