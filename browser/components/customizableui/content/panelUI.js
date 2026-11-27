@@ -14,8 +14,6 @@ ChromeUtils.defineESModuleGetters(this, {
   NewTabUtils: "resource://gre/modules/NewTabUtils.sys.mjs",
   PanelMultiView:
     "moz-src:///browser/components/customizableui/PanelMultiView.sys.mjs",
-  ReportBrokenSite:
-    "moz-src:///browser/components/reportbrokensite/ReportBrokenSite.sys.mjs",
   updateZoomUI: "resource:///modules/ZoomUI.sys.mjs",
 });
 
@@ -32,7 +30,7 @@ const HELP_MENU_ATTRS = [
 ];
 
 /**
- * The layout of the app menu's "Help and Report" subview, as a list of groups
+ * The layout of the app menu's "Help" subview, as a list of groups
  * of `menu_HelpPopup` menuitem ids. Items are cloned in this order, with a
  * separator between each pair of groups that survive. Visible menuitems that
  * no group lists are appended, unseparated, after the last group.
@@ -40,7 +38,6 @@ const HELP_MENU_ATTRS = [
 const HELP_VIEW_GROUPS = [
   [
     "menu_openHelp",
-    "help_reportBrokenSite",
     "menu_HelpPopup_reportPhishingtoolmenu",
     "menu_HelpPopup_reportPhishingErrortoolmenu",
     "helpPolicySupport",
@@ -74,12 +71,6 @@ function cloneHelpMenuItem(node) {
 
   if (node.id) {
     button.id = "appMenu_" + node.id;
-  }
-
-  if (node.id == "help_reportBrokenSite") {
-    button.removeAttribute("command");
-    button.classList.add("subviewbutton-nav");
-    button.setAttribute("closemenu", "none");
   }
 
   button.classList.add("subviewbutton");
@@ -844,7 +835,10 @@ const PanelUI = {
       if (node.hidden) {
         continue;
       }
-      if (node.id === "menu_referralsPage") {
+      if (
+        node.id === "menu_referralsPage" ||
+        node.id === "help_reportBrokenSite"
+      ) {
         continue;
       }
       remaining.add(node);
@@ -905,9 +899,6 @@ const PanelUI = {
 
   _onHelpCommand(aEvent) {
     switch (aEvent.target.id) {
-      case "appMenu_help_reportBrokenSite":
-        ReportBrokenSite.handleParentMenuButtonCommand(aEvent.target);
-        break;
       case "appMenu_menu_openHelp":
         openHelpLink("firefox-help");
         break;

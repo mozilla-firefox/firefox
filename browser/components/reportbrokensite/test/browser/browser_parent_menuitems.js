@@ -4,8 +4,7 @@
 /* Test that the Report Broken Site menu items are disabled
  * when the active tab is not on a reportable URL, and is hidden
  * when the feature is disabled via pref. Also ensure that the
- * Report Broken Site item that is automatically generated in
- * the app menu's help sub-menu is hidden.
+ * app menu item renders a subview caret.
  */
 
 "use strict";
@@ -76,4 +75,20 @@ add_task(async function testMenus() {
   });
 
   ensureReportBrokenSitePreffedOn();
+});
+
+add_task(async function testAppMenuItemHasCaret() {
+  const appMenu = AppMenu();
+  await appMenu.open();
+
+  const content = getComputedStyle(appMenu.reportBrokenSite, "::after").content;
+  const expected = Services.locale.isAppLocaleRTL
+    ? "arrow-left.svg"
+    : "arrow-right.svg";
+  Assert.ok(
+    content.includes(expected),
+    `Report Broken Site renders a subview caret, got ${content}`
+  );
+
+  await appMenu.close();
 });
