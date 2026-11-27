@@ -130,6 +130,9 @@ add_setup(async function () {
 add_task(async function test_topSites_newtab_emptyHistory() {
   let extension = await loadExtension();
 
+  // Wait for YouTube to be listed second, after the Baidu search link.
+  await updateTopSites(sites => sites?.[1]?.url == "https://www.youtube.com/");
+
   let expectedResults = [
     {
       type: "search",
