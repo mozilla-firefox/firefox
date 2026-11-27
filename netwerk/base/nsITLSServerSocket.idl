@@ -22,9 +22,10 @@ interface nsITLSServerSocket : nsIServerSocket
   /**
    * setSessionTickets
    *
-   * Whether the server should support session tickets.  Defaults to true.  This
-   * should be set before calling |asyncListen| if you wish to change the
-   * default.
+   * Whether the server should support session tickets.  Defaults to false.
+   * This should be set before calling |asyncListen| if you wish to change the
+   * default.  Issuing a ticket makes NSS keep a server wrapping key that is
+   * never freed, so NSS_Shutdown will fail afterwards.
    */
   void setSessionTickets(in boolean aSessionTickets);
 

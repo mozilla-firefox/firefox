@@ -1951,6 +1951,8 @@ firefox-appdir = "browser"
 
 ["test_tls_server_multiple_clients.js"]
 
+["test_tls_server_session_tickets.js"]
+
 ["test_traceable_channel.js"]
 
 ["test_trackingProtection_annotateChannels.js"]
