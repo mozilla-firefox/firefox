@@ -59,6 +59,7 @@ class Http3ConnectUDPStream final : public Http3TunnelStreamBase,
   void Close(nsresult aResult) override;
 
   void OnDatagramReceived(nsTArray<uint8_t>&& aData) override;
+  void FlushIncomingDatagrams();
 
   bool OnActivated() override;
 

@@ -635,12 +635,17 @@ nsresult Http3Session::ProcessEvents() {
   Http3Event event{};
   event.tag = Http3Event::Tag::NoEvent;
 
-  // A burst of datagrams arrives within a single call, and the sessions batch
-  // them for IPC, so tell each one we are done as we leave.
+  // A burst of datagrams arrives within a single call, but WebTransport
+  // sessions and connect-udp tunnels batch them. Tell each one we are done
+  // as we leave.
   nsTArray<RefPtr<Http3WebTransportSession>> datagramSessions;
-  auto flushDatagrams = MakeScopeExit([&datagramSessions] {
+  nsTArray<RefPtr<Http3ConnectUDPStream>> datagramTunnels;
+  auto flushDatagrams = MakeScopeExit([&datagramSessions, &datagramTunnels] {
     for (const auto& session : datagramSessions) {
       session->FlushIncomingDatagrams();
+    }
+    for (const auto& tunnel : datagramTunnels) {
+      tunnel->FlushIncomingDatagrams();
     }
   });
 
@@ -1244,6 +1249,9 @@ nsresult Http3Session::ProcessEvents() {
             LOG(("reason.tag=%u err=%u data=%s\n",
                  static_cast<uint32_t>(reasonExternal.tag), status,
                  reason.get()));
+            // Deliver datagrams that arrived earlier in this call before the
+            // stream goes away.
+            connectUDPStream->FlushIncomingDatagrams();
             CloseStream(connectUDPStream,
                         status == 0 ? NS_OK : NS_ERROR_FAILURE);
           } break;
@@ -1266,6 +1274,9 @@ nsresult Http3Session::ProcessEvents() {
               break;
             }
             tunnelStream->OnDatagramReceived(std::move(data));
+            if (!datagramTunnels.Contains(tunnelStream)) {
+              datagramTunnels.AppendElement(tunnelStream);
+            }
             break;
         }
       } break;

@@ -21,10 +21,15 @@ class UDPListener final : public nsIUDPSocketSyncListener {
   UDPListener() = default;
 
   NS_IMETHOD OnPacketReceived(nsIUDPSocket* aSocket) override {
-    nsTArray<uint8_t> data;
-    NetAddr addr{};
-    (void)aSocket->RecvWithAddr(&addr, data);
-    mReceivedData.AppendElements(data);
+    while (true) {
+      nsTArray<uint8_t> data;
+      NetAddr addr{};
+      (void)aSocket->RecvWithAddr(&addr, data);
+      if (data.IsEmpty()) {
+        break;
+      }
+      mReceivedData.AppendElements(data);
+    }
     return NS_OK;
   }
 
@@ -277,16 +282,27 @@ TEST(ConnectUDP, RecvData)
   ConnectUdp::testing::CreateTestData(100, data);
   stream->OnDatagramReceived(std::move(data));
 
+  // No flush
   nsTArray<uint8_t> input = listener->TakeInputData();
+  ASSERT_EQ(input.Length(), 0u);
+
+  // Flush after a single datagram
+  stream->FlushIncomingDatagrams();
+  input = listener->TakeInputData();
   ASSERT_EQ(input.Length(), 100u);
 
   ConnectUdp::testing::CreateTestData(200, data);
   stream->OnDatagramReceived(std::move(data));
 
-  input = listener->TakeInputData();
-  ASSERT_EQ(input.Length(), 200u);
+  ConnectUdp::testing::CreateTestData(200, data);
+  stream->OnDatagramReceived(std::move(data));
 
-  ASSERT_EQ(stream->ByteCountReceived(), 300u);
+  // Flush after two datagrams
+  stream->FlushIncomingDatagrams();
+  input = listener->TakeInputData();
+  ASSERT_EQ(input.Length(), 400u);
+
+  ASSERT_EQ(stream->ByteCountReceived(), 500u);
 
   udp->Close();
 

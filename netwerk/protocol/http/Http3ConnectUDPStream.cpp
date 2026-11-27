@@ -68,9 +68,15 @@ void Http3ConnectUDPStream::OnDatagramReceived(nsTArray<uint8_t>&& aData) {
 
   mByteReadCount += aData.Length();
   mReceivedData.Push(std::make_unique<UDPPayload>(std::move(aData)));
-  if (mSyncListener) {
-    mSyncListener->OnPacketReceived(this);
+}
+
+void Http3ConnectUDPStream::FlushIncomingDatagrams() {
+  LOG(("Http3ConnectUDPStream::FlushIncomingDatagrams %p", this));
+
+  if (mRecvState == RECV_DONE || mReceivedData.IsEmpty() || !mSyncListener) {
+    return;
   }
+  mSyncListener->OnPacketReceived(this);
 }
 
 bool Http3ConnectUDPStream::OnActivated() {
