@@ -135,11 +135,11 @@ class MenuGridItemTest {
     }
 
     @Test
-    fun `GIVEN an active item THEN icon container color is surfaceContainerLowest`() {
+    fun `GIVEN an active item THEN icon container color is surfaceBright`() {
         composeTestRule.setContent {
             AcornTheme {
                 assertEquals(
-                    MaterialTheme.colorScheme.surfaceContainerLowest,
+                    MaterialTheme.colorScheme.surfaceBright,
                     MenuItemState.ACTIVE.iconContainerColor,
                 )
                 assertEquals(

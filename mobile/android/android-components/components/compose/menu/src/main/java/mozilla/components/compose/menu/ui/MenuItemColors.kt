@@ -67,6 +67,6 @@ internal val MenuItemState.iconContainerColor: Color
     @ReadOnlyComposable
     get() =
         when (this) {
-            ACTIVE -> MaterialTheme.colorScheme.surfaceContainerLowest
+            ACTIVE -> MaterialTheme.colorScheme.surfaceBright
             else -> Color.Transparent
         }
