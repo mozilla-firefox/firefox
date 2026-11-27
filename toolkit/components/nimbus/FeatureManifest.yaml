@@ -5872,6 +5872,21 @@ trackingProtectionExperimentation:
         branch: default
         pref: "privacy.trackingprotection.defer_annotation.enabled"
 
+copyCleanLink:
+  description: >-
+    Firefox Labs opt-in that makes Copy Link strip known tracking parameters
+    and hides the separate Copy Clean Link item.
+  owner: momar@mozilla.com
+  hasExposure: false
+  variables:
+    defaultCleanCopy:
+      type: boolean
+      description: >-
+        Controls whether Copy Link strips tracking parameters by default.
+      setPref:
+        branch: user
+        pref: privacy.query_stripping.strip_on_share.default_clean_copy
+
 contentClassifier:
   description: Controls the content classifier service used by tracking protection.
   owner: bvandersloot@mozilla.com

@@ -28,6 +28,8 @@ experimental-features-group-productivity =
   .label = Productivity
 experimental-features-group-newtab-widgets =
   .label = Widgets on { -firefox-home-brand-name }
+experimental-features-group-privacy =
+  .label = Privacy
 
 # New Tab Custom Wallpapers
 experimental-features-custom-wallpaper =
@@ -117,3 +119,8 @@ experimental-features-tab-context-menu-description = See a simpler context menu 
 experimental-features-resource-monitor =
     .label = Resource monitor
 experimental-features-resource-monitor-description = See estimated memory and CPU use for your open tabs right in the sidebar, and unload tabs you’re not using to free up resources. <a data-l10n-name="connect">Share feedback</a>
+
+# Copy Clean Link
+experimental-features-copy-clean-link =
+    .label = Set ‘Copy Clean Link’ as the default copy option
+experimental-features-copy-clean-link-description = Automatically scrub clutter and trackers from your links as you copy them, making the Copy Clean Link feature the default copy.
