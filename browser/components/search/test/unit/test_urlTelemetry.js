@@ -238,6 +238,9 @@ async function testAdUrlClicked(serpUrl, adUrl, expectedAdKey, browser) {
     ),
     loadUsingSystemPrincipal: true,
   });
+  // Providers with requireDocumentLoadForAdClick only count ad clicks for
+  // document loads.
+  channel.loadFlags |= Ci.nsIChannel.LOAD_DOCUMENT_URI;
   // In xpcshell there is no real browsing context for the channel to resolve
   // a browser from, so return our mock browser instead.
   let getChannelBrowserStub = sinon
