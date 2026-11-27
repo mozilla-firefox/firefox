@@ -879,18 +879,15 @@ FaultingCodeRange MacroAssemblerMIPS64::ma_store(ImmWord imm,
   // Make sure that scratch2 contains absolute address so that
   // offset is 0.
   asMasm().computeEffectiveAddress(dest, scratch2);
-  // Scrach register is free now, use it for loading imm value
-  Register scratch = temps.Acquire();
-  ma_li(scratch, ImmWord(imm.value));
-
-  // with offset=0 scratch will not be used in ma_store()
-  // so we can use it as a parameter here
-  return ma_store(scratch, Address(scratch2, 0), size, extension);
+  return ma_store(imm, Address(scratch2, 0), size, extension);
 }
 
 FaultingCodeRange MacroAssemblerMIPS64::ma_store(ImmWord imm, Address address,
                                                  LoadStoreSize size,
                                                  LoadStoreExtension extension) {
+  if (imm.value == 0) {
+    return ma_store(zero, address, size, extension);
+  }
   UseScratchRegisterScope temps(*this);
   Register scratch2 = temps.Acquire();
   ma_li(scratch2, imm);
@@ -1638,6 +1635,9 @@ FaultingCodeRange MacroAssemblerMIPS64Compat::store32(Register src,
 
 FaultingCodeRange MacroAssemblerMIPS64Compat::store32(Imm32 src,
                                                       const Address& address) {
+  if (src.value == 0) {
+    return ma_store(zero, address, SizeWord);
+  }
   UseScratchRegisterScope temps(*this);
   Register scratch2 = temps.Acquire();
   move32(src, scratch2);
