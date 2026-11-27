@@ -9,6 +9,7 @@ import mozilla.components.compose.menu.data.ExpandableMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedEmptySection
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedMoveAsSubItem
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ExpansionToggled
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
@@ -41,12 +42,17 @@ class EditMenuItemsTelemetryMiddleware(private val sectionId: String) :
 
         when (action) {
             is Update -> if (isFirstRead) recordShown(action)
+            is PreviewClicked ->
+                CustomizeMenu.editItemsPreviewClicked.record(
+                    CustomizeMenu.EditItemsPreviewClickedExtra(section = sectionId)
+                )
+            is BackPressed ->
+                CustomizeMenu.editItemsBackPressed.record(CustomizeMenu.EditItemsBackPressedExtra(section = sectionId))
             is Init,
             is ItemsChanged,
             is ExpansionToggled,
             is AttemptedMoveAsSubItem,
-            is AttemptedEmptySection,
-            is PreviewClicked -> Unit
+            is AttemptedEmptySection -> Unit
         }
     }
 

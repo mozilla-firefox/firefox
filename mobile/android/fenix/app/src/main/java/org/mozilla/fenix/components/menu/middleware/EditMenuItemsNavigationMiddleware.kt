@@ -8,6 +8,7 @@ import androidx.navigation.NavController
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedEmptySection
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedMoveAsSubItem
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ExpansionToggled
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
@@ -51,7 +52,8 @@ class EditMenuItemsNavigationMiddleware(private val navController: NavController
             is ItemsChanged,
             is AttemptedMoveAsSubItem,
             is AttemptedEmptySection,
-            is ExpansionToggled -> Unit
+            is ExpansionToggled,
+            is BackPressed -> Unit
         }
     }
 }

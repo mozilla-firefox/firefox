@@ -12,6 +12,8 @@ import mozilla.components.compose.menu.data.CustomizableMenuItem
 import mozilla.components.compose.menu.data.ExpandableMenuItem
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.StandardMenuItem
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.BackPressed
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuItemsState
 import mozilla.components.compose.menu.store.CustomizableMenuItemsStore
@@ -203,6 +205,30 @@ class EditMenuItemsTelemetryMiddlewareTest {
             hiddenItems = emptyList(),
             moreItems = emptyList(),
         )
+    }
+
+    @Test
+    fun `WHEN the user taps preview THEN record it with the section id`() {
+        val store = createStore()
+        assertNull(CustomizeMenu.editItemsPreviewClicked.testGetValue())
+
+        store.dispatch(PreviewClicked)
+
+        val events = CustomizeMenu.editItemsPreviewClicked.testGetValue()
+        assertNotNull(events)
+        assertEquals(TOOLS_GROUP_ID, events.single().extra?.getValue("section"))
+    }
+
+    @Test
+    fun `WHEN the user presses back THEN record it with the section id`() {
+        val store = createStore()
+        assertNull(CustomizeMenu.editItemsBackPressed.testGetValue())
+
+        store.dispatch(BackPressed)
+
+        val events = CustomizeMenu.editItemsBackPressed.testGetValue()
+        assertNotNull(events)
+        assertEquals(TOOLS_GROUP_ID, events.single().extra?.getValue("section"))
     }
 
     private fun createStore(

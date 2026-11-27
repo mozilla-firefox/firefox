@@ -12,6 +12,7 @@ import mozilla.components.compose.menu.data.CustomizableMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedEmptySection
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedMoveAsSubItem
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ExpansionToggled
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
@@ -65,7 +66,8 @@ class EditMenuItemsMiddleware(
             is AttemptedEmptySection -> appStore.dispatch(SnackbarAction.ShowSnackbar(cannotHideLastItemMessage))
             is Update,
             is ExpansionToggled,
-            is PreviewClicked -> Unit
+            is PreviewClicked,
+            is BackPressed -> Unit
         }
     }
 

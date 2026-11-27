@@ -59,4 +59,7 @@ sealed interface CustomizableMenuItemsAction : Action {
 
     /** The user tapped "Preview" on the screen. */
     data object PreviewClicked : CustomizableMenuItemsAction
+
+    /** The user tapped or gestured to go back while in the screen customizing the items of a menu section. */
+    data object BackPressed : CustomizableMenuItemsAction
 }
