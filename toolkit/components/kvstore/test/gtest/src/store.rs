@@ -222,7 +222,11 @@ pub fn renames_corrupt_database_file() {
     let fixture_file_path = std::env::current_dir()
         .expect("current dir")
         .join("kvstore-ok.sqlite");
-    let storage_dir = tempfile::tempdir().expect("should create storage dir");
+    // On Android, the system temporary directory is in the app's cache
+    // directory, which may be purged at any time.
+    let tmp_dir = std::env::temp_dir();
+    std::fs::create_dir_all(&tmp_dir).expect("should create temp dir");
+    let storage_dir = tempfile::tempdir_in(&tmp_dir).expect("should create storage dir");
     let file_path = storage_dir.path().join("kvstore-ok.sqlite");
     std::fs::copy(fixture_file_path, file_path.as_path())
         .expect("should copy database fixture file to storage dir");
