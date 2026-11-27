@@ -205,7 +205,8 @@ static UniquePtr<Pattern> DispatchMakePattern(const PaintState& aState,
                                               uint32_t aOffset);
 static Rect DispatchGetBounds(const PaintState& aState, uint32_t aDepth,
                               uint32_t aOffset);
-static Matrix DispatchGetMatrix(const PaintState& aState, uint32_t aOffset);
+static Matrix DispatchGetMatrix(const PaintState& aState, uint32_t aOffset,
+                                uint32_t* aWrappedPaint = nullptr);
 
 // Variation-data types
 struct Fixed {
@@ -1297,6 +1298,34 @@ struct PaintVarSweepGradient : public PaintSweepGradient {
   }
 };
 
+// Folds aTransform into the pattern's matrix, so that filling with the pattern
+// under an untransformed target gives the same result as filling under
+// aTransform. Returns false if that is not possible.
+static bool ComposePatternTransform(Pattern* aPattern,
+                                    const Matrix& aTransform) {
+  // PaintPatternBase::Paint paints nothing under a singular transform; leave
+  // that case to it.
+  if (aTransform.IsSingular()) {
+    return false;
+  }
+  auto compose = [&](auto* aGradient) {
+    aGradient->mMatrix = aGradient->mMatrix * aTransform;
+    return true;
+  };
+  switch (aPattern->GetType()) {
+    case PatternType::COLOR:
+      return true;
+    case PatternType::LINEAR_GRADIENT:
+      return compose(static_cast<LinearGradientPattern*>(aPattern));
+    case PatternType::RADIAL_GRADIENT:
+      return compose(static_cast<RadialGradientPattern*>(aPattern));
+    case PatternType::CONIC_GRADIENT:
+      return compose(static_cast<ConicGradientPattern*>(aPattern));
+    default:
+      return false;
+  }
+}
+
 struct PaintGlyph {
   enum { kFormat = 10 };
   uint8_t format;
@@ -1313,10 +1342,23 @@ struct PaintGlyph {
     GlyphBuffer buffer{&g, 1};
     // If the paint is a simple fill (rather than a sub-graph of further paint
     // records), we can just use FillGlyphs to render it instead of setting up
-    // a clip.
-    UniquePtr<Pattern> fillPattern =
-        DispatchMakePattern(aState, aOffset + paintOffset);
-    if (fillPattern) {
+    // a clip. Transform records in between are folded into the pattern's
+    // matrix, so that a fill wrapped in transforms takes this path too.
+    Matrix transform;
+    uint32_t patternOffset = aOffset + paintOffset;
+    // Terminates because a wrapped paint always lies at a higher offset.
+    for (;;) {
+      uint32_t wrapped = 0;
+      Matrix matrix = DispatchGetMatrix(aState, patternOffset, &wrapped);
+      if (!wrapped) {
+        break;
+      }
+      transform = matrix * transform;
+      patternOffset = wrapped;
+    }
+
+    UniquePtr<Pattern> fillPattern = DispatchMakePattern(aState, patternOffset);
+    if (fillPattern && ComposePatternTransform(fillPattern.get(), transform)) {
       // On macOS we can't use FillGlyphs because when we render the glyph,
       // Core Text's own color font support may step in and ignore the
       // pattern. So to avoid this, fill the glyph as a path instead.
@@ -2048,7 +2090,11 @@ static UniquePtr<Pattern> DispatchMakePattern(const PaintState& aState,
   return nullptr;
 }
 
-static Matrix DispatchGetMatrix(const PaintState& aState, uint32_t aOffset) {
+// Returns the matrix of the transform paint record at aOffset, or the identity
+// if there is none. For a transform record, *aWrappedPaint (if given) is set
+// to the offset of the paint it applies to, unless it has none.
+static Matrix DispatchGetMatrix(const PaintState& aState, uint32_t aOffset,
+                                uint32_t* aWrappedPaint) {
   if (aOffset >= aState.mCOLRLength) {
     return Matrix();
   }
@@ -2057,11 +2103,17 @@ static Matrix DispatchGetMatrix(const PaintState& aState, uint32_t aOffset) {
   // All paint table formats start with an 8-bit 'format' field.
   uint8_t format = *paint;
 
-#define DO_CASE(T)                                                             \
-  case T::kFormat:                                                             \
-    return aOffset + sizeof(T) <= aState.mCOLRLength                           \
-               ? reinterpret_cast<const T*>(paint)->GetMatrix(aState, aOffset) \
-               : Matrix();
+#define DO_CASE(T)                                             \
+  case T::kFormat: {                                           \
+    if (aOffset + sizeof(T) > aState.mCOLRLength) {            \
+      return Matrix();                                         \
+    }                                                          \
+    const auto* transform = reinterpret_cast<const T*>(paint); \
+    if (aWrappedPaint && transform->paintOffset) {             \
+      *aWrappedPaint = aOffset + transform->paintOffset;       \
+    }                                                          \
+    return transform->GetMatrix(aState, aOffset);              \
+  }
 
   switch (format) {
     DO_CASE_VAR(Transform);

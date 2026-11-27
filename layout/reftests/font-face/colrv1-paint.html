@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<meta charset=utf-8>
+<title>COLRv1Paint.ttf: the glyph named by the query string</title>
+<style>
+@font-face { font-family: COLRv1Paint; src: url("COLRv1Paint.ttf"); }
+div { position: absolute; top: 0; left: 0; font: 100px/1 COLRv1Paint; }
+</style>
+
+<!-- See colrv1-paint-generate.py for what each glyph is. -->
+<div id="test"></div>
+
+<script>
+test.textContent = location.search.substr(1);
+document.fonts.ready.then(() => { document.documentElement.className = ""; });
+</script>

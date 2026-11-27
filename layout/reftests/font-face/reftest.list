@@ -201,6 +201,16 @@ fuzzy(0-128,0-264) == colrv1-07.html colrv1-07-ref.html
 != colrv1-fg-color.html colrv1-fg-color-notref.html
 # Two palettes in one document must not render as one palette.
 != colrv1-palette-cache.html colrv1-palette-cache-notref.html
+# A fill under transforms must match the same fill with the transforms folded
+# into its control points, and must not match the untransformed fill.
+== colrv1-paint.html?B colrv1-paint.html?C
+!= colrv1-paint.html?B colrv1-paint.html?E
+== colrv1-paint.html?D colrv1-paint.html?A
+== colrv1-paint.html?F colrv1-paint.html?G
+== colrv1-paint.html?I colrv1-paint.html?J
+== colrv1-paint.html?K colrv1-paint.html?L
+# A glyph whose paint is not a single pattern, so it is used as a clip.
+== colrv1-paint.html?H colrv1-paint.html?E
 
 == woff2-1.html woff2-1-ref.html
 == woff2-totalsfntsize.html woff2-totalsfntsize-ref.html
