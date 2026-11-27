@@ -1,6 +1,36 @@
 [DEFAULT]
 subsuite = "condprof"
 
+["test_android.py"]
+
+["test_archiver.py"]
+
+["test_changelog.py"]
+
 ["test_check_install.py"]
 
+["test_client_errors.py"]
+
 ["test_client.py"]
+
+["test_creator.py"]
+
+["test_customization.py"]
+
+["test_desktop.py"]
+
+["test_helpers.py"]
+
+["test_main.py"]
+
+["test_metadata.py"]
+
+["test_patch.py"]
+
+["test_progress.py"]
+
+["test_runner_unit.py"]
+
+["test_scenarii.py"]
+
+["test_util.py"]
