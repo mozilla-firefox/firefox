@@ -368,6 +368,11 @@ def create_patch(from_file, to_file, destination_patch):
         # TODO: Potentially don't decompress to_mar files once per thread?
         xz_cmd(("--decompress",), to_file, to_fd.name)
 
+        # zucchini fails to generate a patch if either side is empty, by design
+        if os.path.getsize(from_fd.name) == 0 or os.path.getsize(to_fd.name) == 0:
+            log(f"Empty member, packaging {to_file} in full", "create_patch")
+            return False
+
         args = ["zucchini", "-gen", from_fd.name, to_fd.name, patch_fd.name]
         try:
             subprocess.run(args, check=True)
@@ -376,6 +381,8 @@ def create_patch(from_file, to_file, destination_patch):
             raise Exception(f"Zucchini exited with code: {e.returncode}")
 
         xz_cmd(("--compress", "-7", "-e", "-c"), patch_fd.name, destination_patch)
+
+    return True
 
 
 def make_partial(
@@ -488,19 +495,20 @@ def make_partial(
                     ).returncode
                     != 0
                 ):
-                    # Check for smaller patch or full file size and choose the smaller of the two to package
-                    create_patch(old_file_abs, new_file_abs, f"{patch_file}.patch")
-                    if (
-                        os.stat(f"{patch_file}.patch").st_size
-                        > os.stat(new_file_abs).st_size
-                    ):
-                        make_add_instruction(rel_path, manifest_file)
-                        os.unlink(f"{patch_file}.patch")
-                        shutil.copy2(new_file_abs, patch_file)
-                        archivefiles.append(rel_path)
-                    else:
+                    patch_path = f"{patch_file}.patch"
+                    created = create_patch(old_file_abs, new_file_abs, patch_path)
+                    # Package the smaller between patch and full file
+                    patch_size = os.path.getsize(patch_path) if created else None
+                    new_file_size = os.path.getsize(new_file_abs)
+                    if created and patch_size <= new_file_size:
                         make_patch_instruction(rel_path, manifest_file)
                         archivefiles.append(f"{rel_path}.patch")
+                    else:
+                        if created:
+                            os.unlink(patch_path)
+                        make_add_instruction(rel_path, manifest_file)
+                        shutil.copy2(new_file_abs, patch_file)
+                        archivefiles.append(rel_path)
 
         else:
             remove_array.append(rel_path)
