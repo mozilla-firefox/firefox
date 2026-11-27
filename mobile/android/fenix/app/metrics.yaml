@@ -11073,31 +11073,93 @@ customize_menu:
     metadata:
       tags:
         - MainMenu
-  section_moved:
+  section_hidden:
     type: event
     description: |
-      The user moved a section of the browser menu to another place on the customize menu screen: to another position
-      among the sections marked as showing in the menu, to the ones marked as hidden, out of them or to another
-      position among them. Not recorded when the section is dropped where it was.
+      The user moved a section of the browser menu on the customize menu screen from the sections marked as showing in
+      the menu to the ones marked as hidden. Not recorded when the section cannot be hidden and the move is refused.
     extra_keys:
       section:
         type: string
         description: |
           The name of the moved section. One of: page_controls, reader_view, vpn, tools, library,
           accounts_and_settings, tabs_controls, quit.
-      hidden:
-        type: boolean
+      position:
+        type: quantity
         description: |
-          Whether the section was moved to the sections marked as hidden in the menu, or marked as showing in it.
+          The position of the section after it was moved, among the sections marked as hidden in the menu. Counted from
+          top to bottom, starting at 1, inclusive.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2086548
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2097525
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D346487
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - MainMenu
+  section_unhidden:
+    type: event
+    description: |
+      The user moved a section of the browser menu on the customize menu screen from the sections marked as hidden in
+      the menu back to the ones marked as showing in it.
+    extra_keys:
+      section:
+        type: string
+        description: |
+          The name of the moved section. One of: page_controls, reader_view, vpn, tools, library,
+          accounts_and_settings, tabs_controls, quit.
+      position:
+        type: quantity
+        description: |
+          The position of the section after it was moved, among the sections marked as showing in the menu. Counted
+          from top to bottom, starting at 1, inclusive.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2086548
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2097525
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D346487
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - MainMenu
+  section_reordered:
+    type: event
+    description: |
+      The user moved a section of the browser menu on the customize menu screen to another position among the sections
+      marked as showing in the menu or among the ones marked as hidden, without hiding or showing it. Not recorded when
+      the section is dropped where it was.
+    extra_keys:
+      section:
+        type: string
+        description: |
+          The name of the moved section. One of: page_controls, reader_view, vpn, tools, library,
+          accounts_and_settings, tabs_controls, quit.
       position:
         type: quantity
         description: |
           The position of the section after it was moved, among the sections marked as hidden in the menu if `hidden` is
-          true, among the ones marked as showing in it otherwise. Counted from top to bottom, starting at 1, inclusive.
+          true, among the sections marked as showing in it otherwise. Counted from top to bottom, starting at 1,
+          inclusive.
+      hidden:
+        type: boolean
+        description: |
+          Whether the section was moved among the sections marked as hidden in the menu (true) or among the ones marked
+          as showing in it (false).
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2086548
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2097525
     data_reviews:
       - https://phabricator.services.mozilla.com/D339830
+      - https://phabricator.services.mozilla.com/D346487
     data_sensitivity:
       - interaction
     notification_emails:

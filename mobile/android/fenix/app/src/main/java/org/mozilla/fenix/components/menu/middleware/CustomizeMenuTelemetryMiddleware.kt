@@ -33,14 +33,16 @@ class CustomizeMenuTelemetryMiddleware : Middleware<CustomizableMenuState, Custo
         next: (CustomizableMenuAction) -> Unit,
         action: CustomizableMenuAction,
     ) {
+        val stateBefore = store.state
         // Recreating the screen builds the store again with its previous state, and reads the menu structure again.
-        val isFirstStructureRead = store.state.menuGroups.isEmpty()
+        val isFirstStructureRead = stateBefore.menuGroups.isEmpty()
 
         next(action)
 
         when (action) {
             is Update -> if (isFirstStructureRead) recordShown(action)
-            is MenuStructureChanged -> recordSectionMoved(action)
+            is MenuStructureChanged ->
+                recordSectionMove(action, wasHidden = action.movedGroupId in stateBefore.hiddenGroupIds)
             is BackPressed -> CustomizeMenu.backPressed.record()
             is ResetToDefaultConfirmed -> CustomizeMenu.resetToDefaultClicked.record()
             is PreviewClicked -> CustomizeMenu.previewClicked.record()
@@ -53,17 +55,29 @@ class CustomizeMenuTelemetryMiddleware : Middleware<CustomizableMenuState, Custo
         }
     }
 
-    private fun recordSectionMoved(change: MenuStructureChanged) {
+    private fun recordSectionMove(change: MenuStructureChanged, wasHidden: Boolean) {
         val isHidden = change.movedGroupId in change.hiddenGroupIds
         val sectionsOfSameKind = change.items.filter { (it.id in change.hiddenGroupIds) == isHidden }
+        val position = sectionsOfSameKind.indexOfFirst { it.id == change.movedGroupId } + 1
 
-        CustomizeMenu.sectionMoved.record(
-            CustomizeMenu.SectionMovedExtra(
-                section = change.movedGroupId,
-                hidden = isHidden,
-                position = sectionsOfSameKind.indexOfFirst { it.id == change.movedGroupId } + 1,
-            )
-        )
+        when {
+            isHidden && !wasHidden ->
+                CustomizeMenu.sectionHidden.record(
+                    CustomizeMenu.SectionHiddenExtra(section = change.movedGroupId, position = position)
+                )
+            !isHidden && wasHidden ->
+                CustomizeMenu.sectionUnhidden.record(
+                    CustomizeMenu.SectionUnhiddenExtra(section = change.movedGroupId, position = position)
+                )
+            else ->
+                CustomizeMenu.sectionReordered.record(
+                    CustomizeMenu.SectionReorderedExtra(
+                        section = change.movedGroupId,
+                        position = position,
+                        hidden = isHidden,
+                    )
+                )
+        }
     }
 
     private fun recordShown(update: Update) {

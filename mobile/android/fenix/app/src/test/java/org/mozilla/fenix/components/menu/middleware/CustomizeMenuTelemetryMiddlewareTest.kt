@@ -22,6 +22,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mozilla.fenix.GleanMetrics.CustomizeMenu
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.ACCOUNTS_AND_SETTINGS_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.LIBRARY_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.PAGE_CONTROLS_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.QUIT_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.TABS_CONTROLS_GROUP_ID
@@ -85,27 +86,13 @@ class CustomizeMenuTelemetryMiddlewareTest {
     }
 
     @Test
-    fun `WHEN the user moves a section among the shown sections THEN record its name and its new position counted from 1`() {
+    fun `WHEN the user moves a shown section to the hidden ones THEN record that it was hidden and its position among them`() {
         val store =
             createStore(
-                initialState = CustomizableMenuState(menuGroups = groups(PAGE_CONTROLS_GROUP_ID, TOOLS_GROUP_ID))
+                shown = listOf(PAGE_CONTROLS_GROUP_ID, TOOLS_GROUP_ID, ACCOUNTS_AND_SETTINGS_GROUP_ID),
+                hidden = listOf(QUIT_GROUP_ID),
             )
-        assertNull(CustomizeMenu.sectionMoved.testGetValue())
-
-        store.dispatch(
-            structureChanged(
-                shown = listOf(TOOLS_GROUP_ID, PAGE_CONTROLS_GROUP_ID),
-                movedGroupId = TOOLS_GROUP_ID,
-            )
-        )
-
-        assertSectionMovedRecorded(section = "tools", hidden = false, position = 1)
-        assertNull(CustomizeMenu.shown.testGetValue())
-    }
-
-    @Test
-    fun `WHEN the user moves a section to the removed sections THEN record its name and its new position among them`() {
-        val store = createStore()
+        assertNull(CustomizeMenu.sectionHidden.testGetValue())
 
         store.dispatch(
             structureChanged(
@@ -115,12 +102,20 @@ class CustomizeMenuTelemetryMiddlewareTest {
             )
         )
 
-        assertSectionMovedRecorded(section = "tools", hidden = true, position = 2)
+        assertSectionHiddenRecorded(section = "tools", position = 2)
+        assertNull(CustomizeMenu.sectionUnhidden.testGetValue())
+        assertNull(CustomizeMenu.sectionReordered.testGetValue())
+        assertNull(CustomizeMenu.shown.testGetValue())
     }
 
     @Test
-    fun `WHEN the user moves a section out of the removed sections THEN record its name and its new position among the shown ones`() {
-        val store = createStore()
+    fun `WHEN the user moves a hidden section to the shown ones THEN record that it was unhidden and its position among them`() {
+        val store =
+            createStore(
+                shown = listOf(PAGE_CONTROLS_GROUP_ID, ACCOUNTS_AND_SETTINGS_GROUP_ID),
+                hidden = listOf(TABS_CONTROLS_GROUP_ID, QUIT_GROUP_ID),
+            )
+        assertNull(CustomizeMenu.sectionUnhidden.testGetValue())
 
         store.dispatch(
             structureChanged(
@@ -130,7 +125,101 @@ class CustomizeMenuTelemetryMiddlewareTest {
             )
         )
 
-        assertSectionMovedRecorded(section = "tabs_controls", hidden = false, position = 2)
+        assertSectionUnhiddenRecorded(section = "tabs_controls", position = 2)
+        assertNull(CustomizeMenu.sectionHidden.testGetValue())
+        assertNull(CustomizeMenu.sectionReordered.testGetValue())
+        assertNull(CustomizeMenu.shown.testGetValue())
+    }
+
+    @Test
+    fun `WHEN the user moves a section among the shown sections THEN record that it was reordered and its position counted from 1`() {
+        val store = createStore(shown = listOf(PAGE_CONTROLS_GROUP_ID, TOOLS_GROUP_ID))
+        assertNull(CustomizeMenu.sectionReordered.testGetValue())
+
+        store.dispatch(
+            structureChanged(
+                shown = listOf(TOOLS_GROUP_ID, PAGE_CONTROLS_GROUP_ID),
+                movedGroupId = TOOLS_GROUP_ID,
+            )
+        )
+
+        assertSectionReorderedRecorded(section = "tools", position = 1, hidden = false)
+        assertNull(CustomizeMenu.sectionHidden.testGetValue())
+        assertNull(CustomizeMenu.sectionUnhidden.testGetValue())
+        assertNull(CustomizeMenu.shown.testGetValue())
+    }
+
+    @Test
+    fun `WHEN the user moves an already hidden section to the top of the hidden ones THEN record that it was reordered among the hidden sections`() {
+        val store =
+            createStore(
+                shown = listOf(PAGE_CONTROLS_GROUP_ID),
+                hidden = listOf(QUIT_GROUP_ID, LIBRARY_GROUP_ID),
+            )
+
+        store.dispatch(
+            structureChanged(
+                shown = listOf(PAGE_CONTROLS_GROUP_ID),
+                hidden = listOf(LIBRARY_GROUP_ID, QUIT_GROUP_ID),
+                movedGroupId = LIBRARY_GROUP_ID,
+            )
+        )
+
+        assertSectionReorderedRecorded(section = "library", position = 1, hidden = true)
+        assertNull(CustomizeMenu.sectionHidden.testGetValue())
+        assertNull(CustomizeMenu.sectionUnhidden.testGetValue())
+        assertNull(CustomizeMenu.shown.testGetValue())
+    }
+
+    @Test
+    fun `GIVEN the sections were loaded with a hidden section WHEN the user moves it to the shown ones THEN record that it was unhidden`() {
+        val store = createStore()
+        store.dispatch(
+            update(
+                shown = listOf(PAGE_CONTROLS_GROUP_ID, ACCOUNTS_AND_SETTINGS_GROUP_ID),
+                hidden = listOf(QUIT_GROUP_ID),
+            )
+        )
+
+        store.dispatch(
+            structureChanged(
+                shown = listOf(PAGE_CONTROLS_GROUP_ID, QUIT_GROUP_ID, ACCOUNTS_AND_SETTINGS_GROUP_ID),
+                movedGroupId = QUIT_GROUP_ID,
+            )
+        )
+
+        assertSectionUnhiddenRecorded(section = "quit", position = 2)
+        assertNull(CustomizeMenu.sectionHidden.testGetValue())
+        assertNull(CustomizeMenu.sectionReordered.testGetValue())
+    }
+
+    @Test
+    fun `WHEN the user hides a section and then moves it among the hidden ones THEN record one hide and one reorder`() {
+        val store =
+            createStore(
+                shown = listOf(PAGE_CONTROLS_GROUP_ID, TOOLS_GROUP_ID),
+                hidden = listOf(QUIT_GROUP_ID),
+            )
+
+        store.dispatch(
+            structureChanged(
+                shown = listOf(PAGE_CONTROLS_GROUP_ID),
+                hidden = listOf(QUIT_GROUP_ID, TOOLS_GROUP_ID),
+                movedGroupId = TOOLS_GROUP_ID,
+            )
+        )
+        store.dispatch(
+            structureChanged(
+                shown = listOf(PAGE_CONTROLS_GROUP_ID),
+                hidden = listOf(TOOLS_GROUP_ID, QUIT_GROUP_ID),
+                movedGroupId = TOOLS_GROUP_ID,
+            )
+        )
+
+        assertSectionHiddenRecorded(section = "tools", position = 2)
+        assertSectionReorderedRecorded(section = "tools", position = 1, hidden = true)
+        assertNull(CustomizeMenu.sectionUnhidden.testGetValue())
+        assertNull(CustomizeMenu.shown.testGetValue())
     }
 
     @Test
@@ -178,6 +267,15 @@ class CustomizeMenuTelemetryMiddlewareTest {
     private fun createStore(initialState: CustomizableMenuState = CustomizableMenuState(emptyList())) =
         CustomizableMenuStore(initialState = initialState, middleware = listOf(CustomizeMenuTelemetryMiddleware()))
 
+    private fun createStore(shown: List<String>, hidden: List<String> = emptyList()) =
+        createStore(
+            initialState =
+                CustomizableMenuState(
+                    menuGroups = groups(*(shown + hidden).toTypedArray()),
+                    hiddenGroupIds = hidden.toSet(),
+                )
+        )
+
     private fun update(shown: List<String>, hidden: List<String> = emptyList()) =
         Update(
             items = groups(*(shown + hidden).toTypedArray()),
@@ -195,14 +293,32 @@ class CustomizeMenuTelemetryMiddlewareTest {
 
     private fun groups(vararg ids: String) = ids.map { MenuItemsGroup.Row(id = it, items = emptyList()) }
 
-    private fun assertSectionMovedRecorded(section: String, hidden: Boolean, position: Int) {
-        val events = CustomizeMenu.sectionMoved.testGetValue()
+    private fun assertSectionHiddenRecorded(section: String, position: Int) {
+        val events = CustomizeMenu.sectionHidden.testGetValue()
         assertNotNull(events)
 
         val extras = events.single().extra
         assertEquals(section, extras?.getValue("section"))
-        assertEquals(hidden.toString(), extras?.getValue("hidden"))
         assertEquals(position.toString(), extras?.getValue("position"))
+    }
+
+    private fun assertSectionUnhiddenRecorded(section: String, position: Int) {
+        val events = CustomizeMenu.sectionUnhidden.testGetValue()
+        assertNotNull(events)
+
+        val extras = events.single().extra
+        assertEquals(section, extras?.getValue("section"))
+        assertEquals(position.toString(), extras?.getValue("position"))
+    }
+
+    private fun assertSectionReorderedRecorded(section: String, position: Int, hidden: Boolean) {
+        val events = CustomizeMenu.sectionReordered.testGetValue()
+        assertNotNull(events)
+
+        val extras = events.single().extra
+        assertEquals(section, extras?.getValue("section"))
+        assertEquals(position.toString(), extras?.getValue("position"))
+        assertEquals(hidden.toString(), extras?.getValue("hidden"))
     }
 
     private fun assertShownRecorded(shownSections: String, hiddenSections: String) {
