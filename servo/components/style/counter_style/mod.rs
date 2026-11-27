@@ -590,15 +590,25 @@ impl Parse for CounterRanges {
         let ranges = input.parse_comma_separated(|input| {
             let start = parse_bound(context, input)?;
             let end = parse_bound(context, input)?;
-            if let (CounterBound::Integer(s), CounterBound::Integer(e)) = (&start, &end) {
-                // Rejects calc expressions that cannot be resolved at parse time,
-                // since @counter-style descriptors require concrete values.
-                let s = s.resolve();
-                let e = e.resolve();
-                if s.is_none() || e.is_none() || s.unwrap() > e.unwrap() {
-                    return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
-                }
+
+            // Rejects calc expressions that cannot be resolved at parse time,
+            // since @counter-style descriptors require concrete values.
+            match (&start, &end) {
+                (CounterBound::Integer(s), CounterBound::Integer(e)) => {
+                    let s = s.resolve();
+                    let e = e.resolve();
+                    if s.is_none() || e.is_none() || s.unwrap() > e.unwrap() {
+                        return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
+                    }
+                },
+                (CounterBound::Integer(i), _) | (_, CounterBound::Integer(i)) => {
+                    if i.resolve().is_none() {
+                        return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
+                    }
+                },
+                _ => {}
             }
+
             Ok(CounterRange { start, end })
         })?;
 

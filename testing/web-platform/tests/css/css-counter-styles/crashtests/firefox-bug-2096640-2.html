@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="help" href="https://bugzilla.mozilla.org/show_bug.cgi?id=2096640">
+  <meta name="assert" content="A non-parse-time resolvable calc() in a @counter-style range should not crash (rejects range).">
+  <style>
+    @counter-style x { 
+        system: extends decimal; 
+        range: calc(sign(1em)) infinite;
+    }
+  </style>
+</head>
+<body>
+  <ol style="list-style-type: x">
+    <li></li>
+  </ol>
+</body>
+</html>
