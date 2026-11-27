@@ -18,21 +18,18 @@ function is(a, b, msg) {
 
 let init = false;
 onmessage = e => {
-  if (!init) {
-    init = true;
-
-    let runnableStr = `(() => {return (${e.data});})();`;
-    let runnable = eval(runnableStr); // eslint-disable-line no-eval
-    runnable.call(this).then(_ => {
-      opener.postMessage({ type: "finish" }, "*");
-    }).catch(e => {
-      ok(false, e.data);
-    });
-
+  if (init) {
     return;
   }
+  init = true;
 
-  parent.postMessage(e.data, "*");
+  let runnableStr = `(() => {return (${e.data});})();`;
+  let runnable = eval(runnableStr); // eslint-disable-line no-eval
+  runnable.call(this).then(_ => {
+    opener.postMessage({ type: "finish" }, "*");
+  }).catch(e => {
+    ok(false, e.data);
+  });
 }
 
     </script>

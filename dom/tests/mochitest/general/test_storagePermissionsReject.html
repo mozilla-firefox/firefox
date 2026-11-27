@@ -25,7 +25,7 @@ task(async function() {
 
     // Sandboxed iframes should have the null principal, and thus can't access storage
     document.querySelector('iframe').setAttribute('sandbox', 'allow-scripts');
-    await runIFrame("frameStoragePrevented.html#nullprincipal");
+    await runIFrame("frameStoragePrevented.html");
     await runIFrame("frameStorageNullprincipal.sjs");
     document.querySelector('iframe').removeAttribute('sandbox');
 

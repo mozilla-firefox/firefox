@@ -85,10 +85,7 @@ function cacheTest() {
       }
     );
   } catch (e) {
-    ok(
-      location.protocol !== "https:",
-      "WORKER getting caches should not have thrown"
-    );
+    ok(!isSecureContext, "WORKER getting caches should not have thrown");
     workerTest();
   }
 }

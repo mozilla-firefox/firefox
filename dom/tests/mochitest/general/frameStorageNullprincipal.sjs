@@ -1,7 +1,5 @@
-// This is a sjs file which reads in frameStoragePrevented.html, and writes it out as a data: URI, which this page redirects to.
-// This produces a URI with the null principal, which should be unable to access storage.
-// We append the #nullprincipal hash to the end of the data: URI to tell the script that it shouldn't try to spawn a webworker,
-// as it won't be allowed to, as it has a null principal.
+// This is a sjs file which serves frameStoragePrevented.html with a CSP sandbox.
+// This produces a document with the null principal, which should be unable to access storage.
 
 function handleRequest(request, response) {
   // Get the nsIFile for frameStoragePrevented.html
@@ -31,10 +29,7 @@ function handleRequest(request, response) {
     data += str.value;
   } while (read != 0);
 
-  // Write out the file as a data: URI, and redirect to it
-  response.setStatusLine("1.1", 302, "Found");
-  response.setHeader(
-    "Location",
-    "data:text/html," + encodeURIComponent(data) + "#nullprincipal"
-  );
+  response.setHeader("Content-Type", "text/html", false);
+  response.setHeader("Content-Security-Policy", "sandbox allow-scripts", false);
+  response.write(data);
 }

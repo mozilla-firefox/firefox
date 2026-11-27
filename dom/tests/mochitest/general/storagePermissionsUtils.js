@@ -16,6 +16,10 @@ if (inFrame) {
     }
   };
 
+  is = function (a, b, message) {
+    ok(a === b, `${message} - got ${a}, expected ${b}`);
+  };
+
   finishTest = function () {
     parent.postMessage("done", "http://mochi.test:8888");
   };
@@ -86,12 +90,18 @@ function chromePower(allowed, blockSessionStorage) {
     ok(blockSessionStorage, "getting sessionStorage from chrome threw");
   }
 
-  // indexedDB is affected by storage policy.
+  // indexedDB is affected by storage policy. Deleting a database rather than
+  // opening one leaves nothing behind when it is allowed.
   try {
-    SpecialPowers.wrap(window).indexedDB;
-    ok(allowed, "getting indexedDB from chrome didn't throw");
+    SpecialPowers.wrap(window).indexedDB.deleteDatabase("chromePower");
+    ok(allowed, "deleting an indexedDB database from chrome didn't throw");
   } catch (e) {
-    ok(!allowed, "getting indexedDB from chrome threw");
+    ok(!allowed, "deleting an indexedDB database from chrome threw");
+    is(
+      e.name,
+      "SecurityError",
+      "deleting indexedDB database from chrome emitted a security error"
+    );
   }
 
   // Same with caches, along with the additional https-only requirement.
@@ -194,7 +204,7 @@ function storageAllowed() {
       };
     });
   } catch (e) {
-    ok(location.protocol !== "https:", "getting caches should not have thrown");
+    ok(!isSecureContext, "getting caches should not have thrown");
     return Promise.resolve();
   }
 }
@@ -288,7 +298,7 @@ function storagePrevented() {
       );
     });
   } catch (e) {
-    ok(location.protocol !== "https:", "getting caches should not have thrown");
+    ok(!isSecureContext, "getting caches should not have thrown");
 
     return Promise.resolve();
   }

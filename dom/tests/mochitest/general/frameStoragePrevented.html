@@ -10,9 +10,8 @@
     // We shouldn't be able to access storage
     await storagePrevented();
 
-    // This hash of the URI is set to #nullprincipal by the test if the current page has a null principal,
-    // and thus attempting to create a dedicated worker will throw
-    if (location.hash == "#nullprincipal") {
+    // A page with a null principal can't create a dedicated worker.
+    if (origin == "null") {
       function createWorker() {
         return new Promise((resolve, reject) => {
           var w;
