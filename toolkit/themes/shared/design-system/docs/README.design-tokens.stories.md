@@ -130,7 +130,7 @@ The generator reads `src/tokens/base/` and the directories listed in `COMPONENT_
 
 A `comment` next to a token's `value` is written as a CSS comment above every declaration of that token, in every layer it is declared in, forced colors and Nova included. A comment about one side's value, such as how a light-mode literal was derived, then sits above the other layers' declarations too, so put such a derivation in the commit message instead. A `comment` inside a `nova` block stays in the JSON and isn't written to the CSS.
 
-Adding one token legitimately dirties four generated files: the component sheet, plus `dist/semantic-categories.mjs`, `dist/tokens-table.mjs` and `dist/tokens-figma-primitives.json`. That is propagation rather than drift - confirm it by checking that each hunk names your token.
+Adding one token legitimately dirties four generated files: the component sheet, plus `dist/semantic-categories.mjs`, `dist/tokens-table.mjs` and `dist/tokens-figma-primitives.json`. A token with a `prefersContrast` or `forcedColors` value also dirties `dist/high-contrast-tokens.mjs`. That is propagation rather than drift - confirm it by checking that each hunk names your token.
 
 ### Naming
 
