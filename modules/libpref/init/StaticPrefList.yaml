@@ -11389,14 +11389,6 @@
   mirror: always
   rust: true
 
-# Is support for CSS calc() typed arithmetic (unit multiplication/division) enabled?
-# https://drafts.csswg.org/css-values-4/#calc-type-checking
-- name: layout.css.calc-typed-arithmetic.enabled
-  type: RelaxedAtomicBool
-  value: true
-  mirror: always
-  rust: true
-
 # Is support for fit-content() enabled?
 - name: layout.css.fit-content-function.enabled
   type: RelaxedAtomicBool

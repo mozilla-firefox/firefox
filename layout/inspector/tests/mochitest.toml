@@ -2,7 +2,6 @@
 prefs = [
   "layout.css.at-scope.enabled=true",
   "layout.css.basic-shape-shape.enabled=true",
-  "layout.css.calc-typed-arithmetic.enabled=true",
   "layout.css.progress-function.enabled=true",
   "layout.css.properties-and-values.enabled=true",
   "layout.css.random.enabled=true",

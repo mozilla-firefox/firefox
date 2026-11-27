@@ -427,10 +427,6 @@ pub enum GenericCalcNode<L> {
 
 pub use self::GenericCalcNode as CalcNode;
 
-fn typed_arithmetic_enabled() -> bool {
-    crate::pref!("layout.css.calc-typed-arithmetic.enabled")
-}
-
 /// The non-mixed types that a math function can return. Note that
 /// <integer> is not represented in this list as a separate type from
 /// <number>, as "math functions that resolve to <number> can be used
@@ -721,13 +717,6 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
 
                 for child in children.iter().skip(1) {
                     let child_ty = child.numeric_type()?;
-
-                    // When typed arithmetic is not enabled, at most one side of the multiplication
-                    // operation can have a non-number type.
-                    if !typed_arithmetic_enabled() && !ty.is_number() && !child_ty.is_number() {
-                        return Err(());
-                    }
-
                     ty = NumericType::multiply_two_types(&ty, &child_ty)?;
                 }
 
@@ -800,16 +789,9 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                 NumericType::number()
             },
             CalcNode::Invert(c) => {
-                if typed_arithmetic_enabled() {
-                    let mut ty = c.numeric_type()?;
-                    ty.invert();
-                    ty
-                } else {
-                    if c.numeric_type_as_calc_type()? != CalcType::Number {
-                        return Err(());
-                    }
-                    NumericType::number()
-                }
+                let mut ty = c.numeric_type()?;
+                ty.invert();
+                ty
             },
             CalcNode::Sqrt(c) | CalcNode::Exp(c) => {
                 if c.numeric_type_as_calc_type()? != CalcType::Number {
@@ -1305,9 +1287,6 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
             },
             Self::Invert(child) => {
                 let (value, mut ty) = child.resolve_internal(leaf_to_output_fn)?;
-                if !typed_arithmetic_enabled() && !ty.is_number() {
-                    return Err(());
-                }
                 ty.invert();
                 Ok((1.0 / value, ty))
             },
@@ -1327,13 +1306,6 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
 
                 for child in children.iter().skip(1) {
                     let (leaf, leaf_ty) = child.resolve_internal(leaf_to_output_fn)?;
-
-                    // When typed arithmetic is not enabled, at most one side of the multiplication
-                    // operation can have a non-number type.
-                    if !typed_arithmetic_enabled() && !ty.is_number() && !leaf_ty.is_number() {
-                        return Err(());
-                    }
-
                     value *= leaf;
                     ty = NumericType::multiply_two_types(&ty, &leaf_ty)?;
                 }
@@ -2206,52 +2178,50 @@ impl<L: CalcNodeLeaf> CalcNode<L> {
                     return SimplificationResult::Simplified;
                 }
 
-                if typed_arithmetic_enabled() {
-                    // "If root contains only numeric values and/or Invert nodes containing numeric values,
-                    // and multiplying the types of all the children (noting that the type of an Invert
-                    // node is the inverse of its child’s type) results in a type that matches any of the
-                    // types that a math function can resolve to, return the result of multiplying all the
-                    // values of the children (noting that the value of an Invert node is the reciprocal of
-                    // its child’s value), expressed in the result’s canonical unit."
-                    //
-                    // https://drafts.csswg.org/css-values-4/#simplify-a-calculation-tree
-                    let mut result = 1.0;
-                    let mut ty = Ok(NumericType::number());
+                // "If root contains only numeric values and/or Invert nodes containing numeric values,
+                // and multiplying the types of all the children (noting that the type of an Invert
+                // node is the inverse of its child’s type) results in a type that matches any of the
+                // types that a math function can resolve to, return the result of multiplying all the
+                // values of the children (noting that the value of an Invert node is the reciprocal of
+                // its child’s value), expressed in the result’s canonical unit."
+                //
+                // https://drafts.csswg.org/css-values-4/#simplify-a-calculation-tree
+                let mut result = 1.0;
+                let mut ty = Ok(NumericType::number());
 
-                    for child in children.iter() {
-                        let (leaf, is_inverted) = match child {
-                            Self::Leaf(leaf) => (leaf, false),
-                            Self::Invert(inner) if inner.as_leaf().is_some() => {
-                                (inner.as_leaf().unwrap(), true)
-                            },
-                            _ => {
-                                ty = Err(());
-                                break;
-                            },
-                        };
-
-                        // Only multiply values that are in that type's canonical unit.
-                        let Some(value) = leaf.canonical_value() else {
+                for child in children.iter() {
+                    let (leaf, is_inverted) = match child {
+                        Self::Leaf(leaf) => (leaf, false),
+                        Self::Invert(inner) if inner.as_leaf().is_some() => {
+                            (inner.as_leaf().unwrap(), true)
+                        },
+                        _ => {
                             ty = Err(());
                             break;
-                        };
-                        let (multiplicand, child_ty) = if is_inverted {
-                            let mut ty = leaf.numeric_type();
-                            ty.invert();
-                            (1.0 / value, ty)
-                        } else {
-                            (value, leaf.numeric_type())
-                        };
+                        },
+                    };
 
-                        result *= multiplicand;
-                        ty = ty.and_then(|ty| NumericType::multiply_two_types(&ty, &child_ty));
-                    }
+                    // Only multiply values that are in that type's canonical unit.
+                    let Some(value) = leaf.canonical_value() else {
+                        ty = Err(());
+                        break;
+                    };
+                    let (multiplicand, child_ty) = if is_inverted {
+                        let mut ty = leaf.numeric_type();
+                        ty.invert();
+                        (1.0 / value, ty)
+                    } else {
+                        (value, leaf.numeric_type())
+                    };
 
-                    if let Ok(leaf) = ty.and_then(|ty| L::new_from_typed_value(result, ty)) {
-                        let mut result = Self::Leaf(leaf);
-                        replace_self_with!(&mut result);
-                        return SimplificationResult::Simplified;
-                    }
+                    result *= multiplicand;
+                    ty = ty.and_then(|ty| NumericType::multiply_two_types(&ty, &child_ty));
+                }
+
+                if let Ok(leaf) = ty.and_then(|ty| L::new_from_typed_value(result, ty)) {
+                    let mut result = Self::Leaf(leaf);
+                    replace_self_with!(&mut result);
+                    return SimplificationResult::Simplified;
                 }
 
                 // Else put our simplified children back.
