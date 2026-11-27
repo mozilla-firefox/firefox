@@ -1653,6 +1653,26 @@ void LIRGenerator::visitSameValue(MSameValue* ins) {
   assignSafepoint(lir, ins);
 }
 
+// Reorder to get the (and lhs (not input)) shape.
+static MDefinition* MaybeReorderBitNotInputEmittedAtUse(MDefinition** lhsp,
+                                                        MDefinition* rhs,
+                                                        JSOp op) {
+  if (op != JSOp::BitAnd) {
+    return nullptr;
+  }
+
+  MDefinition* lhs = *lhsp;
+
+  if (rhs->isEmittedAtUses() && rhs->isBitNot()) {
+    return rhs->toBitNot()->input();
+  }
+  if (lhs->isEmittedAtUses() && lhs->isBitNot()) {
+    *lhsp = rhs;
+    return lhs->toBitNot()->input();
+  }
+  return nullptr;
+}
+
 void LIRGenerator::lowerBitOp(JSOp op, MBinaryInstruction* ins) {
   MDefinition* lhs = ins->getOperand(0);
   MDefinition* rhs = ins->getOperand(1);
@@ -1661,6 +1681,13 @@ void LIRGenerator::lowerBitOp(JSOp op, MBinaryInstruction* ins) {
   if (ins->type() == MIRType::Int32) {
     MOZ_ASSERT(lhs->type() == MIRType::Int32);
     MOZ_ASSERT(rhs->type() == MIRType::Int32);
+    if (MDefinition* input =
+            MaybeReorderBitNotInputEmittedAtUse(&lhs, rhs, op)) {
+      auto* lir = new (alloc())
+          LBitAndNotI(useRegisterAtStart(lhs), useRegisterAtStart(input));
+      define(lir, ins);
+      return;
+    }
     ReorderCommutative(&lhs, &rhs, ins);
     if (lowerForALUWithShiftedOperand(op, ins, lhs, rhs)) {
       return;
@@ -1672,6 +1699,24 @@ void LIRGenerator::lowerBitOp(JSOp op, MBinaryInstruction* ins) {
   if (ins->type() == MIRType::Int64) {
     MOZ_ASSERT(lhs->type() == MIRType::Int64);
     MOZ_ASSERT(rhs->type() == MIRType::Int64);
+    if (MDefinition* input =
+            MaybeReorderBitNotInputEmittedAtUse(&lhs, rhs, op)) {
+#if defined(JS_NUNBOX32)
+      // We process upper and lower lane separately, so avoid overwriting.
+      auto* lir = new (alloc()) LBitAndNotI64(
+          useInt64RegisterAtStart(lhs), willHaveDifferentLIRNodes(lhs, input)
+                                            ? useInt64Register(input)
+                                            : useInt64RegisterAtStart(input));
+      defineInt64ReuseInput(lir, ins, 0);
+#elif defined(JS_PUNBOX64)
+      auto* lir = new (alloc()) LBitAndNotI64(useInt64RegisterAtStart(lhs),
+                                              useInt64RegisterAtStart(input));
+      defineInt64(lir, ins);
+#else
+#  error expected either JS_NUNBOX32 or JS_PUNBOX64
+#endif
+      return;
+    }
     ReorderCommutative(&lhs, &rhs, ins);
     lowerForALUInt64(new (alloc()) LBitOpI64(op), ins, lhs, rhs);
     return;
@@ -1758,7 +1803,41 @@ void LIRGenerator::visitToPropertyKeyCache(MToPropertyKeyCache* ins) {
   assignSafepoint(lir, ins);
 }
 
+static bool CanFoldBitNotIntoUse(MDefinition* bitNot) {
+  if (!MacroAssembler::SupportsAndNot()) {
+    return false;
+  }
+
+  if (!bitNot->canEmitAtUses() || !bitNot->hasOneUse()) {
+    return false;
+  }
+  MNode* node = bitNot->usesBegin()->consumer();
+  if (!node->isDefinition() || !node->toDefinition()->isInstruction()) {
+    return false;
+  }
+  MInstruction* use = node->toDefinition()->toInstruction();
+  if (use->block() != bitNot->block() || use->isRecoveredOnBailout()) {
+    return false;
+  }
+  if (use->type() != bitNot->type() ||
+      !(use->type() == MIRType::Int32 || use->type() == MIRType::Int64)) {
+    return false;
+  }
+
+  return use->isBitAnd() || (use->isWasmBinaryBitwise() &&
+                             use->toWasmBinaryBitwise()->subOpcode() ==
+                                 MWasmBinaryBitwise::SubOpcode::And);
+}
+
 void LIRGenerator::visitBitNot(MBitNot* ins) {
+  // Sniff out if the output of this bitnot is used only for a bitand.
+  // If it is, then we will emit an LBitAndNot instruction in place
+  // of this bitnot.
+  if (CanFoldBitNotIntoUse(ins)) {
+    emitAtUses(ins);
+    return;
+  }
+
   MDefinition* input = ins->getOperand(0);
 
   if (ins->type() == MIRType::Int32) {

@@ -22460,6 +22460,16 @@ void CodeGenerator::visitRandom(LRandom* ins) {
   }
 }
 
+void CodeGenerator::visitBitAndNotI(LBitAndNotI* lir) {
+  masm.andNot32(ToRegister(lir->lhs()), ToRegister(lir->rhs()),
+                ToRegister(lir->output()));
+}
+
+void CodeGenerator::visitBitAndNotI64(LBitAndNotI64* lir) {
+  masm.andNot64(ToRegister64(lir->lhs()), ToRegister64(lir->rhs()),
+                ToOutRegister64(lir));
+}
+
 void CodeGenerator::visitSignExtendInt32(LSignExtendInt32* ins) {
   Register input = ToRegister(ins->input());
   Register output = ToRegister(ins->output());

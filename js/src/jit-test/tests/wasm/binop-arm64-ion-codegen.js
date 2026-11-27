@@ -316,6 +316,40 @@ codegenTestARM64_adhoc(
 assertEq(wasmEvalText(subneg64).exports.f(-37000000000n), 37000000000n)
 assertEq(wasmEvalText(subneg64).exports.f(42000000000n), -42000000000n)
 
+// An AND with a complemented operand is fused into a single BIC.
+
+codegenTestARM64_adhoc(
+    `(module
+       (func (export "f") (param i64 i64) (result i64)
+         (i64.and (local.get 0)
+                  (i64.xor (local.get 1) (i64.const -1)))))`,
+    "f",
+    `bic     x0, x0, x1`);
+
+codegenTestARM64_adhoc(
+    `(module
+       (func (export "f") (param i64 i64) (result i64)
+         (i64.and (i64.xor (local.get 1) (i64.const -1))
+                  (local.get 0))))`,
+    "f",
+    `bic     x0, x0, x1`);
+
+codegenTestARM64_adhoc(
+    `(module
+       (func (export "f") (param i32 i32) (result i32)
+         (i32.and (local.get 0)
+                  (i32.xor (local.get 1) (i32.const -1)))))`,
+    "f",
+    `bic     w0, w0, w1`);
+
+codegenTestARM64_adhoc(
+    `(module
+       (func (export "f") (param i32 i32) (result i32)
+         (i32.and (i32.xor (local.get 1) (i32.const -1))
+                  (local.get 0))))`,
+    "f",
+    `bic     w0, w0, w1`);
+
 // Test that select does something reasonable and does not tie its output to one
 // of its inputs.
 

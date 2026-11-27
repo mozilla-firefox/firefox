@@ -241,6 +241,42 @@ codegenTestX64_adhoc(
 assertEq(wasmEvalText(subneg64).exports.f(-37000000000n), 37000000000n)
 assertEq(wasmEvalText(subneg64).exports.f(42000000000n), -42000000000n)
 
+// When BMI1 is available, an AND with a complemented operand is fused into a single ANDN.
+
+if (isBmiPresent(1)) {
+    codegenTestX64_adhoc_call(
+        `(module
+           (func (export "f") (param i64 i64) (result i64)
+             (i64.and (local.get 0)
+                      (i64.xor (local.get 1) (i64.const -1)))))`,
+        "f",
+        `andn %rdi, %rsi, %rax`);
+
+    codegenTestX64_adhoc_call(
+        `(module
+           (func (export "f") (param i64 i64) (result i64)
+             (i64.and (i64.xor (local.get 1) (i64.const -1))
+                      (local.get 0))))`,
+        "f",
+        `andn %rdi, %rsi, %rax`);
+
+    codegenTestX64_adhoc_call(
+        `(module
+           (func (export "f") (param i32 i32) (result i32)
+             (i32.and (local.get 0)
+                      (i32.xor (local.get 1) (i32.const -1)))))`,
+        "f",
+        `andn %edi, %esi, %eax`);
+
+    codegenTestX64_adhoc_call(
+        `(module
+           (func (export "f") (param i32 i32) (result i32)
+             (i32.and (i32.xor (local.get 1) (i32.const -1))
+                      (local.get 0))))`,
+        "f",
+        `andn %edi, %esi, %eax`);
+}
+
 // AND{32,64} followed by `== 0`: check the two operations are merged into a
 // single 'test' insn, and no 'and' insn.  The merging isn't done for
 // {OR,XOR}{32,64}.  This is for both arguments being non-constant.

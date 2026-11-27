@@ -114,6 +114,40 @@ codegenTestLOONG64_adhoc(
     `bstrpick\\.d   \\$a0, \\$a0, 0x3f, 0x10
      slli.d         \\$a0, \\$a0, 0x10`);
 
+// An AND with a complemented operand is fused into a single ANDN.
+
+codegenTestLOONG64_adhoc(
+    `(module
+       (func (export "f") (param i64 i64) (result i64)
+         (i64.and (local.get 0)
+                  (i64.xor (local.get 1) (i64.const -1)))))`,
+    "f",
+    `andn           \\$a0, \\$a0, \\$a1`);
+
+codegenTestLOONG64_adhoc(
+    `(module
+       (func (export "f") (param i64 i64) (result i64)
+         (i64.and (i64.xor (local.get 1) (i64.const -1))
+                  (local.get 0))))`,
+    "f",
+    `andn           \\$a0, \\$a0, \\$a1`);
+
+codegenTestLOONG64_adhoc(
+    `(module
+       (func (export "f") (param i32 i32) (result i32)
+         (i32.and (local.get 0)
+                  (i32.xor (local.get 1) (i32.const -1)))))`,
+    "f",
+    `andn           \\$a0, \\$a0, \\$a1`);
+
+codegenTestLOONG64_adhoc(
+    `(module
+       (func (export "f") (param i32 i32) (result i32)
+         (i32.and (i32.xor (local.get 1) (i32.const -1))
+                  (local.get 0))))`,
+    "f",
+    `andn           \\$a0, \\$a0, \\$a1`);
+
 // Test that signed comparisons against negative constants use SLTI directly.
 
 codegenTestLOONG64_adhoc(

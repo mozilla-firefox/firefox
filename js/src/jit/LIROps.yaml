@@ -964,6 +964,18 @@
   extra_name: true
   defer_init: true
 
+- name: BitAndNotI
+  result_type: WordSized
+  operands:
+    lhs: WordSized
+    rhs: WordSized
+
+- name: BitAndNotI64
+  result_type: Int64
+  operands:
+    lhs: Int64
+    rhs: Int64
+
 - name: ShiftI
   doc: |
     Shift operation, taking two 32-bit integers as inputs and returning
