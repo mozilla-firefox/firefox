@@ -1052,8 +1052,8 @@ nsresult EventDispatcher::Dispatch(EventTarget* aTarget,
     }
   }
 
-#ifdef DEBUG
   if (NS_IsMainThread() && aEvent->mMessage != eVoidEvent &&
+      StaticPrefs::dom_events_check_safe_to_run_script() &&
       !nsContentUtils::IsSafeToRunScript()) {
     static const auto warn = [](bool aIsSystem) {
       if (aIsSystem) {
@@ -1077,10 +1077,12 @@ nsresult EventDispatcher::Dispatch(EventTarget* aTarget,
         warn(nsContentUtils::IsChromeDoc(doc));
       }
     } else if (nsCOMPtr<nsIGlobalObject> global = target->GetRelevantGlobal()) {
-      warn(global->PrincipalOrNull()->IsSystemPrincipal());
+      nsIPrincipal* principal = global->PrincipalOrNull();
+      warn(principal && principal->IsSystemPrincipal());
     }
   }
 
+#ifdef DEBUG
   if (aDOMEvent) {
     WidgetEvent* innerEvent = aDOMEvent->WidgetEventPtr();
     NS_ASSERTION(innerEvent == aEvent,

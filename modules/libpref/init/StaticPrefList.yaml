@@ -3247,6 +3247,17 @@
   value: true
   mirror: always
 
+# Whether EventDispatcher::Dispatch crashes if script is not safe to run when
+# dispatching an event.
+- name: dom.events.check_safe_to_run_script
+  type: bool
+#ifdef DEBUG
+  value: true
+#else
+  value: false
+#endif
+  mirror: always
+
 # Whether to expose execCommand("paste") to web content.
 - name: dom.execCommand.paste.enabled
   type: bool
