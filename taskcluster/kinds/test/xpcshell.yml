@@ -114,11 +114,12 @@ xpcshell:
             linux2404-64-asan/opt: 2
             linux2404-64-ccov/opt: 4
             linux2404-64-tsan/opt: 3
-            linux2404-64/debug: 2
+            linux2404-64(-artifact)?/debug: 2
             linux2204-64-wayland/debug: 2
             macosx1015-64.*: 6
             macosx1470-64/debug: 6
             macosx1470-64.*/opt: 4
+            macosx1500-.*/debug: 2
             windows.*/debug: 2
             windows11-64-(24h2|25h2)-asan/opt: 2
             windows11-64-(24h2|25h2)-ccov/opt: 3
