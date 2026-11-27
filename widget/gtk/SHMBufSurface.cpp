@@ -435,5 +435,16 @@ already_AddRefed<DMABufSurface> SHMBufSurfaceYUV::UploadToDMABufSurface(
     return nullptr;
   }
 
-  return DMABufSurfaceYUV::CreateYUVSurface(aGLContext, this);
+  RefPtr<DMABufSurfaceYUV> surface =
+      DMABufSurfaceYUV::CreateYUVSurface(aGLContext, this);
+  if (!surface) {
+    LOGDMABUF("  failed to create DMABuf surface!");
+    return nullptr;
+  }
+  surface->SetYUVColorSpace(mColorSpace);
+  surface->SetColorPrimaries(mColorPrimaries);
+  surface->SetTransferFunction(mTransferFunction);
+  surface->SetColorRange(mColorRange);
+  surface->SetHDRMetadata(mHDRMetadata);
+  return surface.forget();
 }
