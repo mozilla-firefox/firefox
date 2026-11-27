@@ -64,10 +64,6 @@
     <!-- Layers -->
     <!-- Card background, Menu background, Dialog, Banner -->
     <color name="fx_mobile_layer_color_2">@color/novaWhite</color>
-    <!-- Warning background -->
-    <color name="fx_mobile_layer_color_warning">@color/photonYellow20</color>
-    <!-- Error background -->
-    <color name="fx_mobile_layer_color_critical">@color/photonRed10</color>
 
     <!-- Action -->
     <!-- Primary button in a disabled state-->
@@ -283,8 +279,8 @@
     <color name="mozac_ui_icons_fill" tools:ignore="UnusedResources">@color/fx_mobile_on_surface</color>
 
     <!-- Add-ons colors -->
-    <color name="mozac_feature_addons_messagebar_error_background_color" tools:ignore="UnusedResources">@color/fx_mobile_layer_color_critical</color>
-    <color name="mozac_feature_addons_messagebar_warning_background_color" tools:ignore="UnusedResources">@color/fx_mobile_layer_color_warning</color>
+    <color name="mozac_feature_addons_messagebar_error_background_color" tools:ignore="UnusedResources">@color/fx_mobile_error_container</color>
+    <color name="mozac_feature_addons_messagebar_warning_background_color" tools:ignore="UnusedResources">@color/fx_mobile_warning_container</color>
 
     <!-- Private Mode mask icon circle fill colors for mozac_ic_private_mode_circle_fill_stroke_20 -->
     <color name="mozac_ic_private_mode_circle_fill" tools:ignore="UnusedResources">@color/fx_mobile_icon_private</color>

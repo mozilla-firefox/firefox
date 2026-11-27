@@ -64,10 +64,6 @@
     <!-- Layers -->
     <!-- Card background, Menu background, Dialog, Banner -->
     <color name="fx_mobile_layer_color_2">@color/photonDarkGrey30</color>
-    <!-- Warning background -->
-    <color name="fx_mobile_layer_color_warning">@color/photonYellow70A77</color>
-    <!-- Error background -->
-    <color name="fx_mobile_layer_color_critical">@color/photonPink80</color>
 
     <!-- Action -->
     <!-- Primary button in a disabled state -->
