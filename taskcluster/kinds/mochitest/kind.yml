@@ -210,7 +210,15 @@ tasks:
                         windows.*-64-[^-/]+/debug: ['autoland', 'mozilla-central']
                         windows.*-64-[^-/]+/opt: ['autoland']
                         default: []
-                repeat: []
+                repeat:
+                    by-test-platform:
+                        linux.*-64-shippable/opt: ['mozilla-central']
+                        linux.*-64/debug: ['autoland', 'mozilla-central']
+                        linux.*-64/opt: ['autoland']
+                        windows.*-64-[^-/]+-shippable/opt: ['mozilla-central']
+                        windows.*-64-[^-/]+/debug: ['autoland', 'mozilla-central']
+                        windows.*-64-[^-/]+/opt: ['autoland']
+                        default: []
                 headless:
                     by-test-platform:
                         .*-wayland.*: []

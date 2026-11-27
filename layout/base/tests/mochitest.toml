@@ -278,6 +278,8 @@ support-files = ["file_dynamic_toolbar_max_height.html"]
 ["test_event_target_radius.html"]
 support-files = ["helper_bug1733509.html"]
 skip-if = [
+  "os == 'mac' && repeat", # Bug 2095777
+  "os == 'win' && repeat", # Bug 2095777
   "xorigin", # JavaScript error: resource://specialpowers/SpecialPowersChild.sys.mjs, line 73: SecurityError: Permission denied to access property "windowUtils" on cross-origin object
 ]
 

@@ -250,6 +250,7 @@ skip-if = [
 skip-if = [
   "http2",
   "http3",
+  "os == 'linux' && opt && repeat", # Bug 2098494
 ]
 
 ["test_storagePermissionsRejectForeign.html"]
