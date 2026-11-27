@@ -47,10 +47,7 @@ void IonCompileTask::runTask() {
 }
 
 void IonCompileTask::trace(JSTracer* trc) {
-  if (!mirGen_.runtime->runtimeMatches(trc->runtime())) {
-    return;
-  }
-
+  MOZ_ASSERT(mirGen_.runtime->runtimeMatches(trc->runtime()));
   snapshot_->trace(trc);
 }
 
@@ -100,6 +97,7 @@ static void MoveFinishedTasksToLazyLinkList(
     JSScript* script = task->script();
     MOZ_ASSERT(script->hasBaselineScript());
     script->baselineScript()->setPendingIonCompileTask(rt, script, task);
+    task->removeFrom(rt->jitRuntime()->ionOffThreadList(rt));
     rt->jitRuntime()->ionLazyLinkListAdd(rt, task);
   }
 }
@@ -202,6 +200,7 @@ void jit::FinishOffThreadTask(JSRuntime* runtime,
                               IonCompileTask* task) {
   MOZ_ASSERT(runtime);
   MOZ_ASSERT(CurrentThreadCanAccessRuntime(runtime));
+  MOZ_RELEASE_ASSERT(!task->isInList());
 
   JSScript* script = task->script();
 
@@ -209,11 +208,6 @@ void jit::FinishOffThreadTask(JSRuntime* runtime,
   if (script->baselineScript()->hasPendingIonCompileTask() &&
       script->baselineScript()->pendingIonCompileTask() == task) {
     script->baselineScript()->removePendingIonCompileTask(runtime, script);
-  }
-
-  // If the task is still in one of the helper thread lists, then remove it.
-  if (task->isInList()) {
-    runtime->jitRuntime()->ionLazyLinkListRemove(runtime, task);
   }
 
   // Clean up if compilation did not succeed.
