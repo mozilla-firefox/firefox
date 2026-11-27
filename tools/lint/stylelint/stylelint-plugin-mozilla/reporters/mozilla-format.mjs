@@ -15,7 +15,6 @@ const PROJECT_ROOT = path.resolve(
 );
 
 // These constants help filter the events we care about.
-const ENQUEUE_EVENT_DEPTH = 0;
 const START_EVENT_DEPTH = 0;
 const PASS_EVENT_DEPTH = 4;
 const FAILURE_CODE = "testCodeFailure";
@@ -28,42 +27,14 @@ class MozillaFormatter extends Transform {
     super({ writableObjectMode: true });
     this.passes = 0;
     this.failures = [];
-    this.ruleNameToFilePath = new Map();
     this.currentFilePath = "";
-    this.currentRuleName = "";
   }
   _transform(event, _, callback) {
     let { type, data } = event;
     switch (type) {
-      // Node test runner sends `test:enqueue` events for all files before
-      // running any tests. We use this to build a map of rule name → test file
-      // path so that we can lookup the file path later. This is pretty hack-y
-      // since it relies on the test file name matching the rule name, but the
-      // combination of Node test runner + stylelint-test-rule-node makes it
-      // frustratingly hard to determine which file a test originates from.
-      case "test:enqueue":
-        if (
-          data.nesting === ENQUEUE_EVENT_DEPTH &&
-          !data.file.includes("stylelint-test-rule-node")
-        ) {
-          let relativePath = path.relative(PROJECT_ROOT, data.file);
-          let ruleName = path.basename(
-            relativePath,
-            path.extname(relativePath)
-          );
-          this.ruleNameToFilePath.set(
-            `stylelint-plugin-mozilla/${ruleName}`,
-            relativePath
-          );
-          callback();
-        } else {
-          callback();
-        }
-        break;
       case "test:start":
         if (data.nesting === START_EVENT_DEPTH) {
-          this.currentRuleName = data.name;
-          this.currentFilePath = this.ruleNameToFilePath.get(data.name);
+          this.currentFilePath = path.relative(PROJECT_ROOT, data.entryFile);
           callback(null, `SUITE-START | ${this.currentFilePath}\n`);
         } else {
           callback();
