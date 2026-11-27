@@ -2703,6 +2703,7 @@ class NetworkModule extends RootBiDiModule {
     // Note: this is supposed to be triggered from fetch and doesn't depend on
     // whether network events are used or not.
     this.#cloneNetworkRequestBody(request);
+    this.#maybeCollectNetworkRequestBody(request);
 
     const relatedNavigables = [browsingContext];
     this.#updateRequestHeaders(request, relatedNavigables);
@@ -2714,8 +2715,6 @@ class NetworkModule extends RootBiDiModule {
     });
 
     if (isListening) {
-      this.#maybeCollectNetworkRequestBody(request);
-
       const baseParameters = this.#processNetworkEvent(
         protocolEventName,
         request
@@ -2775,6 +2774,8 @@ class NetworkModule extends RootBiDiModule {
       return;
     }
 
+    this.#maybeAbortNetworkResponseBodyCollection(request);
+
     const protocolEventName = "network.fetchError";
 
     const isListening = this._hasListener(protocolEventName, {
@@ -2785,8 +2786,6 @@ class NetworkModule extends RootBiDiModule {
       // bail out.
       return;
     }
-
-    this.#maybeAbortNetworkResponseBodyCollection(request);
 
     const baseParameters = this.#processNetworkEvent(
       protocolEventName,
@@ -2824,6 +2823,8 @@ class NetworkModule extends RootBiDiModule {
 
     if (protocolEventName === "network.responseStarted") {
       this.#cloneNetworkResponseBody(request);
+    } else {
+      this.#maybeCollectNetworkResponseBody(request, response);
     }
 
     const isListening = this._hasListener(protocolEventName, {
@@ -2833,10 +2834,6 @@ class NetworkModule extends RootBiDiModule {
       // If there are no listeners subscribed to this event and this context,
       // bail out.
       return;
-    }
-
-    if (protocolEventName === "network.responseCompleted") {
-      this.#maybeCollectNetworkResponseBody(request, response);
     }
 
     const baseParameters = this.#processNetworkEvent(
