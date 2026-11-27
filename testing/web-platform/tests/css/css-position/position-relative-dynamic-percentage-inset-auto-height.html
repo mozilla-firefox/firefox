@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<title>Dynamic change of a relatively positioned element's block-axis inset to a percentage, with an auto-height containing block</title>
+<link rel="help" href="https://drafts.csswg.org/css-position-3/#rel-pos">
+<link rel="help" href="https://drafts.csswg.org/css2/#position-props">
+<meta name="assert" content="Percentage insets against an auto-height containing block behave as auto, also after dynamic changes.">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<style>
+  #cb { position: absolute; top: 0; left: 0; width: 100px; }
+  .item { position: relative; height: 50px; top: -1000px; }
+  .on #top-calc { top: calc(100% + 50px); }
+  .on #top-percent { top: 100%; }
+  .on #bottom-percent { top: auto; bottom: 100%; }
+</style>
+<div id="cb">
+  <div class="item" id="top-calc"></div>
+  <div class="item" id="top-percent"></div>
+  <div class="item" id="bottom-percent"></div>
+</div>
+<script>
+  test(() => {
+    const cb = document.getElementById("cb");
+    cb.getBoundingClientRect();
+    cb.classList.add("on");
+    const cbTop = cb.getBoundingClientRect().top;
+    for (const [i, item] of [...cb.children].entries()) {
+      assert_equals(item.getBoundingClientRect().top - cbTop, 50 * i, item.id);
+    }
+  });
+</script>
