@@ -18719,3 +18719,56 @@ session_storage:
       tags:
         - Tabs
         - Performance
+  engine_state_length:
+    type: custom_distribution
+    range_min: 100
+    range_max: 100000000
+    bucket_count: 100
+    histogram_type: exponential
+    unit: characters
+    description: |
+      Number of characters in one tab's saved engine state, a relative measure
+      of how big it is. One sample per valid engine state read from the session
+      file, including tabs then discarded at restore. Also recorded when a tab
+      of a collection is read, including all collection tabs during the
+      one-time migration of collections to tab groups.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2075223
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D341794
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Tabs
+        - Performance
+  history_entries:
+    type: custom_distribution
+    range_min: 1
+    range_max: 60
+    bucket_count: 60
+    histogram_type: linear
+    unit: entries
+    description: |
+      Number of history entries in one tab's saved engine state. One sample
+      per valid engine state read from the session file, including tabs then
+      discarded at restore. Also recorded when a tab of a collection is read,
+      including all collection tabs during the one-time migration of
+      collections to tab groups. Gecko caps this at 50
+      (browser.sessionhistory.max_entries).
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2075223
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D341794
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Tabs
+        - Performance

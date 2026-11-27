@@ -11,6 +11,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyAll
 import kotlin.test.assertNotNull
+import mozilla.components.browser.engine.gecko.facts.GeckoEngineSessionStateFacts
 import mozilla.components.browser.session.storage.facts.SessionStorageFacts
 import mozilla.components.browser.thumbnails.facts.BrowserThumbnailsFacts
 import mozilla.components.compose.browser.awesomebar.AwesomeBarFacts as ComposeAwesomeBarFacts
@@ -1475,6 +1476,29 @@ class MetricControllerTest {
         assertNull(SessionStorage.saveDuration.testGetValue())
         assertNull(SessionStorage.saveFileSize.testGetValue())
         assertNull(SessionStorage.saveBytesPerTab.testGetValue())
+    }
+
+    @Test
+    fun `WHEN engine state restored fact is processed THEN engine state length and history entries are recorded`() {
+        val controller = createReleaseMetricController()
+
+        controller.run {
+            Fact(
+                    component = Component.BROWSER_ENGINE_GECKO,
+                    action = Action.IMPLEMENTATION_DETAIL,
+                    item = GeckoEngineSessionStateFacts.Items.STATE_RESTORED,
+                    metadata =
+                        mapOf(
+                            GeckoEngineSessionStateFacts.Metadata.ENGINE_STATE_LENGTH to 2048,
+                            GeckoEngineSessionStateFacts.Metadata.HISTORY_ENTRIES to 12,
+                        ),
+                )
+                .process()
+        }
+
+        assertEquals(2048L, SessionStorage.engineStateLength.testGetValue()?.sum)
+        assertEquals(1L, SessionStorage.historyEntries.testGetValue()?.count)
+        assertEquals(12L, SessionStorage.historyEntries.testGetValue()?.sum)
     }
 
     @Test

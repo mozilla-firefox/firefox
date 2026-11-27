@@ -7,6 +7,7 @@ package mozilla.components.browser.engine.gecko
 import android.util.JsonReader
 import android.util.JsonWriter
 import java.io.IOException
+import mozilla.components.browser.engine.gecko.facts.emitStateRestoredFact
 import mozilla.components.concept.engine.EngineSessionState
 import org.json.JSONException
 import org.json.JSONObject
@@ -57,7 +58,15 @@ class GeckoEngineSessionState internal constructor(internal val actualState: Gec
 
                 reader.endObject()
 
-                GeckoEngineSessionState(rawState?.let { GeckoSession.SessionState.fromString(it) })
+                val sessionState = rawState?.let { GeckoSession.SessionState.fromString(it) }
+                if (rawState != null && sessionState != null) {
+                    emitStateRestoredFact(
+                        engineStateLength = rawState.length,
+                        historyEntries = sessionState.size,
+                    )
+                }
+
+                GeckoEngineSessionState(sessionState)
             } catch (e: IOException) {
                 GeckoEngineSessionState(null)
             } catch (e: JSONException) {

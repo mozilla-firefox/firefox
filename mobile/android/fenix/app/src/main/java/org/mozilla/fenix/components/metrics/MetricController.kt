@@ -6,6 +6,7 @@ package org.mozilla.fenix.components.metrics
 
 import androidx.annotation.VisibleForTesting
 import java.util.UUID
+import mozilla.components.browser.engine.gecko.facts.GeckoEngineSessionStateFacts
 import mozilla.components.browser.engine.gecko.facts.GeckoEngineViewFacts
 import mozilla.components.browser.session.storage.facts.SessionStorageFacts
 import mozilla.components.browser.thumbnails.facts.BrowserThumbnailsFacts
@@ -526,6 +527,15 @@ internal class ReleaseMetricController(
 
             Component.BROWSER_SESSION_STORAGE to SessionStorageFacts.Items.SAVE -> {
                 recordSessionSave(metadata)
+            }
+
+            Component.BROWSER_ENGINE_GECKO to GeckoEngineSessionStateFacts.Items.STATE_RESTORED -> {
+                (metadata?.get(GeckoEngineSessionStateFacts.Metadata.ENGINE_STATE_LENGTH) as? Number)?.let {
+                    SessionStorage.engineStateLength.accumulateSingleSample(it.toLong())
+                }
+                (metadata?.get(GeckoEngineSessionStateFacts.Metadata.HISTORY_ENTRIES) as? Number)?.let {
+                    SessionStorage.historyEntries.accumulateSingleSample(it.toLong())
+                } ?: Unit
             }
 
             Component.BROWSER_THUMBNAILS to BrowserThumbnailsFacts.Items.CAPTURE_ATTEMPTED -> {
