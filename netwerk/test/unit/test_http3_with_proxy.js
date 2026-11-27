@@ -2,17 +2,96 @@
 
 /* import-globals-from http3_common.js */
 
+const { Http3ProxyFilter } = ChromeUtils.importESModule(
+  "resource://testing-common/NodeServer.sys.mjs"
+);
+
 // Max concurent stream number in neqo is 100.
 // Openning 120 streams will test queuing of streams.
 let number_of_parallel_requests = 120;
 let h3Route;
 let httpsOrigin;
 let h3AltSvc;
+let h3Port;
 let h3ServerDomain;
+let prefs;
+
+let pps = Cc["@mozilla.org/network/protocol-proxy-service;1"].getService();
+let proxyHost;
+let proxyPort;
+let proxyFilter;
 
 add_setup(async function () {
-  ({ h3Route, httpsOrigin, h3AltSvc, h3ServerDomain } =
-    await setup_http3_with_proxy());
+  do_get_profile();
+  let h2Port = await create_h3_fallback_origin();
+  h3Port = await create_h3_server();
+  Assert.notEqual(h3Port, null);
+  Assert.notEqual(h3Port, "");
+  h3AltSvc = ":" + h3Port;
+  h3ServerDomain = "foo.example.com";
+  h3Route = `${h3ServerDomain}:${h3Port}`;
+  prefs = Services.prefs;
+
+  prefs.setBoolPref("network.http.http3.enable", true);
+  // We always resolve elements of localDomains as it's hardcoded without the
+  // following pref:
+  prefs.setBoolPref("network.proxy.allow_hijacking_localhost", true);
+
+  if (mozinfo.os == "android") {
+    // Set necessary prefs to make Firefox connect to the http3Server on the
+    // host machine.
+    prefs.setCharPref("network.dns.localDomains", "");
+    const overrideService = Cc[
+      "@mozilla.org/network/native-dns-override;1"
+    ].getService(Ci.nsINativeDNSResolverOverride);
+    overrideService.addIPOverride(h3ServerDomain, "10.0.2.2");
+    prefs.setCharPref(
+      "network.http.http3.alt-svc-mapping-for-testing",
+      `${h3ServerDomain};h3=:${h3Port}`
+    );
+  } else {
+    prefs.setCharPref(
+      "network.dns.localDomains",
+      "foo.example.com, alt1.example.com"
+    );
+  }
+
+  // The certificate for the http3server server is for foo.example.com and
+  // is signed by http2-ca.pem so add that cert to the trust list as a
+  // signing cert.
+  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
+    Ci.nsIX509CertDB
+  );
+  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
+  addCertFromFile(certdb, "proxy-ca.pem", "CTu,u,u");
+  httpsOrigin = `https://${h3ServerDomain}:${h2Port}/`;
+
+  proxyHost = "alt1.example.com";
+  proxyPort = (await create_masque_proxy_server()).masqueProxyPort;
+  Assert.notEqual(proxyPort, null);
+  Assert.notEqual(proxyPort, "");
+  proxyFilter = new Http3ProxyFilter(
+    proxyHost,
+    proxyPort,
+    0,
+    "/.well-known/masque/udp/{target_host}/{target_port}/",
+    ""
+  );
+  pps.registerFilter(proxyFilter, 10);
+
+  registerCleanupFunction(() => {
+    prefs.clearUserPref("network.http.http3.enable");
+    prefs.clearUserPref("network.dns.localDomains");
+    prefs.clearUserPref("network.proxy.allow_hijacking_localhost");
+    prefs.clearUserPref("network.http.http3.alt-svc-mapping-for-testing");
+    pps.unregisterFilter(proxyFilter);
+    if (mozinfo.os == "android") {
+      const overrideService = Cc[
+        "@mozilla.org/network/native-dns-override;1"
+      ].getService(Ci.nsINativeDNSResolverOverride);
+      overrideService.clearOverrides();
+    }
+  });
 });
 
 add_task(async function test_https_alt_svc() {
@@ -63,12 +142,6 @@ add_task(async function test_patch() {
 
 add_task(async function test_slow_receiver() {
   await do_test_slow_receiver(httpsOrigin, h3Route);
-});
-
-// Uploads enough data through the connect-udp tunnel to fill the outer
-// connection's datagram queue.
-add_task(async function test_large_post_backpressure() {
-  await do_test_large_post_backpressure(httpsOrigin, h3Route, h3ServerDomain);
 });
 
 // This test should be at the end, because it will close http3

@@ -14,7 +14,6 @@
 #include "nsIPipe.h"
 #include "nsNetAddr.h"
 #include "nsProxyInfo.h"
-#include "nsQueryObject.h"
 
 namespace mozilla::net {
 
@@ -68,15 +67,9 @@ void Http3ConnectUDPStream::OnDatagramReceived(nsTArray<uint8_t>&& aData) {
 
   mByteReadCount += aData.Length();
   mReceivedData.Push(std::make_unique<UDPPayload>(std::move(aData)));
-}
-
-void Http3ConnectUDPStream::FlushIncomingDatagrams() {
-  LOG(("Http3ConnectUDPStream::FlushIncomingDatagrams %p", this));
-
-  if (mRecvState == RECV_DONE || mReceivedData.IsEmpty() || !mSyncListener) {
-    return;
+  if (mSyncListener) {
+    mSyncListener->OnPacketReceived(this);
   }
-  mSyncListener->OnPacketReceived(this);
 }
 
 bool Http3ConnectUDPStream::OnActivated() {
@@ -85,17 +78,14 @@ bool Http3ConnectUDPStream::OnActivated() {
   return false;
 }
 
-void Http3ConnectUDPStream::OnOutgoingDatagramSpaceAvailable() {
-  LOG(("Http3ConnectUDPStream::OnOutgoingDatagramSpaceAvailable %p", this));
-  if (!mDatagramSendingPaused) {
-    return;
-  }
-  mDatagramSendingPaused = false;
+nsresult Http3ConnectUDPStream::OnProcessDatagram() {
+  LOG(("Http3ConnectUDPStream::OnProcessDatagram %p", this));
 
-  RefPtr<HttpConnectionUDP> conn = do_QueryObject(mSyncListener);
-  if (conn) {
-    (void)conn->ResumeSend();
+  while (!mOutputData.IsEmpty()) {
+    nsTArray<uint8_t> data = mOutputData.Pop()->TakeData();
+    mSession->SendHTTPDatagram(mStreamId, data, mTrackingId++);
   }
+  return NS_OK;
 }
 
 nsresult Http3ConnectUDPStream::TryActivating() {
@@ -231,34 +221,13 @@ NS_IMETHODIMP Http3ConnectUDPStream::SendWithAddress(
   if (mSendState != PROCESSING_DATAGRAM) {
     return NS_ERROR_NOT_AVAILABLE;
   }
-  if (mDatagramSendingPaused) {
-    return NS_BASE_STREAM_WOULD_BLOCK;
-  }
 
   nsTArray<uint8_t> datagram;
   datagram.AppendElements(data, length);
-  nsresult rv = mSession->SendHTTPDatagram(mStreamId, datagram, mTrackingId++);
-  if (rv == NS_BASE_STREAM_WOULD_BLOCK) {
-    mDatagramSendingPaused = true;
-    return rv;
-  }
-  if (rv == NS_ERROR_NOT_AVAILABLE) {
-    // This error can happen if the outer connection's PMTUD hasn't completed
-    // yet. Let's swallow the error and have the inner connection's retry
-    // mechanisms kick in. Merely propagating the error to the caller would
-    // close the connection.
-    return NS_OK;
-  }
-  if (NS_FAILED(rv)) {
-    return rv;
-  }
+  mOutputData.Push(std::make_unique<UDPPayload>(std::move(datagram)));
   mByteWriteCount += length;
   mSession->StreamHasDataToWrite(this);
-  if (rv == NS_SUCCESS_SENDING_PAUSED) {
-    mDatagramSendingPaused = true;
-    return NS_OK;
-  }
-  return rv;
+  return NS_OK;
 }
 
 NS_IMETHODIMP Http3ConnectUDPStream::SendBinaryStream(const nsACString& host,

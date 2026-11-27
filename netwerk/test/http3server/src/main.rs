@@ -18,7 +18,7 @@ use neqo_http3::{
 use neqo_transport::server::ConnectionRef;
 use neqo_transport::{
     ConnectionEvent, ConnectionParameters, DatagramQueueOutcome, OutputBatch,
-    RandomConnectionIdGenerator, StreamDataLimit, StreamType,
+    RandomConnectionIdGenerator, StreamType,
 };
 use std::env;
 use std::pin::Pin;
@@ -1760,19 +1760,6 @@ fn spawn_server<S: HttpServer + Unpin + 'static>(
     Ok(())
 }
 
-fn masque_proxy_connection_parameters() -> ConnectionParameters {
-    let params = ConnectionParameters::default().pmtud(true);
-    if env::var("MOZ_HTTP3_MASQUE_CAPSULES_ONLY").is_ok() {
-        // The flow-control window is small on purpose, so our tests hit the limit.
-        params
-            .datagram_size(0)
-            .max_stream_data(StreamDataLimit::BiDiRemote, 16 * 1024)
-    } else {
-        // TODO: Restrict in size.
-        params.datagram_size(u16::MAX as u64)
-    }
-}
-
 #[tokio::main]
 async fn main() -> Result<(), io::Error> {
     neqo_common::log::init(None);
@@ -1926,7 +1913,12 @@ async fn main() -> Result<(), io::Error> {
                 cid_mgr,
                 Http3Parameters::default()
                     .max_table_size_encoder(MAX_TABLE_SIZE)
-                    .connection_parameters(masque_proxy_connection_parameters())
+                    .connection_parameters(
+                        ConnectionParameters::default()
+                            // TODO: Restrict in size.
+                            .datagram_size(u16::MAX as u64)
+                            .pmtud(true),
+                    )
                     .max_table_size_decoder(MAX_TABLE_SIZE)
                     .max_blocked_streams(MAX_BLOCKED_STREAMS)
                     .connect(true)
