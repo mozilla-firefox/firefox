@@ -293,6 +293,8 @@
   <string name="browser_menu_passwords">Senhas</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">Fechar menu</string>
+  <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+  <string name="browser_menu_preview_heading_content_description">Exibição prévia do menu. Itens não podem ser ativados aqui.</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">Navegação</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
@@ -355,6 +357,8 @@
   <string name="browser_toolbar_translate">Traduzir página</string>
   <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
   <string name="browser_toolbar_picture_in_picture">Picture-in-picture</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">Fechar picture-in-picture</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">Agite seu dispositivo para resumir esta página em segundos. ⚡️</string>
   <!--
@@ -1183,6 +1187,8 @@
   <string name="preferences_enable_sync_title">Sincronizar este dispositivo</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
   <string name="preferences_enable_sync_summary_sync_enabled">Seus dados são salvos e estão disponíveis nos dispositivos sincronizados.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">Usando dados salvos na sua conta.</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
   <string name="preferences_enable_sync_summary_sync_disabled">Usando dados salvos na sua conta %1$s.</string>
   <!-- Summary for the sync preference category. -->
@@ -1702,6 +1708,8 @@
   <string name="add_to_new_tab_group_content_description">Adicionar a novo grupo de abas</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">Novo grupo de abas</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">Abrir em grupo de abas</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -1744,6 +1752,14 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Excluir grupo</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Cancelar</string>
+  <!-- Title of the confirmation dialog shown when moving the last tab out of a group will delete the group. %s is the group name, which defaults to a value such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_title">Mover a última aba de %s?</string>
+  <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">Esta aba será movida para %1$s. O grupo %2$s será excluído porque ficará vazio.</string>
+  <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">Mover aba</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">Cancelar</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">Mais opções</string>
   <!--
@@ -2114,15 +2130,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">FECHAR</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">Não mostrar novamente</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">NÃO MOSTRAR NOVAMENTE</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">ENVIAR</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">Enviar relatório de falha</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">ENVIAR RELATÓRIO DE FALHA</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">Relatórios de falhas nos ajudam a diagnosticar e resolver problemas relacionados ao navegador. Os relatórios podem conter dados pessoais ou sensíveis. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">Saiba mais</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">Saiba mais</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">SAIBA MAIS</string>
   <!--
     Bookmarks
 
@@ -3116,6 +3138,8 @@
   <string name="ip_protection_learn_more">Saiba mais</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
   <string name="ip_protection_data_limit_label">Limite mensal de dados</string>
+  <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
+  <string name="ip_protection_settings_message_dismiss">Descartar</string>
   <!--
     Data usage shown on the browser VPN settings screen.
     %1$.1f is the data remaining in GB (for example "8.3").
@@ -3183,6 +3207,13 @@
     %2$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
   <string name="ip_protection_onboarding_body_promo">Ative para tornar sua navegação mais privativa e mais difícil de rastrear. Experimente agora para ter dados ilimitados até %1$s. %2$s</string>
+  <!--
+    The body of the VPN onboarding card when the user qualifies for using VPN without signing in to a Mozilla account
+    %1$d is the amount of free data in GB available without signing in (for example "5").
+    %2$d is the amount of data in GB available after signing in (for example "50").
+    %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
+  -->
+  <string name="ip_protection_onboarding_body_no_fxa">Ative para navegar com mais privacidade e dificultar o rastreamento. Experimente com %1$d GB de dados gratuitos, ou entre na conta para ter %2$d GB. %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">Saiba mais</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
@@ -3242,6 +3273,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Salvar e preencher métodos de pagamento</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">O %s criptografa todos os métodos de pagamento que você salva</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Salvar códigos de segurança</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">O %s criptografa o número do cartão e o código de segurança para para agilizar pagamentos</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Sincronizar cartões entre dispositivos</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3278,6 +3313,8 @@
   <string name="credit_cards_expiration_date_year">Ano da data de validade</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Nome no cartão</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">Código de segurança (opcional)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Excluir cartão</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3294,10 +3331,16 @@
   <string name="credit_cards_cancel_button">Cancelar</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Cartões salvos</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">Código de segurança salvo</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Digite um número de cartão válido</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Adicionar um nome</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">O código de segurança deve ter 3 dígitos</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">Os códigos de segurança do American Express têm 4 dígitos</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Desbloqueie para ver seus cartões salvos</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3625,7 +3668,11 @@
     Header text for a section on the home screen.
   -->
   <string name="pocket_stories_header_2">Histórias</string>
-  <!-- Header text for the Stories screen. -->
+  <!--
+    Pocket recommended stories
+
+    Header text for the Stories screen.
+  -->
   <string name="stories_screen_text_news">Notícias</string>
   <!--
     Context description text for the "Discover more" button in the stories home screen section
@@ -3707,6 +3754,12 @@
     %1$s is the size in kilobytes or megabytes of the language file.
   -->
   <string name="translations_download_language_file_dialog_title">Baixar idioma no modo de economia de dados (%1$s)?</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Preferências de tradução</string>
   <!--
     Translations options dialog
 
@@ -3947,6 +4000,8 @@
   <string name="certificate_details_panel_secure_connection_title">Conexão segura</string>
   <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
   <string name="certificate_details_panel_issued_to_label">Certificado emitido para:</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">Verificado por:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">Selo de confiança da UE</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4016,6 +4071,8 @@
   <string name="clear_site_data_dialog_negative_button_text">Cancelar</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">Conexão segura</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">ver detalhes do certificado</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">Conexão não segura</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4526,6 +4583,8 @@
   <string name="wrex_widget_match_suspended">Suspenso</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Adiado</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Cancelado</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">Atualizar</string>
   <!-- Sports widget menu item to view the team's match results. -->

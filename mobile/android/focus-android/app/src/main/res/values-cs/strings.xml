@@ -435,6 +435,10 @@
     indicates that the website uses a QWAC.
   -->
   <string name="qualified_text">Klasifikovaný podle nařízení (EÚ) 2024/1183.</string>
+  <!-- Link in the header of the tracking protection panel when the site is secure. Tapping it opens a page showing the website's certificate details. -->
+  <string name="connection_details_secure_connection_link">Zabezpečené spojení</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the tracking protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_details_view_certificate_details">zobrazit podrobnosti certifikátu</string>
   <!-- Title of the section that contains the website's certificate information (issued to, verified by, etc.) as verified by the browser (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_secure_connection_title">Zabezpečené připojení</string>
   <!-- Label for the organization, locality and country the website's certificate was issued to -->

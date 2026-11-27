@@ -1996,7 +1996,11 @@
   <string name="radio_preference_info_content_description">Күбрәк белү өчен басыгыз</string>
   <!-- Content description for the action bar "up" button -->
   <string name="action_bar_up_description">Югарыга</string>
-  <!-- Header text for the Stories screen. -->
+  <!--
+    Pocket recommended stories
+
+    Header text for the Stories screen.
+  -->
   <string name="stories_screen_text_news">Яңалыклар</string>
   <!-- Text indicating that the Pocket story that also displays this text is a sponsored story by other 3rd party entity. -->
   <string name="pocket_stories_sponsor_indication">Спонсорланган</string>
