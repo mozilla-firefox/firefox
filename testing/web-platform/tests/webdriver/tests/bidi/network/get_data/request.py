@@ -4,6 +4,7 @@ import random
 import pytest
 
 from .. import (
+    BEFORE_REQUEST_SENT_EVENT,
     PAGE_EMPTY_TEXT,
     RESPONSE_STARTED_EVENT,
     RESPONSE_COMPLETED_EVENT,
@@ -105,3 +106,57 @@ async def test_revalidated_cached_document(
         )
         assert data["type"] == "string"
         assert data["value"] == "<html><body>etag HTTP Response</body></html>"
+
+
+async def test_request_without_before_request_sent_subscription(
+    bidi_session,
+    url,
+    wait_for_event,
+    wait_for_future_safe,
+    fetch,
+    setup_network_test,
+    add_data_collector,
+):
+    await add_data_collector(data_types=["request"])
+    await setup_network_test(events=[RESPONSE_COMPLETED_EVENT])
+
+    on_response_completed = wait_for_event(RESPONSE_COMPLETED_EVENT)
+    await fetch(url(PAGE_EMPTY_TEXT), post_data="somedata")
+    event = await wait_for_future_safe(on_response_completed)
+
+    data = await asyncio.wait_for(
+        bidi_session.network.get_data(
+            request=event["request"]["request"], data_type="request"
+        ),
+        timeout=5,
+    )
+
+    assert data["type"] == "string"
+    assert data["value"] == "somedata"
+
+
+async def test_response_without_response_completed_subscription(
+    bidi_session,
+    url,
+    wait_for_event,
+    wait_for_future_safe,
+    fetch,
+    setup_network_test,
+    add_data_collector,
+):
+    await add_data_collector(data_types=["response"])
+    await setup_network_test(events=[BEFORE_REQUEST_SENT_EVENT])
+
+    on_before_request_sent = wait_for_event(BEFORE_REQUEST_SENT_EVENT)
+    await fetch(url(PAGE_EMPTY_TEXT))
+    event = await wait_for_future_safe(on_before_request_sent)
+
+    data = await asyncio.wait_for(
+        bidi_session.network.get_data(
+            request=event["request"]["request"], data_type="response"
+        ),
+        timeout=5,
+    )
+
+    assert data["type"] == "string"
+    assert data["value"] == "empty\n"
