@@ -349,3 +349,42 @@ addAccessibleTask(
   },
   { topLevel: true, chrome: true }
 );
+
+/**
+ * Test that image alternative text is included in the combobox value and
+ * listbox option name, and updates when it changes.
+ */
+addAccessibleTask(
+  `
+<select id="combobox">
+  <option id="comboboxOption">a<img id="comboboxImg" alt="b">c</option>
+</select>
+<select id="listbox" size="2">
+  <option id="listboxOption">a<img id="listboxImg" alt="b">c</option>
+</select>
+  `,
+  async function testOptionImageAlt(browser, docAcc) {
+    const combobox = findAccessibleChildByID(docAcc, "combobox");
+    ok(combobox, "Combobox accessible exists");
+    is(combobox.value, "abc", "Combobox value includes image alt");
+    info("Changing combobox image alt");
+    const valueChanged = waitForEvent(EVENT_TEXT_VALUE_CHANGE, "combobox");
+    await invokeContentTask(browser, [], () => {
+      content.document.getElementById("comboboxImg").alt = "d";
+    });
+    await valueChanged;
+    is(combobox.value, "adc", "Combobox value reflects changed image alt");
+
+    const option = findAccessibleChildByID(docAcc, "listboxOption");
+    ok(option, "Listbox option accessible exists");
+    testName(option, "abc");
+    info("Changing listbox image alt");
+    const nameChanged = waitForEvent(EVENT_NAME_CHANGE, "listboxOption");
+    await invokeContentTask(browser, [], () => {
+      content.document.getElementById("listboxImg").alt = "d";
+    });
+    await nameChanged;
+    testName(option, "adc");
+  },
+  { chrome: true, topLevel: true }
+);

@@ -956,7 +956,7 @@ static bool TestOptionElementForInteger(Element* aElement, int32_t aTestValue) {
   if (val == aTestValue) {
     return true;
   }
-  option->GetRenderedLabel(str);
+  option->GetRenderedLabel(str, AltText::Exclude);
   val = nsContentUtils::ParseHTMLInteger(str, &parseFlags);
   return val == aTestValue;
 }
