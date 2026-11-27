@@ -19,6 +19,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mozilla.fenix.GleanMetrics.AppMenu
+import org.mozilla.fenix.GleanMetrics.CustomizeMenu
 import org.mozilla.fenix.GleanMetrics.Events
 import org.mozilla.fenix.GleanMetrics.HomeMenu
 import org.mozilla.fenix.GleanMetrics.ReaderMode
@@ -389,6 +390,38 @@ class MenuTelemetryMiddlewareTest {
         store.dispatch(MenuAction.DefaultBrowserMenuBannerDismissed)
 
         assertTelemetryRecorded(Events.browserMenuAction, item = "dismiss_menu_banner")
+    }
+
+    @Test
+    fun `WHEN customize menu banner shown action is dispatched THEN record the banner shown telemetry`() {
+        val store = createStore()
+        assertNull(CustomizeMenu.bannerShown.testGetValue())
+
+        store.dispatch(MenuAction.CustomizeMenuBannerShown)
+
+        assertTelemetryRecorded(CustomizeMenu.bannerShown)
+    }
+
+    @Test
+    fun `WHEN customize menu banner action is dispatched THEN record the customize menu launched telemetry`() {
+        val store = createStore()
+        assertNull(CustomizeMenu.launched.testGetValue())
+
+        store.dispatch(MenuAction.CustomizeMenuBannerClicked)
+
+        val snapshot = CustomizeMenu.launched.testGetValue()!!
+        assertEquals(1, snapshot.size)
+        assertEquals("menu_banner", snapshot.single().extra?.getValue("source"))
+    }
+
+    @Test
+    fun `WHEN customize menu banner dismiss action is dispatched THEN record the banner dismissed telemetry`() {
+        val store = createStore()
+        assertNull(CustomizeMenu.bannerDismissed.testGetValue())
+
+        store.dispatch(MenuAction.CustomizeMenuBannerDismissed)
+
+        assertTelemetryRecorded(CustomizeMenu.bannerDismissed)
     }
 
     @Test

@@ -59,10 +59,12 @@ import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.FindInPage
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.More
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Print
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Translate
+import org.mozilla.fenix.utils.Settings
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CustomizeMenuMiddlewareTest {
     private val repository: MenuCustomizationRepository = mockk(relaxed = true)
+    private val settings: Settings = mockk(relaxed = true)
     private val captureActions = CaptureActionsMiddleware<CustomizableMenuState, CustomizableMenuAction>()
     private val captureAppActions = CaptureActionsMiddleware<AppState, AppAction>()
     private val appStore = AppStore(middlewares = listOf(captureAppActions))
@@ -650,6 +652,109 @@ class CustomizeMenuMiddlewareTest {
             verify { repository.save(match<CustomizedMenuInfo> { !it.isNavigationSectionMoved }) }
         }
 
+    @Test
+    fun `GIVEN the menu sections were customized WHEN the screen is shown THEN turn off the customize menu banner`() =
+        runTest {
+            createStore(customization = MutableStateFlow(defaultMenuInfo.copy(isNavigationSectionMoved = true)))
+            runCurrent()
+
+            verify { settings.shouldShowCustomizeMenuBanner = false }
+        }
+
+    @Test
+    fun `GIVEN the customize menu banner is disabled in this build WHEN the menu is customized THEN leave its settings untouched`() =
+        runTest {
+            val store =
+                createStore(
+                    customization = MutableStateFlow(defaultMenuInfo.copy(isNavigationSectionMoved = true)),
+                    sectionsCustomization = MutableStateFlow(mapOf(TOOLS_GROUP_ID to changedToolsInfo())),
+                    isToolsMenuCustomizationEnabled = true,
+                    isCustomizeMenuBannerEnabled = false,
+                )
+            runCurrent()
+
+            store.dispatch(
+                MenuStructureChanged(
+                    items = groups(*defaultMenuInfo.visibleSectionIds.reversed().toTypedArray()),
+                    hiddenGroupIds = emptySet(),
+                    movedGroupId = PAGE_CONTROLS_GROUP_ID,
+                )
+            )
+
+            verify(exactly = 0) { settings.shouldShowCustomizeMenuBanner = any() }
+        }
+
+    @Test
+    fun `GIVEN the menu was not customized WHEN the screen is shown THEN keep the customize menu banner`() = runTest {
+        createStore(
+            customization = MutableStateFlow(defaultMenuInfo),
+            sectionsCustomization = MutableStateFlow(BrowserMenuConfiguration.defaultSectionsInfo()),
+            isToolsMenuCustomizationEnabled = true,
+        )
+        runCurrent()
+
+        verify(exactly = 0) { settings.shouldShowCustomizeMenuBanner = any() }
+    }
+
+    @Test
+    fun `GIVEN only the tools items were customized WHEN the screen is shown THEN turn off the customize menu banner`() =
+        runTest {
+            createStore(
+                customization = MutableStateFlow(defaultMenuInfo),
+                sectionsCustomization = MutableStateFlow(mapOf(TOOLS_GROUP_ID to changedToolsInfo())),
+                isToolsMenuCustomizationEnabled = true,
+            )
+            runCurrent()
+
+            verify { settings.shouldShowCustomizeMenuBanner = false }
+        }
+
+    @Test
+    fun `GIVEN the tools items were customized but cannot be anymore WHEN the screen is shown THEN keep the customize menu banner`() =
+        runTest {
+            createStore(
+                customization = MutableStateFlow(defaultMenuInfo),
+                sectionsCustomization = MutableStateFlow(mapOf(TOOLS_GROUP_ID to changedToolsInfo())),
+                isToolsMenuCustomizationEnabled = false,
+            )
+            runCurrent()
+
+            verify(exactly = 0) { settings.shouldShowCustomizeMenuBanner = any() }
+        }
+
+    @Test
+    fun `WHEN the user changes the menu structure from its default THEN turn off the customize menu banner`() =
+        runTest {
+            val store = createStore(customization = MutableStateFlow(defaultMenuInfo))
+            runCurrent()
+
+            store.dispatch(
+                MenuStructureChanged(
+                    items = groups(*defaultMenuInfo.visibleSectionIds.reversed().toTypedArray()),
+                    hiddenGroupIds = emptySet(),
+                    movedGroupId = PAGE_CONTROLS_GROUP_ID,
+                )
+            )
+
+            verify { settings.shouldShowCustomizeMenuBanner = false }
+        }
+
+    @Test
+    fun `WHEN the user saves the default menu structure THEN keep the customize menu banner`() = runTest {
+        val store = createStore(customization = MutableStateFlow(defaultMenuInfo))
+        runCurrent()
+
+        store.dispatch(
+            MenuStructureChanged(
+                items = defaultGroups() + groups(*defaultMenuInfo.hiddenSectionIds.toTypedArray()),
+                hiddenGroupIds = defaultMenuInfo.hiddenSectionIds.toSet(),
+                movedGroupId = VPN_GROUP_ID,
+            )
+        )
+
+        verify(exactly = 0) { settings.shouldShowCustomizeMenuBanner = any() }
+    }
+
     // The customization is read on a scope that runTest cancels at the end of each test.
     private fun TestScope.createStore(
         initialState: CustomizableMenuState = CustomizableMenuState(menuGroups = emptyList()),
@@ -658,6 +763,7 @@ class CustomizeMenuMiddlewareTest {
         sectionsWithNothingToShow: Set<String> = emptySet(),
         isToolbarAtBottom: Boolean = false,
         isToolsMenuCustomizationEnabled: Boolean = false,
+        isCustomizeMenuBannerEnabled: Boolean = true,
     ): CustomizableMenuStore {
         every { repository.customizedMenuInfo } returns customization
         every { repository.customizedSectionsInfo } returns sectionsCustomization
@@ -698,6 +804,8 @@ class CustomizeMenuMiddlewareTest {
                         scope = backgroundScope,
                         appStore = appStore,
                         cannotHideSectionMessage = cannotHideSectionMessage,
+                        settings = settings,
+                        isCustomizeMenuBannerEnabled = isCustomizeMenuBannerEnabled,
                     ),
                 ),
         )

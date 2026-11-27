@@ -97,6 +97,11 @@
     <color name="prompt_login_edit_text_cursor_color_normal_theme">@color/photonViolet50</color>
     <color name="search_suggestion_indicator_icon_color_normal_theme">@color/photonGreen60</color>
     <color name="search_suggestion_indicator_icon_bookmark_color_normal_theme">@color/photonBlue40</color>
+    <color name="customize_menu_banner_shadow_normal_theme">@color/customize_menu_banner_shadow_dark_theme</color>
+    <color name="customize_menu_banner_screen_normal_theme">@color/customize_menu_banner_screen_dark_theme</color>
+    <color name="customize_menu_banner_notch_normal_theme">@color/customize_menu_banner_notch_dark_theme</color>
+    <color name="customize_menu_banner_card_normal_theme">@color/customize_menu_banner_card_dark_theme</color>
+    <color name="customize_menu_banner_panel_normal_theme">@android:color/transparent</color>
 
     <!-- Protections Dashboard colors -->
     <color name="protections_dashboard_chip_background">#FF3D3264</color>

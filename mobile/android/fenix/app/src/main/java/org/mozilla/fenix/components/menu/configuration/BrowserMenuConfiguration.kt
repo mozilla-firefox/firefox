@@ -14,6 +14,7 @@ import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.AddToHomeSc
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Back
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Bookmark
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Bookmarks
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeMenuBanner
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeReaderView
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.DefaultBrowserBanner
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.DesktopSite
@@ -120,15 +121,54 @@ object BrowserMenuConfiguration {
         return visibleSectionIds.mapNotNull { defaultSectionsIds[it] }
     }
 
-    private val promoBannerSection =
-        MenuSectionConfiguration(
-            id = PROMO_BANNER_GROUP_ID,
-            presentationMode = Row,
-            items = listOf(DefaultBrowserBanner),
-            isFirstScrollingSection = true,
-        )
+    /**
+     * Whether the browser menu differs from its default, in the order and visibility of its sections or in the items of
+     * any of them.
+     *
+     * @param customizationInfo The user's customization of the browser menu sections, `null` if they were never
+     *   customized.
+     * @param isToolbarAtBottom Whether the toolbar is shown at the bottom of the screen.
+     * @param isExpandedToolbarEnabled Whether the expanded toolbar is used.
+     * @param customizedSectionsInfo The items of each section chosen by the user, keyed by section id.
+     */
+    fun isCustomized(
+        customizationInfo: CustomizedMenuInfo?,
+        isToolbarAtBottom: Boolean,
+        isExpandedToolbarEnabled: Boolean,
+        customizedSectionsInfo: Map<String, CustomizedSectionInfo> = emptyMap(),
+    ): Boolean =
+        (customizationInfo != null &&
+            areSectionsCustomized(customizationInfo, isToolbarAtBottom, isExpandedToolbarEnabled)) ||
+            areItemsCustomized(customizedSectionsInfo)
 
-    private fun List<MenuSectionConfiguration>.withPromoBanner() = listOf(promoBannerSection) + this
+    private fun areSectionsCustomized(
+        customizationInfo: CustomizedMenuInfo,
+        isToolbarAtBottom: Boolean,
+        isExpandedToolbarEnabled: Boolean,
+    ): Boolean {
+        val default = defaultMenuInfo(isToolbarAtBottom, isExpandedToolbarEnabled)
+        val shownSections = customizableSections(isToolbarAtBottom, isExpandedToolbarEnabled, customizationInfo)
+        val defaultShownSections = customizableSections(isToolbarAtBottom, isExpandedToolbarEnabled)
+
+        return shownSections.map { it.id } != defaultShownSections.map { it.id } ||
+            customizationInfo.hiddenSectionIds.toSet() != default.hiddenSectionIds.toSet() ||
+            customizationInfo.isNavigationSectionMoved
+    }
+
+    private fun areItemsCustomized(customizedSectionsInfo: Map<String, CustomizedSectionInfo>): Boolean {
+        val defaults = defaultSectionsInfo()
+        return customizedSectionsInfo.any { (sectionId, sectionInfo) -> sectionInfo != defaults[sectionId] }
+    }
+
+    private fun List<MenuSectionConfiguration>.withPromoBanner(): List<MenuSectionConfiguration> =
+        listOf(
+            MenuSectionConfiguration(
+                id = PROMO_BANNER_GROUP_ID,
+                presentationMode = Row,
+                items = listOf(DefaultBrowserBanner, CustomizeMenuBanner),
+                isFirstScrollingSection = true,
+            )
+        ) + this
 
     /**
      * Whether the navigation section is shown away from the toolbar's side of the menu, indicating the user moved it

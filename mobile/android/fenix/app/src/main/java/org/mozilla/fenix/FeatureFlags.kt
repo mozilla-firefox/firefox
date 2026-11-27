@@ -26,4 +26,10 @@ object FeatureFlags {
      * ⚠️ DO NOT MODIFY THIS FLAG IN PRODUCTION.
      */
     val onboardingFeatureEnabled = !Config.channel.isDebug
+
+    /**
+     * Allows the browser menu to show the banner promoting its customization, which should only happen once the
+     * customization of both the menu sections and the Tools items ships.
+     */
+    const val CUSTOMIZE_MENU_BANNER_ENABLED = false
 }

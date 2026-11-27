@@ -9,11 +9,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -25,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -33,6 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.button.TextButton
 import mozilla.components.compose.base.text.Text as AcornText
@@ -43,6 +42,7 @@ import mozilla.components.compose.menu.data.MenuItemSummary
 import mozilla.components.ui.icons.R as iconsR
 
 private val BANNER_MIN_HEIGHT = 76.dp
+private const val ILLUSTRATION_MAX_WIDTH_FRACTION = 0.5f
 
 /**
  * A full-width promotional banner shown in the menu, that has a call-to-action button.
@@ -75,13 +75,15 @@ internal fun MenuBanner(
     ) {
         Box {
             Row(
-                modifier = Modifier.height(IntrinsicSize.Min).padding(end = AcornTheme.layout.space.static50),
+                modifier = Modifier.padding(end = AcornTheme.layout.space.static50),
                 verticalAlignment = Alignment.Bottom,
             ) {
                 Column(
-                    modifier = Modifier.weight(1f).fillMaxHeight().padding(top = AcornTheme.layout.space.static200),
-                    verticalArrangement =
-                        Arrangement.spacedBy(AcornTheme.layout.space.static50, Alignment.CenterVertically),
+                    modifier =
+                        Modifier.weight(1f)
+                            .align(Alignment.CenterVertically)
+                            .padding(top = AcornTheme.layout.space.static200),
+                    verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static50),
                 ) {
                     Column(modifier = Modifier.padding(start = AcornTheme.layout.space.static200)) {
                         Text(
@@ -112,7 +114,8 @@ internal fun MenuBanner(
                     painter = icon.painter,
                     contentDescription = null,
                     modifier =
-                        Modifier.padding(end = AcornTheme.layout.space.static200)
+                        Modifier.maxWidthFraction(ILLUSTRATION_MAX_WIDTH_FRACTION)
+                            .padding(end = AcornTheme.layout.space.static200)
                             .graphicsLayer(scaleX = if (isRtl) -1f else 1f),
                 )
             }
@@ -149,6 +152,18 @@ private fun BoxScope.MenuBannerDismissButton(onDismiss: () -> Unit) {
             tint = MaterialTheme.colorScheme.secondary,
         )
     }
+}
+
+/** Limits the width of the content to [fraction] of the width offered to it. */
+internal fun Modifier.maxWidthFraction(fraction: Float) = layout { measurable, constraints ->
+    val maxWidth =
+        if (constraints.hasBoundedWidth) {
+            (constraints.maxWidth * fraction).roundToInt()
+        } else {
+            constraints.maxWidth
+        }
+    val placeable = measurable.measure(constraints.copy(minWidth = 0, maxWidth = maxWidth))
+    layout(placeable.width, placeable.height) { placeable.placeRelative(0, 0) }
 }
 
 @PreviewLightDark

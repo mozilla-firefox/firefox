@@ -679,4 +679,8 @@
 
     <!--  Power Saving Mode  -->
     <string name="pref_key_last_known_power_save_mode" translatable="false">pref_key_last_known_power_save_mode</string>
+
+    <!--  Customize menu promotional banner  -->
+    <string name="pref_key_show_customize_menu_banner" translatable="false">pref_key_show_customize_menu_banner</string>
+    <string name="pref_key_customize_menu_banner_view_count" translatable="false">pref_key_customize_menu_banner_view_count</string>
 </resources>

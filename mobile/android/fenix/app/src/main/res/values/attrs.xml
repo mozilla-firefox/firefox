@@ -44,6 +44,11 @@
     <attr name="fenixWordmarkLogo" format="reference" />
     <attr name="awesomeBarIndicatorColor" format="reference|color"/>
     <attr name="awesomeBarIndicatorBookmarkColor" format="reference|color"/>
+    <attr name="customizeMenuBannerShadowColor" format="reference|color" />
+    <attr name="customizeMenuBannerScreenColor" format="reference|color" />
+    <attr name="customizeMenuBannerNotchColor" format="reference|color" />
+    <attr name="customizeMenuBannerCardColor" format="reference|color" />
+    <attr name="customizeMenuBannerPanelColor" format="reference|color" />
 
     <declare-styleable name="TrackingProtectionCategoryItem">
         <attr name="categoryItemTitle" format="reference" />

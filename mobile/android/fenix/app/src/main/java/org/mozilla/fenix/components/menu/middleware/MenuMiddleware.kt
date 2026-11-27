@@ -25,12 +25,12 @@ import org.mozilla.fenix.components.menu.MenuItemsRegistry
  * interactions with them.
  *
  * @param menuItemsRegistry Builds the [MenuItemsRegistry] with the items of the menu to show, waiting until they are
- *   known.
+ *   known. It is given the function dispatching actions to the store.
  * @param host [MenuHost] for the providers of the menu items to interact with.
  * @param scope [CoroutineScope] tied to the lifetime of the menu, on which to keep it up to date.
  */
 class MenuMiddleware(
-    private val menuItemsRegistry: suspend () -> MenuItemsRegistry,
+    private val menuItemsRegistry: suspend (dispatch: (MenuAction) -> Unit) -> MenuItemsRegistry,
     private val host: MenuHost,
     private val scope: CoroutineScope,
 ) : Middleware<MenuState, MenuAction> {
@@ -44,7 +44,7 @@ class MenuMiddleware(
     ) {
         when (action) {
             is Init -> buildMenuStructure(store)
-            is MenuEvent -> if (eventRouter?.route(action) != true) logger.warn("No menu item handles $action")
+            is MenuEvent -> eventRouter?.let { if (!it.route(action)) logger.warn("No menu item handles $action") }
             else -> Unit
         }
 
@@ -52,7 +52,7 @@ class MenuMiddleware(
     }
 
     private fun buildMenuStructure(store: Store<MenuState, MenuAction>) = scope.launch {
-        val registry = menuItemsRegistry()
+        val registry = menuItemsRegistry(store::dispatch)
         eventRouter = MenuItemEventRouter(registry = registry, host = host)
         MenuBuilder(registry).menuStructure.collect { store.dispatch(Update(it)) }
     }

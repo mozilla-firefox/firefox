@@ -123,10 +123,32 @@ class MenuMiddlewareTest {
         )
     }
 
+    @Test
+    fun `WHEN building the menu dispatches an action THEN pass it on`() {
+        val passedOn = mutableListOf<MenuStoreAction>()
+        createStore(
+            downstreamMiddleware =
+                listOf { _, next, action ->
+                    passedOn += action
+                    next(action)
+                },
+            menuItemsRegistry = { dispatch ->
+                dispatch(MenuAction.CustomizeMenuBannerShown)
+                registryOf(ReactingMenuItemProvider(reactingTo = null))
+            },
+        )
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(listOf(MenuAction.CustomizeMenuBannerShown), passedOn.filterIsInstance<MenuEvent>())
+    }
+
     private fun createStore(
         provider: MenuItemProvider = ReactingMenuItemProvider(reactingTo = null),
         downstreamMiddleware: List<Middleware<MenuState, MenuStoreAction>> = emptyList(),
-        menuItemsRegistry: suspend () -> MenuItemsRegistry = { registryOf(provider) },
+        menuItemsRegistry: suspend (dispatch: (MenuStoreAction) -> Unit) -> MenuItemsRegistry = {
+            registryOf(provider)
+        },
     ) =
         MenuStore(
             initialState = MenuState(emptyList()),

@@ -1662,8 +1662,10 @@ class SettingsTest {
     }
 
     @Test
-    fun `WHEN reading menu customization preferences THEN default values are false`() {
+    fun `WHEN reading menu customization preferences THEN default values are returned`() {
         assertFalse(settings.isMenuCustomizationScreenEnabled)
+        assertTrue(settings.shouldShowCustomizeMenuBanner)
+        assertEquals(0, settings.customizeMenuBannerViewCount)
     }
 
     @Test

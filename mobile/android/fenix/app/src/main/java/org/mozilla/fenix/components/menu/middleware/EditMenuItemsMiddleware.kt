@@ -21,6 +21,7 @@ import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuItemsState
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
+import org.mozilla.fenix.FeatureFlags
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction.SnackbarAction
 import org.mozilla.fenix.components.menu.CustomizedItemInfo
@@ -28,6 +29,7 @@ import org.mozilla.fenix.components.menu.CustomizedSectionInfo
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
 import org.mozilla.fenix.components.menu.MenuItemsRegistry
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
+import org.mozilla.fenix.utils.Settings
 
 /**
  * [Middleware] showing the items of a menu section as customized by the user, in the screen customizing them, and
@@ -42,6 +44,9 @@ import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
  *   is dropped inside another item.
  * @param cannotHideLastItemMessage Localized message telling the user the last item shown in the section cannot be
  *   removed from the menu.
+ * @param settings [Settings] application settings updated when the items differ from their default ones.
+ * @param isCustomizeMenuBannerEnabled Whether the banner promoting the menu customization may be shown in this build.
+ *   If not, customizing the items leaves the banner settings untouched.
  */
 class EditMenuItemsMiddleware(
     private val repository: MenuCustomizationRepository,
@@ -51,6 +56,8 @@ class EditMenuItemsMiddleware(
     private val appStore: AppStore,
     private val cannotMoveAsSubItemMessage: String,
     private val cannotHideLastItemMessage: String,
+    private val settings: Settings,
+    private val isCustomizeMenuBannerEnabled: Boolean = FeatureFlags.CUSTOMIZE_MENU_BANNER_ENABLED,
 ) : Middleware<CustomizableMenuItemsState, CustomizableMenuItemsAction> {
     override fun invoke(
         store: Store<CustomizableMenuItemsState, CustomizableMenuItemsAction>,
@@ -85,13 +92,17 @@ class EditMenuItemsMiddleware(
     }
 
     private fun saveItems(action: ItemsChanged) {
-        repository.save(
+        val sectionInfo =
             CustomizedSectionInfo(
                 sectionId = sectionId,
                 items = action.items.map { it.toInfo() },
                 hiddenItems = action.hiddenItems.map { it.toInfo() },
             )
-        )
+        repository.save(sectionInfo)
+
+        if (isCustomizeMenuBannerEnabled && sectionInfo != BrowserMenuConfiguration.defaultSectionsInfo()[sectionId]) {
+            settings.shouldShowCustomizeMenuBanner = false
+        }
     }
 
     private val topLevelOnlyIds = BrowserMenuConfiguration.topLevelOnlyItemIds()

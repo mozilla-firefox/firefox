@@ -23,6 +23,7 @@ import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
+import org.mozilla.fenix.FeatureFlags
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction.SnackbarAction
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
@@ -31,6 +32,7 @@ import org.mozilla.fenix.components.menu.MenuBuilder
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
 import org.mozilla.fenix.components.menu.MenuItemsRegistry
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
+import org.mozilla.fenix.utils.Settings
 
 /**
  * [CustomizableMenuStore] middleware responsible with handling the user interactions for customizing the menu
@@ -44,6 +46,9 @@ import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
  * @param scope [CoroutineScope] tied to the lifetime of the screen, on which to read the current structure.
  * @param appStore [AppStore] showing the snackbars of the screen.
  * @param cannotHideSectionMessage Localized message telling the user a section cannot be removed from the menu.
+ * @param settings [Settings] application settings updated when the browser menu differs from its default structure.
+ * @param isCustomizeMenuBannerEnabled Whether the banner promoting the menu customization may be shown in this build.
+ *   If not, customizing the menu leaves the banner settings untouched.
  */
 class CustomizeMenuMiddleware(
     private val repository: MenuCustomizationRepository,
@@ -54,6 +59,8 @@ class CustomizeMenuMiddleware(
     private val scope: CoroutineScope,
     private val appStore: AppStore,
     private val cannotHideSectionMessage: String,
+    private val settings: Settings,
+    private val isCustomizeMenuBannerEnabled: Boolean = FeatureFlags.CUSTOMIZE_MENU_BANNER_ENABLED,
 ) : Middleware<CustomizableMenuState, CustomizableMenuAction> {
     override fun invoke(
         store: Store<CustomizableMenuState, CustomizableMenuAction>,
@@ -101,6 +108,9 @@ class CustomizeMenuMiddleware(
         repository.save(newMenuInfo)
 
         val isCustomized = isCustomized(newMenuInfo, repository.customizedSectionsInfo.value.orEmpty())
+        if (isCustomizeMenuBannerEnabled && isCustomized) {
+            settings.shouldShowCustomizeMenuBanner = false
+        }
         if (isCustomized != store.state.isCustomized) {
             store.dispatch(CustomizationStatusChanged(isCustomized))
         }
@@ -123,13 +133,17 @@ class CustomizeMenuMiddleware(
         val shownSections =
             BrowserMenuConfiguration.customizableSections(isToolbarAtBottom, isExpandedToolbarEnabled, customization)
         val hiddenSections = BrowserMenuConfiguration.hiddenSections(customization)
+        val isCustomized = isCustomized(customization, sectionsCustomization)
+        if (isCustomizeMenuBannerEnabled && isCustomized) {
+            settings.shouldShowCustomizeMenuBanner = false
+        }
 
         store.dispatch(
             Update(
                 items = (shownSections + hiddenSections).mapNotNull { groups[it.id] },
                 mandatoryGroupIds = BrowserMenuConfiguration.REQUIRED_SECTION_IDS,
                 hiddenGroupIds = hiddenSections.map { it.id }.toSet(),
-                isCustomized = isCustomized(customization, sectionsCustomization),
+                isCustomized = isCustomized,
                 editableGroupIds =
                     if (isToolsMenuCustomizationEnabled) {
                         BrowserMenuConfiguration.ITEMS_CUSTOMIZABLE_SECTION_IDS
@@ -143,23 +157,13 @@ class CustomizeMenuMiddleware(
     private fun isCustomized(
         customization: CustomizedMenuInfo,
         sectionsCustomization: Map<String, CustomizedSectionInfo>,
-    ): Boolean {
-        val default = BrowserMenuConfiguration.defaultMenuInfo(isToolbarAtBottom, isExpandedToolbarEnabled)
-        val shownSections =
-            BrowserMenuConfiguration.customizableSections(isToolbarAtBottom, isExpandedToolbarEnabled, customization)
-        val defaultShownSections =
-            BrowserMenuConfiguration.customizableSections(isToolbarAtBottom, isExpandedToolbarEnabled)
-
-        return shownSections.map { it.id } != defaultShownSections.map { it.id } ||
-            customization.hiddenSectionIds.toSet() != default.hiddenSectionIds.toSet() ||
-            customization.isNavigationSectionMoved ||
-            isToolsMenuCustomizationEnabled && sectionsCustomization.isCustomized()
-    }
-
-    private fun Map<String, CustomizedSectionInfo>.isCustomized(): Boolean {
-        val defaults = BrowserMenuConfiguration.defaultSectionsInfo()
-        return any { (sectionId, sectionInfo) -> sectionInfo != defaults[sectionId] }
-    }
+    ) =
+        BrowserMenuConfiguration.isCustomized(
+            customizationInfo = customization,
+            isToolbarAtBottom = isToolbarAtBottom,
+            isExpandedToolbarEnabled = isExpandedToolbarEnabled,
+            customizedSectionsInfo = if (isToolsMenuCustomizationEnabled) sectionsCustomization else emptyMap(),
+        )
 
     private fun resetToDefault(store: Store<CustomizableMenuState, CustomizableMenuAction>) = scope.launch {
         repository.reset()

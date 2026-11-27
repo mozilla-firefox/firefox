@@ -62,6 +62,7 @@ import kotlinx.coroutines.flow.first
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.menu.Menu
 import mozilla.components.compose.menu.data.MenuAttribution
+import mozilla.components.compose.menu.store.MenuAction as MenuStoreAction
 import mozilla.components.compose.menu.store.MenuState
 import mozilla.components.compose.menu.store.MenuStore
 import mozilla.components.compose.menu.ui.MenuItemIconRes
@@ -87,6 +88,7 @@ import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration
 import org.mozilla.fenix.components.menu.middleware.MenuMiddleware
 import org.mozilla.fenix.components.menu.middleware.MenuTelemetryMiddleware
 import org.mozilla.fenix.components.menu.middleware.ToolbarMenuHighlightMiddleware
+import org.mozilla.fenix.components.menu.store.MenuAction
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.isToolbarAtBottom
 import org.mozilla.fenix.ext.nav
@@ -102,14 +104,26 @@ private const val HIDING_FRICTION = 0.9f
 private const val MENU_ANIMATION_DURATION = 300L
 private const val MENU_ANIMATION_START_OFFSET_RATIO = 0.2f
 private const val PRIVATE_HOME_MENU_BACKGROUND_ALPHA = 100
+private const val KEY_CUSTOMIZE_MENU_BANNER_SHOWN = "customize_menu_banner_shown"
 
 /** A bottom sheet fragment hosting the customizable menu. */
 class MenuFragment : BottomSheetDialogFragment() {
     private val args by navArgs<MenuFragmentArgs>()
     private val snackbarHostState = SnackbarHostState()
     private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
+    private var wasCustomizeMenuBannerShown = false
 
     private val ipProtectionSnackbarBinding = ViewBoundFeatureWrapper<IPProtectionSnackbarBinding>()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        wasCustomizeMenuBannerShown = savedInstanceState?.getBoolean(KEY_CUSTOMIZE_MENU_BANNER_SHOWN, false) ?: false
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(KEY_CUSTOMIZE_MENU_BANNER_SHOWN, wasCustomizeMenuBannerShown)
+    }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         if (args.accessPoint != MenuAccessPoint.Preview) {
@@ -344,7 +358,9 @@ class MenuFragment : BottomSheetDialogFragment() {
         return orientationMaxHeight - topBarHeight
     }
 
-    private fun buildMenuItemProvidersFactory(): MenuItemProvidersFactory {
+    private fun buildMenuItemProvidersFactory(
+        customizeMenuBannerSession: CustomizeMenuBannerSession
+    ): MenuItemProvidersFactory {
         val components = requireComponents
         val context = requireContext()
         val activity = requireActivity()
@@ -385,6 +401,7 @@ class MenuFragment : BottomSheetDialogFragment() {
             applicationScope = components.applicationScope,
             browsingModeManager = (activity as HomeActivity).browsingModeManager,
             tabGroupFeatureConfiguration = components.core.tabGroupDiscoveryFeatureConfiguration,
+            customizeMenuBannerSession = customizeMenuBannerSession,
         )
     }
 
@@ -394,7 +411,7 @@ class MenuFragment : BottomSheetDialogFragment() {
             middleware =
                 listOf(
                     MenuMiddleware(
-                        menuItemsRegistry = ::buildMenuItemsRegistry,
+                        menuItemsRegistry = { dispatch -> buildMenuItemsRegistry(isRestored, dispatch) },
                         host = DefaultMenuHost(findNavController()),
                         scope = viewLifecycleOwner.lifecycle.coroutineScope,
                     ),
@@ -409,26 +426,52 @@ class MenuFragment : BottomSheetDialogFragment() {
                 ),
         )
 
-    private suspend fun buildMenuItemsRegistry() =
-        MenuItemsRegistry(
-            configuration = buildMenuConfigurationFor(args.accessPoint),
-            resolver = buildMenuItemProvidersFactory()::buildProviderFor,
+    private suspend fun buildMenuItemsRegistry(
+        isRestored: Boolean,
+        dispatch: (MenuStoreAction) -> Unit,
+    ): MenuItemsRegistry {
+        val followsBrowserMenu =
+            when (args.accessPoint) {
+                MenuAccessPoint.Browser,
+                MenuAccessPoint.Preview,
+                MenuAccessPoint.Home -> true
+                MenuAccessPoint.External -> false
+            }
+        val customizationInfo = if (followsBrowserMenu) readMenuCustomization() else null
+        val customizedSectionsInfo = if (followsBrowserMenu) readSectionsCustomization() else emptyMap()
+        val customizeMenuBannerSession =
+            CustomizeMenuBannerSession(
+                customizationInfo = customizationInfo,
+                customizedSectionsInfo = customizedSectionsInfo,
+                isRestored = isRestored,
+                wasShown = wasCustomizeMenuBannerShown,
+                onViewCounted = { dispatch(MenuAction.CustomizeMenuBannerShown) },
+                onShownDecided = { wasCustomizeMenuBannerShown = it },
+            )
+        return MenuItemsRegistry(
+            configuration = buildMenuConfigurationFor(args.accessPoint, customizationInfo, customizedSectionsInfo),
+            resolver = buildMenuItemProvidersFactory(customizeMenuBannerSession)::buildProviderFor,
         )
+    }
 
-    private suspend fun buildMenuConfigurationFor(menuAccessPoint: MenuAccessPoint) =
+    private fun buildMenuConfigurationFor(
+        menuAccessPoint: MenuAccessPoint,
+        customizationInfo: CustomizedMenuInfo?,
+        customizedSectionsInfo: Map<String, CustomizedSectionInfo>,
+    ) =
         when (menuAccessPoint) {
             MenuAccessPoint.Browser,
             MenuAccessPoint.Preview ->
                 BrowserMenuConfiguration.sections(
                     isToolbarAtBottom = requireContext().isToolbarAtBottom(),
                     isExpandedToolbarEnabled = requireComponents.settings.shouldUseExpandedToolbar,
-                    customizationInfo = readMenuCustomization(),
-                    customizedSectionsInfo = readSectionsCustomization(),
+                    customizationInfo = customizationInfo,
+                    customizedSectionsInfo = customizedSectionsInfo,
                 )
             MenuAccessPoint.Home ->
                 HomeMenuConfiguration.sections(
-                    customizationInfo = readMenuCustomization(),
-                    customizedSectionsInfo = readSectionsCustomization(),
+                    customizationInfo = customizationInfo,
+                    customizedSectionsInfo = customizedSectionsInfo,
                 )
             MenuAccessPoint.External ->
                 CustomTabMenuConfiguration.sections(

@@ -197,6 +197,7 @@ class MenuItemProvidersFactoryTest {
             FenixMenuItem.NewTab::class to NewTabMenuItemProvider::class,
             FenixMenuItem.NewPrivateTab::class to NewPrivateTabMenuItemProvider::class,
             FenixMenuItem.DefaultBrowserBanner::class to DefaultBrowserMenuItemProvider::class,
+            FenixMenuItem.CustomizeMenuBanner::class to CustomizeMenuBannerMenuItemProvider::class,
             FenixMenuItem.CustomizeReaderView::class to ReaderViewMenuItemProvider::class,
             FenixMenuItem.IPProtection::class to VpnMenuItemProvider::class,
             FenixMenuItem.Bookmark::class to BookmarkMenuItemProvider::class,

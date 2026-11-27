@@ -209,6 +209,17 @@
     <color name="search_suggestion_indicator_icon_color_normal_theme">@color/photonGreen70</color>
     <color name="search_suggestion_indicator_icon_bookmark_color_normal_theme">@color/photonBlue50</color>
 
+    <!-- Colors of the phone drawn in the customize menu banner illustration -->
+    <color name="customize_menu_banner_shadow_normal_theme">#25080707</color>
+    <color name="customize_menu_banner_screen_normal_theme">#FFFFFF</color>
+    <color name="customize_menu_banner_notch_normal_theme">#584A7D</color>
+    <color name="customize_menu_banner_card_normal_theme">#D4C1FF</color>
+    <color name="customize_menu_banner_panel_normal_theme">#FCFBFF</color>
+    <color name="customize_menu_banner_shadow_dark_theme">#614C406C</color>
+    <color name="customize_menu_banner_screen_dark_theme">#1D1B1F</color>
+    <color name="customize_menu_banner_notch_dark_theme">#4C406C</color>
+    <color name="customize_menu_banner_card_dark_theme">#5939A8</color>
+
     <!-- Tracking protection dashboard colors used in normal browsing mode -->
     <color name="protections_dashboard_chip_background">#66FFFFFF</color>
     <color name="protections_dashboard_chip_text">#FF312A64</color>

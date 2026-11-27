@@ -48,10 +48,12 @@ import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Extensions
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.FindInPage
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.More
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Print
+import org.mozilla.fenix.utils.Settings
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EditMenuItemsMiddlewareTest {
     private val repository: MenuCustomizationRepository = mockk(relaxed = true)
+    private val settings: Settings = mockk(relaxed = true)
     private val captureActions = CaptureActionsMiddleware<CustomizableMenuItemsState, CustomizableMenuItemsAction>()
     private val captureAppActions = CaptureActionsMiddleware<AppState, AppAction>()
     private val appStore = AppStore(middlewares = listOf(captureAppActions))
@@ -240,12 +242,71 @@ class EditMenuItemsMiddlewareTest {
             }
         }
 
+    @Test
+    fun `WHEN the user saves items differing from the default ones THEN turn the customize menu banner off for good`() =
+        runTest {
+            val store = createStore(sectionsCustomization = MutableStateFlow(emptyMap()))
+            runCurrent()
+
+            store.dispatch(
+                ItemsChanged(items = defaultItems().reversed(), hiddenItems = emptyList(), movedItemId = FindInPage.id)
+            )
+
+            verify { settings.shouldShowCustomizeMenuBanner = false }
+        }
+
+    @Test
+    fun `WHEN the user hides an item and restores it THEN keep the customize menu banner off`() = runTest {
+        val store = createStore(sectionsCustomization = MutableStateFlow(emptyMap()))
+        runCurrent()
+        val items = defaultItems()
+
+        store.dispatch(ItemsChanged(items = items.drop(1), hiddenItems = items.take(1), movedItemId = items.first().id))
+        store.dispatch(ItemsChanged(items = items, hiddenItems = emptyList(), movedItemId = items.first().id))
+
+        verify(exactly = 1) { settings.shouldShowCustomizeMenuBanner = false }
+    }
+
+    @Test
+    fun `WHEN the user saves the default items THEN leave the customize menu banner on`() = runTest {
+        val store = createStore(sectionsCustomization = MutableStateFlow(emptyMap()))
+        runCurrent()
+
+        store.dispatch(ItemsChanged(items = defaultItems(), hiddenItems = emptyList(), movedItemId = FindInPage.id))
+
+        verify(exactly = 0) { settings.shouldShowCustomizeMenuBanner = any() }
+    }
+
+    @Test
+    fun `GIVEN the banner feature flag is off WHEN the user saves customized items THEN leave the banner settings untouched`() =
+        runTest {
+            val store =
+                createStore(sectionsCustomization = MutableStateFlow(emptyMap()), isCustomizeMenuBannerEnabled = false)
+            runCurrent()
+
+            store.dispatch(
+                ItemsChanged(items = defaultItems().reversed(), hiddenItems = emptyList(), movedItemId = FindInPage.id)
+            )
+
+            verify(exactly = 0) { settings.shouldShowCustomizeMenuBanner = any() }
+        }
+
+    private fun defaultItems() =
+        BrowserMenuConfiguration.defaultSectionsInfo().getValue(TOOLS_GROUP_ID).items.map { item ->
+            CustomizableMenuItem(
+                id = item.id,
+                item = itemOf(item.id),
+                subItems = item.subItemIds.map { CustomizableMenuItem(it, itemOf(it)) },
+            )
+        }
+
     private fun itemOf(id: String): MenuItem = StandardMenuItem(title = MenuItemTitle(Text.String(id)))
 
     // The customization is read on a scope that runTest cancels at the end of each test.
     private fun TestScope.createStore(
         sectionsCustomization: MutableStateFlow<Map<String, CustomizedSectionInfo>?>,
         providedItemIds: Set<String>? = null,
+        isCustomizeMenuBannerEnabled: Boolean = true,
     ): CustomizableMenuItemsStore {
         every { repository.customizedSectionsInfo } returns sectionsCustomization
         val registry =
@@ -269,6 +330,8 @@ class EditMenuItemsMiddlewareTest {
                         appStore = appStore,
                         cannotMoveAsSubItemMessage = cannotMoveAsSubItemMessage,
                         cannotHideLastItemMessage = cannotHideLastItemMessage,
+                        settings = settings,
+                        isCustomizeMenuBannerEnabled = isCustomizeMenuBannerEnabled,
                     ),
                 )
         )

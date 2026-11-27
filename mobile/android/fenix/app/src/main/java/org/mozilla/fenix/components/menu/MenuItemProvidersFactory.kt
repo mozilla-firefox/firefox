@@ -43,6 +43,7 @@ import org.mozilla.fenix.components.accounts.MozillaAccountMenuItemProvider
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem
 import org.mozilla.fenix.customtabs.CustomTabAppMenuItemProvider
 import org.mozilla.fenix.downloads.DownloadsMenuItemProvider
+import org.mozilla.fenix.ext.isToolbarAtBottom
 import org.mozilla.fenix.home.CustomizeHomepageMenuItemProvider
 import org.mozilla.fenix.home.topsites.ShortcutMenuItemProvider
 import org.mozilla.fenix.ipprotection.VpnMenuItemProvider
@@ -100,6 +101,7 @@ class MenuItemProvidersFactory(
     private val applicationScope: CoroutineScope,
     private val browsingModeManager: BrowsingModeManager,
     private val tabGroupFeatureConfiguration: TabGroupsFeatureDiscoveryConfiguration,
+    private val customizeMenuBannerSession: CustomizeMenuBannerSession? = null,
 ) {
 
     /** Build a [MenuItemProvider] for the given [FenixMenuItem]. */
@@ -129,6 +131,14 @@ class MenuItemProvidersFactory(
                     target = target,
                     scope = menuViewScope,
                     setAsDefaultBrowser = setAsDefaultBrowserDelegate,
+                )
+
+            FenixMenuItem.CustomizeMenuBanner ->
+                CustomizeMenuBannerMenuItemProvider(
+                    settings = settings,
+                    target = target,
+                    isToolbarAtBottom = context.isToolbarAtBottom(),
+                    session = customizeMenuBannerSession,
                 )
 
             FenixMenuItem.CustomizeReaderView ->

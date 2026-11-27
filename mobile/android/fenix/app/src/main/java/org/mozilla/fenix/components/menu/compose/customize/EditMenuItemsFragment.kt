@@ -59,6 +59,7 @@ class EditMenuItemsFragment : Fragment(), UserInteractionHandler, SystemInsetsPa
                             cannotMoveAsSubItemMessage =
                                 getString(R.string.edit_menu_items_extensions_cannot_be_moved_into_more),
                             cannotHideLastItemMessage = getString(R.string.edit_menu_items_section_cannot_be_empty),
+                            settings = requireComponents.settings,
                         ),
                         EditMenuItemsNavigationMiddleware(findNavController()),
                         EditMenuItemsTelemetryMiddleware(args.sectionId),

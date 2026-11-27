@@ -10,6 +10,7 @@ import mozilla.components.lib.state.State
 import mozilla.components.lib.state.Store
 import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.GleanMetrics.AppMenu
+import org.mozilla.fenix.GleanMetrics.CustomizeMenu
 import org.mozilla.fenix.GleanMetrics.Events
 import org.mozilla.fenix.GleanMetrics.HomeMenu
 import org.mozilla.fenix.GleanMetrics.ReaderMode
@@ -157,6 +158,13 @@ class MenuTelemetryMiddleware<S : State, A : Action>(private val accessPoint: Me
 
             MenuAction.DefaultBrowserMenuBannerDismissed ->
                 Events.browserMenuAction.record(Events.BrowserMenuActionExtra(item = "dismiss_menu_banner"))
+
+            MenuAction.CustomizeMenuBannerShown -> CustomizeMenu.bannerShown.record(NoExtras())
+
+            MenuAction.CustomizeMenuBannerClicked ->
+                CustomizeMenu.launched.record(CustomizeMenu.LaunchedExtra(source = "menu_banner"))
+
+            MenuAction.CustomizeMenuBannerDismissed -> CustomizeMenu.bannerDismissed.record(NoExtras())
 
             MenuAction.CustomizeReaderView -> ReaderMode.appearance.record(NoExtras())
 

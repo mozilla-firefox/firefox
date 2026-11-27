@@ -22,6 +22,9 @@ sealed class FenixMenuItem(val id: String, val isTopLevelOnly: Boolean = false) 
     /** A banner allowing to set this application as the default browser. */
     data object DefaultBrowserBanner : FenixMenuItem("default_browser_banner")
 
+    /** A banner promoting the menu customization feature. */
+    data object CustomizeMenuBanner : FenixMenuItem("customize_menu_banner")
+
     /** A menu item allowing to customize the reader view. */
     data object CustomizeReaderView : FenixMenuItem("customize_reader_view")
 

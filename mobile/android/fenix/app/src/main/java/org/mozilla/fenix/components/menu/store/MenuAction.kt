@@ -54,6 +54,15 @@ sealed class MenuAction : MenuEvent {
     /** [MenuAction] dispatched when default browser menu banner is dismissed. */
     data object DefaultBrowserMenuBannerDismissed : MenuAction()
 
+    /** [MenuAction] dispatched when a newly opened menu shows the customize menu banner. */
+    data object CustomizeMenuBannerShown : MenuAction()
+
+    /** [MenuAction] dispatched when the customize menu banner is clicked. */
+    data object CustomizeMenuBannerClicked : MenuAction()
+
+    /** [MenuAction] dispatched when the customize menu banner is dismissed. */
+    data object CustomizeMenuBannerDismissed : MenuAction()
+
     /**
      * [MenuAction] dispatched when an addon is to be installed.
      *

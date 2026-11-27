@@ -26,6 +26,7 @@ class FenixMenuItemTest {
         assertEquals(
             mapOf(
                 FenixMenuItem.DefaultBrowserBanner::class to "default_browser_banner",
+                FenixMenuItem.CustomizeMenuBanner::class to "customize_menu_banner",
                 FenixMenuItem.CustomizeReaderView::class to "customize_reader_view",
                 FenixMenuItem.IPProtection::class to "ip_protection",
                 FenixMenuItem.Bookmark::class to "bookmark",

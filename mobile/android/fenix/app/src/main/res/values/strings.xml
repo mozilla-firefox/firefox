@@ -287,6 +287,12 @@
     <string name="browser_menu_default_banner_subtitle_2">Fast, private, and made for you.</string>
     <!-- Button in the banner prompting the user to set Firefox as their default browser (tapping it sets the app as default browser on the device) -->
     <string name="browser_menu_default_banner_button">Make default</string>
+    <!-- Title text in a banner displayed within the menu to promote the customize menu feature. -->
+    <string name="browser_menu_customize_banner_title">A menu that fits you</string>
+    <!-- Subtext in a banner within the menu to promote the customize menu feature. -->
+    <string name="browser_menu_customize_banner_subtitle">Change up the order, or hide what you don’t use.</string>
+    <!-- Label of the button in a banner within the menu to promote the customize menu feature. Tapping it opens the screen where the user can customize the menu. -->
+    <string name="browser_menu_customize_banner_button">Customize menu</string>
 
     <!-- Extensions management fragment -->
     <!-- Text displayed when there are no extensions to be shown -->

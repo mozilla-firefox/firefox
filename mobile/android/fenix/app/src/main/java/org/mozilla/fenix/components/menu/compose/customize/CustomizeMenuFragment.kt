@@ -59,6 +59,7 @@ class CustomizeMenuFragment : Fragment(), UserInteractionHandler, SystemInsetsPa
                             scope = viewLifecycleOwner.lifecycle.coroutineScope,
                             appStore = components.appStore,
                             cannotHideSectionMessage = getString(R.string.customize_menu_cannot_hide_section),
+                            settings = components.settings,
                         ),
                         CustomizeMenuNavigationMiddleware(findNavController()),
                         CustomizeMenuTelemetryMiddleware(),
