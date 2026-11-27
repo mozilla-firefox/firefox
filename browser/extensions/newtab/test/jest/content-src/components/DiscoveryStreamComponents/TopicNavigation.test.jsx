@@ -90,12 +90,15 @@ function addSectionToPage(sectionKey) {
 }
 
 describe("TopicNavigation", () => {
+  let originalResizeObserver;
+
   beforeEach(() => {
     containerWidth = 1000;
     itemWidths = ITEM_WIDTHS;
     controlWidth = 50;
     observers = [];
 
+    originalResizeObserver = globalThis.ResizeObserver;
     globalThis.ResizeObserver = MockResizeObserver;
     Element.prototype.scrollIntoView = jest.fn();
 
@@ -121,7 +124,7 @@ describe("TopicNavigation", () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
-    delete globalThis.ResizeObserver;
+    globalThis.ResizeObserver = originalResizeObserver;
     delete Element.prototype.scrollIntoView;
     document.body.innerHTML = "";
   });

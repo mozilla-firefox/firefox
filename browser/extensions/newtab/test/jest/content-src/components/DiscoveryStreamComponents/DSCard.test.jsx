@@ -120,6 +120,68 @@ describe("<DSCard>", () => {
     expect(click.data.value.dwell_id).toBe(open.data.dwell_id);
   });
 
+  describe("context menu format", () => {
+    // The "format" a menu action reports, from the user event for "Open in a
+    // New Window".
+    function menuFormat(props) {
+      const store = createStore(combineReducers(reducers), INITIAL_STATE);
+      const storeDispatch = jest.spyOn(store, "dispatch");
+      const { container } = render(
+        <Provider store={store}>
+          <DSCard
+            dispatch={dispatch}
+            {...DEFAULT_PROPS}
+            section="section_key"
+            {...props}
+          />
+        </Provider>
+      );
+      const item = container
+        .querySelector("[data-l10n-id='newtab-menu-open-new-window']")
+        .closest("panel-item");
+      storeDispatch.mockClear();
+      act(() => item.click());
+      const userEvent = storeDispatch.mock.calls
+        .map(([action]) => action)
+        .find(action => action.type === at.DISCOVERY_STREAM_USER_EVENT);
+      return userEvent.data.value.format;
+    }
+
+    let originalInnerWidth;
+    beforeEach(() => {
+      originalInnerWidth = window.innerWidth;
+      // col-1 by window width.
+      window.innerWidth = 500;
+    });
+    afterEach(() => {
+      window.innerWidth = originalInnerWidth;
+    });
+
+    it("comes from the columnLayout prop on first render", () => {
+      expect(
+        menuFormat({
+          sectionsClassNames: "col-1-medium col-4-large",
+          columnLayout: "col-4",
+        })
+      ).toBe("large-card");
+    });
+
+    it("comes from the window width without the prop", () => {
+      expect(
+        menuFormat({ sectionsClassNames: "col-1-medium col-4-large" })
+      ).toBe("medium-card");
+    });
+
+    it("supports the 5-column layout", () => {
+      expect(
+        menuFormat({
+          sectionsClassNames: "col-1-small col-5-medium",
+          columnLayout: "col-5",
+        })
+      ).toBe("medium-card");
+    });
+  });
+
   it("should pass onLinkClick prop", () => {
     expect(typeof cardRef.current.onLinkClick).toBe("function");
   });

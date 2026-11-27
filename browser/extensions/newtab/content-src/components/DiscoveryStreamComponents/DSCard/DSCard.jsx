@@ -791,7 +791,10 @@ export class _DSCard extends React.PureComponent {
                       this.props.sectionsClassNames,
                       this.props.section,
                       this.props.flightId,
-                      getNovaColumnLayout(this.contextMenuButtonHostElement)
+                      // CardSections passes the layout in Nova. Other parents
+                      // don't, so read it from the card's own grid.
+                      this.props.columnLayout ??
+                        getNovaColumnLayout(this.contextMenuButtonHostElement)
                     )
               }
               isSectionsCard={this.props.mayHaveSectionsCards}

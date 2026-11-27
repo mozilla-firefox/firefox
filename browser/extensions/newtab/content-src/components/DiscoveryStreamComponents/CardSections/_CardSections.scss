@@ -507,6 +507,32 @@
   }
 }
 
+// Nova's active column count, set once for all of a CardSections' grids on
+// their shared wrapper. The grids and cards inherit it, and CardSections reads
+// it from the wrapper (useColumnLayout).
+// @nova-cleanup(remove-conditional): Remove .nova-enabled wrapper, make default
+.nova-enabled .ds-section-wrapper {
+  @include at-content-cols-range(0, 8) {
+    --sections-col-count: 1;
+  }
+
+  @include at-content-cols-range(8, 12) {
+    --sections-col-count: 2;
+  }
+
+  @include at-content-cols-range(12, 16) {
+    --sections-col-count: 3;
+  }
+
+  @include at-content-cols-range(16, 20) {
+    --sections-col-count: 4;
+  }
+
+  @include at-content-cols(20) {
+    --sections-col-count: 5;
+  }
+}
+
 .ds-section-grid.ds-card-grid {
   grid-gap: var(--space-large);
   grid-template-columns: repeat(1, 300px);
@@ -779,8 +805,6 @@
     // (assigned by JS for all breakpoints simultaneously) only activate one set of
     // mixin styles at a time, avoiding specificity conflicts between mixins.
     @include at-content-cols-range(0, 8) {
-      --sections-col-count: 1;
-
       @for $i from 0 through 16 {
         .col-1-position-#{$i} { order: $i; }
       }
@@ -807,8 +831,6 @@
     }
 
     @include at-content-cols-range(8, 12) {
-      --sections-col-count: 2;
-
       @for $i from 0 through 16 {
         .col-2-position-#{$i} { order: $i; }
       }
@@ -841,8 +863,6 @@
     }
 
     @include at-content-cols-range(12, 16) {
-      --sections-col-count: 3;
-
       @for $i from 0 through 16 {
         .col-3-position-#{$i} { order: $i; }
       }
@@ -875,8 +895,6 @@
     }
 
     @include at-content-cols-range(16, 20) {
-      --sections-col-count: 4;
-
       @for $i from 0 through 16 {
         .col-4-position-#{$i} { order: $i; }
       }
@@ -909,8 +927,6 @@
     }
 
     @include at-content-cols(20) {
-      --sections-col-count: 5;
-
       @for $i from 0 through 16 {
         .col-5-position-#{$i} { order: $i; }
       }
