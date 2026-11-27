@@ -70,7 +70,7 @@ RUN set -ex; \
   case "$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release)" in \
   focal|bionic) \
     /usr/lib/apt/apt-helper -o Acquire::https::Verify-Peer=false download-file \
-      https://launchpad.net/ubuntu/+archive/primary/+files/ca-certificates_20260816ubuntu0.22.04.1_all.deb /tmp/ca-certificates.deb SHA256:29ca037f49f7a4b41d67ad72946c2e541f3ae52d8f6ab1495d2af09aa391144b ;; \
+      https://launchpad.net/ubuntu/+archive/primary/+files/ca-certificates_20260816ubuntu0.22.04.2_all.deb /tmp/ca-certificates.deb SHA256:f99e8375d35bdde4800d4842df777be3dafe38bca4d178429fa929de200bf821 ;; \
   buster|bullseye) \
     /usr/lib/apt/apt-helper -o Acquire::https::Verify-Peer=false download-file \
       https://snapshot.debian.org/archive/debian-security/20261020T213255Z/pool/updates/main/c/ca-certificates/ca-certificates_20250419~deb12u2_all.deb /tmp/ca-certificates.deb SHA256:b9f76b5271a7ac373fd5e7e1b5b826a71ddd702b42a0d104955ecb1acfffc94b ;; \
