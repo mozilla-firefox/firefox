@@ -32,7 +32,11 @@ internal object ServiceReducer {
             }
 
             is IPProtectionAction.ServiceAction.CurrentAuthProviderChanged -> {
-                state.copy(currentAuthProvider = action.authProvider)
+                val providerChanged = state.currentAuthProvider != action.authProvider
+                state.copy(
+                    currentAuthProvider = action.authProvider,
+                    usageQuota = if (providerChanged) null else state.usageQuota,
+                )
             }
         }
 }

@@ -170,6 +170,51 @@ class IPProtectionReducerTest {
     }
 
     @Test
+    fun `GIVEN a prior auth provider WHEN the current auth provider changes to a different provider THEN the usage quota is reset`() {
+        val priorState =
+            iPProtectionReducer(
+                state = buildIPProtectionState(currentAuthProvider = CurrentAuthProvider.Gpi),
+                IPProtectionAction.UsageAction.UsageChanged(1000L, 5000L, "2026-06-01T00:00:00Z"),
+            )
+
+        val resultState =
+            iPProtectionReducer(
+                state = priorState,
+                action = IPProtectionAction.ServiceAction.CurrentAuthProviderChanged(CurrentAuthProvider.Fxa),
+            )
+
+        assertNull(resultState.usageQuota)
+    }
+
+    @Test
+    fun `GIVEN a prior auth provider WHEN another auth provider changed event is received for the same auth provider THEN the usage quota is unchanged`() {
+        val priorState =
+            iPProtectionReducer(
+                state = buildIPProtectionState(currentAuthProvider = CurrentAuthProvider.Gpi),
+                IPProtectionAction.UsageAction.UsageChanged(
+                    remaining = 1000L,
+                    max = 5000L,
+                    resetTime = "2026-06-01T00:00:00Z",
+                ),
+            )
+
+        val resultState =
+            iPProtectionReducer(
+                state = priorState,
+                action = IPProtectionAction.ServiceAction.CurrentAuthProviderChanged(CurrentAuthProvider.Gpi),
+            )
+
+        assertEquals(
+            UsageQuota.Metered(
+                remaining = DataVolume(1000),
+                max = DataVolume(5000),
+                resetTime = Instant.parse("2026-06-01T00:00:00Z"),
+            ),
+            resultState.usageQuota,
+        )
+    }
+
+    @Test
     fun `WHEN the proxy reports a state THEN the proxy status follows it AND an unknown state reads as uninitialized`() {
         ProxyState.entries.forEach { proxyState ->
             val expected =

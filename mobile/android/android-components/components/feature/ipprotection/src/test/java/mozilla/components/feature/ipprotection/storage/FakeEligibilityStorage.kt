@@ -9,6 +9,7 @@ package mozilla.components.feature.ipprotection.storage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
 import mozilla.components.concept.engine.ipprotection.ServiceState
 import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.IPProtectionStore
@@ -60,6 +61,7 @@ internal fun buildIPProtectionState(
     proxyRequest: ProxyRequest? = null,
     proxyActivation: ProxyActivation = ProxyActivation.Idle,
     usageResetPromptPending: Boolean = false,
+    currentAuthProvider: CurrentAuthProvider = CurrentAuthProvider.Unknown,
 ): IPProtectionState {
     return IPProtectionState(
         accountState = AccountState(accountStatus),
@@ -70,5 +72,6 @@ internal fun buildIPProtectionState(
         proxyActivation = proxyActivation,
         proxyRequest = proxyRequest,
         usageQuotaResetPromptPending = usageResetPromptPending,
+        currentAuthProvider = currentAuthProvider,
     )
 }
