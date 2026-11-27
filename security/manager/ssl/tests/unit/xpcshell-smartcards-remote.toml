@@ -15,9 +15,7 @@ prefs = [
 ]
 
 ["test_osclientcerts_module.js"]
-skip-if = [
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11'",
-]
+run-if = ["os != 'linux'"]
 
 ["test_pkcs11_module.js"]
 
