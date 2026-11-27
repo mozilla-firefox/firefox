@@ -51,7 +51,6 @@ class Http3TunnelStreamBase : public Http3StreamBase,
   void TransactionIsDone(nsresult aResult);
 
   virtual bool OnActivated() { return true; }
-  virtual nsresult OnProcessDatagram() { return NS_OK; }
 
  protected:
   bool ConsumeHeaders(const char* buf, uint32_t avail, uint32_t* countUsed);

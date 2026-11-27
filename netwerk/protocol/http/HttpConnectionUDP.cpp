@@ -390,9 +390,6 @@ nsresult HttpConnectionUDP::InitCommon(nsIUDPSocket* aSocket,
   }
 
   mIsInTunnel = isInTunnel;
-  if (mIsInTunnel) {
-    mHttp3Session->SetIsInTunnel();
-  }
 
   ChangeConnectionState(ConnectionState::INITED);
   InitCallbacks(callbacks, "HttpConnectionUDP::mCallbacks");

@@ -471,6 +471,12 @@ with modules["NETWORK"]:
     # to call getNextToken again.
     errors["NS_SUCCESS_AUTH_FINISHED"] = SUCCESS(40)
 
+    # This success code indicates that a send operation was successful, but the
+    # next one should wait until we are notified that sending can continue.
+    # This is similar in spirit to `NS_BASE_STREAM_WOULD_BLOCK`, except for the
+    # fact that the send actually succeeded and does not need to be retried.
+    errors["NS_SUCCESS_SENDING_PAUSED"] = SUCCESS(41)
+
     # These are really not "results", they're statuses, used by nsITransport and
     # friends.  This is abuse of nsresult, but we'll put up with it for now.
     # nsITransport

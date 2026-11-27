@@ -14,6 +14,7 @@
 #include "nsIPipe.h"
 #include "nsNetAddr.h"
 #include "nsProxyInfo.h"
+#include "nsQueryObject.h"
 
 namespace mozilla::net {
 
@@ -78,14 +79,17 @@ bool Http3ConnectUDPStream::OnActivated() {
   return false;
 }
 
-nsresult Http3ConnectUDPStream::OnProcessDatagram() {
-  LOG(("Http3ConnectUDPStream::OnProcessDatagram %p", this));
-
-  while (!mOutputData.IsEmpty()) {
-    nsTArray<uint8_t> data = mOutputData.Pop()->TakeData();
-    mSession->SendHTTPDatagram(mStreamId, data, mTrackingId++);
+void Http3ConnectUDPStream::OnOutgoingDatagramSpaceAvailable() {
+  LOG(("Http3ConnectUDPStream::OnOutgoingDatagramSpaceAvailable %p", this));
+  if (!mDatagramSendingPaused) {
+    return;
   }
-  return NS_OK;
+  mDatagramSendingPaused = false;
+
+  RefPtr<HttpConnectionUDP> conn = do_QueryObject(mSyncListener);
+  if (conn) {
+    (void)conn->ResumeSend();
+  }
 }
 
 nsresult Http3ConnectUDPStream::TryActivating() {
@@ -221,13 +225,34 @@ NS_IMETHODIMP Http3ConnectUDPStream::SendWithAddress(
   if (mSendState != PROCESSING_DATAGRAM) {
     return NS_ERROR_NOT_AVAILABLE;
   }
+  if (mDatagramSendingPaused) {
+    return NS_BASE_STREAM_WOULD_BLOCK;
+  }
 
   nsTArray<uint8_t> datagram;
   datagram.AppendElements(data, length);
-  mOutputData.Push(std::make_unique<UDPPayload>(std::move(datagram)));
+  nsresult rv = mSession->SendHTTPDatagram(mStreamId, datagram, mTrackingId++);
+  if (rv == NS_BASE_STREAM_WOULD_BLOCK) {
+    mDatagramSendingPaused = true;
+    return rv;
+  }
+  if (rv == NS_ERROR_NOT_AVAILABLE) {
+    // This error can happen if the outer connection's PMTUD hasn't completed
+    // yet. Let's swallow the error and have the inner connection's retry
+    // mechanisms kick in. Merely propagating the error to the caller would
+    // close the connection.
+    return NS_OK;
+  }
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
   mByteWriteCount += length;
   mSession->StreamHasDataToWrite(this);
-  return NS_OK;
+  if (rv == NS_SUCCESS_SENDING_PAUSED) {
+    mDatagramSendingPaused = true;
+    return NS_OK;
+  }
+  return rv;
 }
 
 NS_IMETHODIMP Http3ConnectUDPStream::SendBinaryStream(const nsACString& host,

@@ -227,10 +227,9 @@ class NeqoHttp3Conn final {
   }
 
   nsresult ConnectUdpSendDatagram(uint64_t aSessionId, nsTArray<uint8_t>& aData,
-                                  uint64_t aTrackingId, uint64_t aSendGroupId,
-                                  int64_t aSendOrder) {
-    return neqo_http3conn_connect_udp_send_datagram(
-        this, aSessionId, &aData, aTrackingId, aSendGroupId, aSendOrder);
+                                  uint64_t aTrackingId) {
+    return neqo_http3conn_connect_udp_send_datagram(this, aSessionId, &aData,
+                                                    aTrackingId);
   }
 
   nsresult WebTransportMaxDatagramSize(uint64_t aSessionId, uint64_t* aResult) {

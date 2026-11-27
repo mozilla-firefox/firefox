@@ -76,7 +76,7 @@ nsresult Http3TunnelStreamBase::ReadSegments() {
   LOG(("Http3TunnelStreamBase::ReadSegments %p mSendState=%d mRecvState=%d",
        this, mSendState, mRecvState));
   if (mSendState == PROCESSING_DATAGRAM) {
-    return OnProcessDatagram();
+    return NS_OK;
   }
 
   if ((mRecvState == RECV_DONE) || (mRecvState == ACTIVE) ||

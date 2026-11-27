@@ -102,7 +102,7 @@ nsresult Http3Session::Init(nsHttpConnectionInfo* aConnInfo,
                             nsINetAddr* aSelfAddr, nsINetAddr* aPeerAddr,
                             HttpConnectionUDP* udpConn, uint32_t aProviderFlags,
                             nsIInterfaceRequestor* callbacks,
-                            nsIUDPSocket* socket, bool aIsTunnel) {
+                            nsIUDPSocket* socket, bool aIsInTunnel) {
   LOG3(("Http3Session::Init %p", this));
 
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
@@ -121,7 +121,7 @@ nsresult Http3Session::Init(nsHttpConnectionInfo* aConnInfo,
   // 2. To explicitly enable Path MTU Discovery (PMTUD) on the outer connection,
   //    since the outer path’s MTU must be at least as large as the inner one.
   bool isOuterConnection = false;
-  if (!aIsTunnel) {
+  if (!aIsInTunnel) {
     if (auto* proxyInfo = aConnInfo->ProxyInfo()) {
       // MASQUE, or an HTTPS CONNECT proxy reached over HTTP/3 via its HTTPS RR.
       isOuterConnection =
@@ -170,8 +170,9 @@ nsresult Http3Session::Init(nsHttpConnectionInfo* aConnInfo,
     ExtState(ExtendedConnectKind::ConnectUDP).mStatus = NEGOTIATING;
   }
 
+  mIsInTunnel = aIsInTunnel;
   mUseNSPRForIO =
-      StaticPrefs::network_http_http3_use_nspr_for_io() || aIsTunnel;
+      StaticPrefs::network_http_http3_use_nspr_for_io() || aIsInTunnel;
 
   uint32_t idleTimeout = StaticPrefs::network_http_http3_idle_timeout();
 
@@ -181,7 +182,7 @@ nsresult Http3Session::Init(nsHttpConnectionInfo* aConnInfo,
                          : 0;
 
   // The outer connection of a connect-udp tunnel already paces its traffic.
-  bool pacingEnabled = !aIsTunnel;
+  bool pacingEnabled = !aIsInTunnel;
 
   nsresult rv;
   if (mUseNSPRForIO) {
@@ -775,9 +776,17 @@ nsresult Http3Session::ProcessEvents() {
         LOG(("Http3Session::ProcessEvents - StreamCreatable"));
         ProcessPending();
         break;
-      case Http3Event::Tag::OutgoingDatagramSpaceAvailable:
+      case Http3Event::Tag::OutgoingDatagramSpaceAvailable: {
         LOG(("Http3Session::ProcessEvents - OutgoingDatagramSpaceAvailable"));
-        // Connection-scoped: neqo does not say which session drained.
+        uint64_t streamId = event.outgoing_datagram_space_available.session_id;
+        if (RefPtr<Http3StreamBase> stream = mStreamIdHash.Get(streamId)) {
+          if (RefPtr<Http3ConnectUDPStream> udp =
+                  stream->GetHttp3ConnectUDPStream()) {
+            udp->OnOutgoingDatagramSpaceAvailable();
+            break;
+          }
+        }
+
         // The listener only sends IPC and never closes a session, so
         // mWebTransportSessions can't change here.  If that stops being true,
         // iterate mWebTransportSessions.Clone() instead.
@@ -787,7 +796,7 @@ nsresult Http3Session::ProcessEvents() {
             session->NotifyOutgoingDatagramSpaceAvailable();
           }
         }
-        break;
+      } break;
       case Http3Event::Tag::AuthenticationNeeded:
         LOG(("Http3Session::ProcessEvents - AuthenticationNeeded %d",
              mAuthenticationStarted));
@@ -1277,8 +1286,9 @@ nsresult Http3Session::ProcessEvents() {
 }  // namespace net
 
 // This function may return a socket error.
-// It will not return an error if socket error is
-// NS_BASE_STREAM_WOULD_BLOCK.
+// Unless we are a tunnel, it will swallow NS_BASE_STREAM_WOULD_BLOCK and
+// return NS_OK instead. Note that SendData treats WOULD_BLOCK as success
+// either way.
 // A Caller of this function will close the Http3 connection
 // if this function returns an error.
 // Callers are:
@@ -1321,6 +1331,11 @@ nsresult Http3Session::ProcessOutput(nsIUDPSocket* socket) {
 
           LOG(("Http3Session::ProcessOutput sending packet rv=%d osError=%d",
                static_cast<int32_t>(rv), NS_FAILED(rv) ? PR_GetOSError() : 0));
+          if (rv == NS_BASE_STREAM_WOULD_BLOCK && self->mIsInTunnel) {
+            // In a tunnel, WOULD_BLOCK means the outer connection is paused.
+            // The glue keeps the packet and resends it upon resume.
+            return rv;
+          }
           if (NS_FAILED(rv) && (rv != NS_BASE_STREAM_WOULD_BLOCK)) {
             if (rv == NS_ERROR_OUT_OF_MEMORY) {
               // NSPR maps ENOBUFS to PR_INSUFFICIENT_RESOURCES_ERROR, which
@@ -3492,15 +3507,13 @@ void Http3Session::
   }
 }
 
-void Http3Session::SendHTTPDatagram(uint64_t aStreamId,
-                                    nsTArray<uint8_t>& aData,
-                                    uint64_t aTrackingId) {
+nsresult Http3Session::SendHTTPDatagram(uint64_t aStreamId,
+                                        nsTArray<uint8_t>& aData,
+                                        uint64_t aTrackingId) {
   LOG(("Http3Session::SendHTTPDatagram %p length=%zu aTrackingId=%" PRIx64,
        this, aData.Length(), aTrackingId));
-  // Connect-UDP (MASQUE) doesn't use WebTransport send groups or send order,
-  // so pass 0 for both (0 = null sendGroup, 0 = default sendOrder).
-  (void)mHttp3Connection->ConnectUdpSendDatagram(aStreamId, aData, aTrackingId,
-                                                 0, 0);
+  return mHttp3Connection->ConnectUdpSendDatagram(aStreamId, aData,
+                                                  aTrackingId);
 }
 
 void Http3Session::SetSendOrder(Http3StreamBase* aStream, int64_t aSendOrder) {

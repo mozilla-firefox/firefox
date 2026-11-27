@@ -167,6 +167,95 @@ TEST(ConnectUDP, SendData)
   udp->Close();
 }
 
+TEST(ConnectUDP, SendDataPausedAndResumed)
+{
+  InitHttpHandler();
+
+  RefPtr<Http3SessionStub> session = new Http3SessionStub();
+  RefPtr<Http3ConnectUDPStream> stream = CreateUDPStream(session);
+  nsCOMPtr<nsIUDPSocket> udp = static_cast<nsIUDPSocket*>(stream.get());
+  ASSERT_TRUE(udp);
+
+  NetAddr peerAddr;
+  peerAddr.InitFromString("127.0.0.1"_ns);
+  nsTArray<uint8_t> data;
+  ConnectUdp::testing::CreateTestData(100, data);
+  uint32_t written = 0;
+
+  // The datagram is queued, but the session asks us to stop sending.
+  session->SetSendHTTPDatagramResult(NS_SUCCESS_SENDING_PAUSED);
+  nsresult rv =
+      udp->SendWithAddress(&peerAddr, data.Elements(), data.Length(), &written);
+  ASSERT_EQ(rv, NS_OK);
+  nsTArray<uint8_t> output = session->TakeOutputData();
+  ConnectUdp::testing::ValidateData(data, output);
+
+  // While paused, datagrams must be refused rather than queued or dropped.
+  session->SetSendHTTPDatagramResult(NS_OK);
+  rv =
+      udp->SendWithAddress(&peerAddr, data.Elements(), data.Length(), &written);
+  ASSERT_EQ(rv, NS_BASE_STREAM_WOULD_BLOCK);
+  ASSERT_TRUE(session->TakeOutputData().IsEmpty());
+  ASSERT_EQ(stream->ByteCountSent(), 100u);
+
+  stream->OnOutgoingDatagramSpaceAvailable();
+
+  data.Clear();
+  ConnectUdp::testing::CreateTestData(200, data);
+  rv =
+      udp->SendWithAddress(&peerAddr, data.Elements(), data.Length(), &written);
+  ASSERT_EQ(rv, NS_OK);
+  output = session->TakeOutputData();
+  ConnectUdp::testing::ValidateData(data, output);
+  ASSERT_EQ(stream->ByteCountSent(), 300u);
+
+  udp->Close();
+}
+
+TEST(ConnectUDP, SendDataRejectedAndResumed)
+{
+  InitHttpHandler();
+
+  RefPtr<Http3SessionStub> session = new Http3SessionStub();
+  RefPtr<Http3ConnectUDPStream> stream = CreateUDPStream(session);
+  nsCOMPtr<nsIUDPSocket> udp = static_cast<nsIUDPSocket*>(stream.get());
+  ASSERT_TRUE(udp);
+
+  NetAddr peerAddr;
+  peerAddr.InitFromString("127.0.0.1"_ns);
+  nsTArray<uint8_t> data;
+  ConnectUdp::testing::CreateTestData(100, data);
+  uint32_t written = 0;
+
+  // The session rejects the datagram, e.g. because a capsule hit the request
+  // stream's flow-control limit.
+  session->SetSendHTTPDatagramResult(NS_BASE_STREAM_WOULD_BLOCK);
+  nsresult rv =
+      udp->SendWithAddress(&peerAddr, data.Elements(), data.Length(), &written);
+  ASSERT_EQ(rv, NS_BASE_STREAM_WOULD_BLOCK);
+  ASSERT_TRUE(session->TakeOutputData().IsEmpty());
+  ASSERT_EQ(stream->ByteCountSent(), 0u);
+
+  // Sending stays paused until space is available, even if the session could
+  // take the datagram now.
+  session->SetSendHTTPDatagramResult(NS_OK);
+  rv =
+      udp->SendWithAddress(&peerAddr, data.Elements(), data.Length(), &written);
+  ASSERT_EQ(rv, NS_BASE_STREAM_WOULD_BLOCK);
+  ASSERT_TRUE(session->TakeOutputData().IsEmpty());
+
+  stream->OnOutgoingDatagramSpaceAvailable();
+
+  rv =
+      udp->SendWithAddress(&peerAddr, data.Elements(), data.Length(), &written);
+  ASSERT_EQ(rv, NS_OK);
+  nsTArray<uint8_t> output = session->TakeOutputData();
+  ConnectUdp::testing::ValidateData(data, output);
+  ASSERT_EQ(stream->ByteCountSent(), 100u);
+
+  udp->Close();
+}
+
 TEST(ConnectUDP, RecvData)
 {
   InitHttpHandler();

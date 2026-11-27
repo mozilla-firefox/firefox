@@ -731,3 +731,140 @@ async function do_test_version_fallback(httpsOrigin) {
 
   await promise;
 }
+
+// Starts an HTTP/3 origin server and a MASQUE proxy, and routes requests
+// through the proxy. `proxyEnv` holds extra environment variables for the
+// proxy's server process.
+async function setup_http3_with_proxy(proxyEnv = {}) {
+  const { Http3ProxyFilter } = ChromeUtils.importESModule(
+    "resource://testing-common/NodeServer.sys.mjs"
+  );
+  const pps = Cc["@mozilla.org/network/protocol-proxy-service;1"].getService();
+
+  do_get_profile();
+  let h2Port = await create_h3_fallback_origin();
+  let h3Port = await create_h3_server();
+  Assert.notEqual(h3Port, null);
+  Assert.notEqual(h3Port, "");
+  const h3ServerDomain = "foo.example.com";
+
+  Services.prefs.setBoolPref("network.http.http3.enable", true);
+  // We always resolve elements of localDomains as it's hardcoded without the
+  // following pref:
+  Services.prefs.setBoolPref("network.proxy.allow_hijacking_localhost", true);
+
+  if (mozinfo.os == "android") {
+    // Set necessary prefs to make Firefox connect to the http3Server on the
+    // host machine.
+    Services.prefs.setCharPref("network.dns.localDomains", "");
+    const overrideService = Cc[
+      "@mozilla.org/network/native-dns-override;1"
+    ].getService(Ci.nsINativeDNSResolverOverride);
+    overrideService.addIPOverride(h3ServerDomain, "10.0.2.2");
+    Services.prefs.setCharPref(
+      "network.http.http3.alt-svc-mapping-for-testing",
+      `${h3ServerDomain};h3=:${h3Port}`
+    );
+  } else {
+    Services.prefs.setCharPref(
+      "network.dns.localDomains",
+      "foo.example.com, alt1.example.com"
+    );
+  }
+
+  // The certificate for the http3server server is for foo.example.com and
+  // is signed by http2-ca.pem so add that cert to the trust list as a
+  // signing cert.
+  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
+    Ci.nsIX509CertDB
+  );
+  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
+  addCertFromFile(certdb, "proxy-ca.pem", "CTu,u,u");
+
+  let proxyPort = (await create_masque_proxy_server(proxyEnv)).masqueProxyPort;
+  Assert.notEqual(proxyPort, null);
+  Assert.notEqual(proxyPort, "");
+  const proxyFilter = new Http3ProxyFilter(
+    "alt1.example.com",
+    proxyPort,
+    0,
+    "/.well-known/masque/udp/{target_host}/{target_port}/",
+    ""
+  );
+  pps.registerFilter(proxyFilter, 10);
+
+  registerCleanupFunction(() => {
+    Services.prefs.clearUserPref("network.http.http3.enable");
+    Services.prefs.clearUserPref("network.dns.localDomains");
+    Services.prefs.clearUserPref("network.proxy.allow_hijacking_localhost");
+    Services.prefs.clearUserPref(
+      "network.http.http3.alt-svc-mapping-for-testing"
+    );
+    pps.unregisterFilter(proxyFilter);
+    if (mozinfo.os == "android") {
+      const overrideService = Cc[
+        "@mozilla.org/network/native-dns-override;1"
+      ].getService(Ci.nsINativeDNSResolverOverride);
+      overrideService.clearOverrides();
+    }
+  });
+
+  return {
+    h3ServerDomain,
+    h3Route: `${h3ServerDomain}:${h3Port}`,
+    h3AltSvc: `:${h3Port}`,
+    httpsOrigin: `https://${h3ServerDomain}:${h2Port}/`,
+  };
+}
+
+// Returns the stats of the HTTP/3 connections to `host`. When proxied, these are
+// the inner connections of the tunnel.
+async function getHttp3ConnStats(host) {
+  const dashboard = Cc["@mozilla.org/network/dashboard;1"].getService(
+    Ci.nsIDashboard
+  );
+  const conns = await new Promise(resolve =>
+    dashboard.requestHttp3ConnectionStats({
+      onDashboardDataAvailable: data => resolve(data.connections),
+    })
+  );
+  info(`HTTP/3 connection stats: ${JSON.stringify(conns)}`);
+  return conns.filter(c => c.host == host).flatMap(c => c.stats);
+}
+
+// Uploads enough data through a connect-udp tunnel to back-pressure the inner
+// connection, checking that it gets paused and no packets get dropped.
+async function do_test_large_post_backpressure(
+  httpsOrigin,
+  h3Route,
+  h3ServerDomain
+) {
+  const before = await getHttp3ConnStats(h3ServerDomain);
+  Assert.equal(before.length, 1, "Exactly one inner HTTP/3 connection");
+
+  const size = 4 * 1024 * 1024;
+  const chan = makeChan(httpsOrigin + "post");
+  openWithBody("0".repeat(size), chan, "POST");
+
+  const { listener, promise } = createPostListener({
+    expectedStatus: Cr.NS_OK,
+    expectedRoute: h3Route,
+  });
+  chan.asyncOpen(listener);
+  await promise;
+
+  Assert.equal(chan.getResponseHeader("x-data-received-length"), `${size}`);
+
+  const after = await getHttp3ConnStats(h3ServerDomain);
+  Assert.equal(after.length, 1, "Upload reused the inner HTTP/3 connection");
+  Assert.greater(
+    after[0].wouldBlockTx,
+    before[0].wouldBlockTx,
+    "Inner connection was paused"
+  );
+  Assert.equal(
+    after[0].lost,
+    before[0].lost,
+    "No inner packets were lost in the tunnel"
+  );
+}

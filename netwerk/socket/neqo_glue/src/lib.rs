@@ -39,8 +39,8 @@ use neqo_http3::{
 };
 use neqo_transport::{
     stream_id::StreamType, streams::SendGroupId, CongestionControl, Connection,
-    ConnectionParameters, Error as TransportError, HyStartCssBaseline, Output, OutputBatch,
-    RandomConnectionIdGenerator, SlowStart, Stats as TransportStats,
+    ConnectionParameters, DatagramQueueOutcome, Error as TransportError, HyStartCssBaseline,
+    Output, OutputBatch, RandomConnectionIdGenerator, SlowStart, Stats as TransportStats,
     StreamDataLimit, StreamId, Version,
 };
 use nserror::{
@@ -49,6 +49,7 @@ use nserror::{
     NS_ERROR_INVALID_ARG, NS_ERROR_NET_HTTP3_PROTOCOL_ERROR, NS_ERROR_NET_INTERRUPT,
     NS_ERROR_NET_RESET, NS_ERROR_NET_TIMEOUT, NS_ERROR_NOT_AVAILABLE, NS_ERROR_NOT_CONNECTED,
     NS_ERROR_OUT_OF_MEMORY, NS_ERROR_SOCKET_ADDRESS_IN_USE, NS_ERROR_UNEXPECTED, NS_OK,
+    NS_SUCCESS_SENDING_PAUSED,
 };
 use nss_rs::{cert::CertificateCompressor, init, PRErrorCode};
 use nsstring::{nsACString, nsCString};
@@ -1357,49 +1358,57 @@ pub extern "C" fn neqo_http3conn_process_output_and_send_use_nspr_for_io(
     assert!(conn.socket.is_none(), "NSPR IO path");
 
     loop {
-        match conn.conn.process_output(Instant::now()) {
-            Output::Datagram(dg) => {
-                let Ok(len) = u32::try_from(dg.len()) else {
-                    return NS_ERROR_UNEXPECTED;
-                };
-                let rv = match dg.destination().ip() {
-                    IpAddr::V4(v4) => send_func(
-                        context,
-                        AF_INET_U16,
-                        v4.octets().as_ptr(),
-                        dg.destination().port(),
-                        dg.as_ptr(),
-                        len,
-                    ),
-                    IpAddr::V6(v6) => send_func(
-                        context,
-                        AF_INET6_U16,
-                        v6.octets().as_ptr(),
-                        dg.destination().port(),
-                        dg.as_ptr(),
-                        len,
-                    ),
-                };
-                if rv != NS_OK {
-                    return rv;
+        let dg = match conn.buffered_outbound_datagram.take() {
+            Some(dg) => dg,
+            None => match conn.conn.process_output(Instant::now()) {
+                Output::Datagram(dg) => datagram::Batch::from(dg),
+                Output::Callback(to) => {
+                    let timeout = if to.is_zero() {
+                        Duration::from_millis(1)
+                    } else {
+                        to
+                    };
+                    let Ok(timeout) = u64::try_from(timeout.as_millis()) else {
+                        return NS_ERROR_UNEXPECTED;
+                    };
+                    set_timer_func(context, timeout);
+                    break;
                 }
-            }
-            Output::Callback(to) => {
-                let timeout = if to.is_zero() {
-                    Duration::from_millis(1)
-                } else {
-                    to
-                };
-                let Ok(timeout) = u64::try_from(timeout.as_millis()) else {
-                    return NS_ERROR_UNEXPECTED;
-                };
-                set_timer_func(context, timeout);
-                break;
-            }
-            Output::None => {
-                set_timer_func(context, u64::MAX);
-                break;
-            }
+                Output::None => {
+                    set_timer_func(context, u64::MAX);
+                    break;
+                }
+            },
+        };
+
+        let Ok(len) = u32::try_from(dg.data().len()) else {
+            return NS_ERROR_UNEXPECTED;
+        };
+        let rv = match dg.destination().ip() {
+            IpAddr::V4(v4) => send_func(
+                context,
+                AF_INET_U16,
+                v4.octets().as_ptr(),
+                dg.destination().port(),
+                dg.data().as_ptr(),
+                len,
+            ),
+            IpAddr::V6(v6) => send_func(
+                context,
+                AF_INET6_U16,
+                v6.octets().as_ptr(),
+                dg.destination().port(),
+                dg.data().as_ptr(),
+                len,
+            ),
+        };
+        if rv == NS_BASE_STREAM_WOULD_BLOCK {
+            conn.increment_would_block_tx();
+            conn.buffered_outbound_datagram = Some(dg);
+            return rv;
+        }
+        if rv != NS_OK {
+            return rv;
         }
     }
     NS_OK
@@ -2234,8 +2243,10 @@ pub enum Http3Event {
     EchFallbackAuthenticationNeeded,
     WebTransport(WebTransportEventExternal),
     ConnectUdp(ConnectUdpEventExternal),
-    /// neqo's outgoing datagram queue dropped back below its high water mark.
-    OutgoingDatagramSpaceAvailable,
+    /// The outgoing QUIC datagram queue has space again after having been full.
+    OutgoingDatagramSpaceAvailable {
+        session_id: u64,
+    },
     NoEvent,
 }
 
@@ -2318,8 +2329,10 @@ pub extern "C" fn neqo_http3conn_event(
                 local,
             },
             Http3ClientEvent::RequestsCreatable => Http3Event::RequestsCreatable,
-            Http3ClientEvent::OutgoingDatagramSpaceAvailable { .. } => {
-                Http3Event::OutgoingDatagramSpaceAvailable
+            Http3ClientEvent::OutgoingDatagramSpaceAvailable { session_id } => {
+                Http3Event::OutgoingDatagramSpaceAvailable {
+                    session_id: session_id.as_u64(),
+                }
             }
             Http3ClientEvent::AuthenticationNeeded => Http3Event::AuthenticationNeeded,
             Http3ClientEvent::ZeroRttRejected => Http3Event::ZeroRttRejected,
@@ -2845,25 +2858,35 @@ pub extern "C" fn neqo_http3conn_connect_udp_send_datagram(
     session_id: u64,
     data: &mut ThinVec<u8>,
     tracking_id: u64,
-    send_group_id: u64,
-    send_order: i64,
 ) -> nsresult {
     let id = if tracking_id == 0 {
         None
     } else {
         Some(tracking_id)
     };
-    // The local neqo2 vendor doesn't yet support per-datagram send group/order
-    // prioritization; accept the params from the C++ side but don't forward
-    // them until neqo grows the corresponding API.
-    let _ = (send_group_id, send_order);
     match conn.conn.connect_udp_send_datagram(
         StreamId::from(session_id),
         data,
         id,
         Instant::now(),
     ) {
-        Ok(_) => NS_OK,
+        Ok(DatagramQueueOutcome::Ok) => NS_OK,
+        Ok(DatagramQueueOutcome::MaxBufferedReached) => NS_SUCCESS_SENDING_PAUSED,
+        Ok(DatagramQueueOutcome::Overflowed { .. }) => {
+            let msg = "datagram queue outcome = overflowed after `connect_udp_send_datagram`";
+            warn!("{msg}");
+            debug_assert!(false, "{msg}");
+            NS_ERROR_UNEXPECTED
+        }
+        Ok(DatagramQueueOutcome::Rejected) => {
+            let msg = "datagram queue outcome = rejected after `connect_udp_send_datagram`";
+            warn!("{msg}");
+            debug_assert!(false, "{msg}");
+            NS_ERROR_UNEXPECTED
+        }
+        // We attempted to send the datagram as a capsule, but it hit the request stream's
+        // flow-control limit and should be re-sent later.
+        Err(Http3Error::FlowControlLimit) => NS_BASE_STREAM_WOULD_BLOCK,
         Err(Http3Error::Transport(TransportError::TooMuchData)) => NS_ERROR_NOT_AVAILABLE,
         Err(_) => NS_ERROR_UNEXPECTED,
     }
