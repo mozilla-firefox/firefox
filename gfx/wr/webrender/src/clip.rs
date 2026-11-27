@@ -1078,7 +1078,7 @@ impl From<ClipItemKey> for ClipNode {
                 ClipItemKind::Path {
                     path,
                     fill_rule,
-                    origin: LayoutPoint::from_au(origin),
+                    origin: origin.into(),
                 }
             }
         };

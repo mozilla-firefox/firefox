@@ -23,10 +23,10 @@ use crate::interning::Handle;
 use crate::path::Path;
 use crate::key_types::{
     BorderRadiusAu, ConicGradientParams, GlyphInstanceAu, GradientStopKey, NinePatchDescriptor,
-    NormalBorderAu, PolygonKey, PrimKeyCommonData, RadialGradientParams, SizeKey,
+    NormalBorderAu, PointKey, PolygonKey, PrimKeyCommonData, RadialGradientParams, SizeKey,
     StretchSizeKey, SubRectKey, VectorKey,
 };
-use crate::units::{AuHelpers, LayoutPointAu, LayoutSideOffsets, LayoutSideOffsetsAu, TileOffset};
+use crate::units::{AuHelpers, LayoutSideOffsets, LayoutSideOffsetsAu, TileOffset};
 use app_units::Au;
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
 
@@ -342,7 +342,7 @@ pub enum ClipItemKeyKind {
     /// The point is the origin of the clip's rect, which positions the path.
     /// Clip rects are snapped to the device pixel grid, but the path stays at
     /// its unsnapped position.
-    Path(Handle<Path>, FillRule, LayoutPointAu),
+    Path(Handle<Path>, FillRule, PointKey),
     Border(BorderClipKey),
 }
 
