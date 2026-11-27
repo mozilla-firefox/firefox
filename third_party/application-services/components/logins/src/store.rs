@@ -7,7 +7,7 @@ use crate::login::{
     BulkResultEntry, EncryptedLogin, Login, LoginCandidate, LoginEntry, LoginEntryWithMeta,
 };
 use crate::LoginsSyncEngine;
-use db_crypto::EncryptorDecryptor;
+use db_crypto::{DbCryptoApiError, EncryptorDecryptor};
 use parking_lot::Mutex;
 use sql_support::run_maintenance;
 use std::path::Path;
@@ -16,6 +16,15 @@ use sync15::{
     engine::{EngineSyncAssociation, SyncEngine, SyncEngineId},
     ServerTimestamp,
 };
+
+/// What `LoginStore::check_decryptability()` found.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct DecryptabilityReport {
+    /// Every stored login, local and mirror.
+    pub total: u64,
+    /// Logins that did not decrypt although the key was available.
+    pub undecryptable: u64,
+}
 
 #[derive(uniffi::Enum)]
 pub enum LoginOrErrorMessage {
@@ -199,6 +208,28 @@ impl LoginStore {
             .into_iter()
             .map(|login| login.decrypt(db.encdec.as_ref()))
             .collect()
+    }
+
+    /// Count the logins that do not decrypt with the current key, without returning or deleting
+    /// anything, to tell a store with a few unreadable logins apart from one whose key no longer
+    /// fits any of them.
+    ///
+    /// Stops at the first failure of the key itself (a cancelled primary password prompt, an NSS
+    /// authentication error, a missing or invalid key) and reports it as that error: moving on
+    /// would ask for the key, and so for the primary password, once per login.
+    #[handle_error(Error)]
+    pub fn check_decryptability(&self) -> ApiResult<DecryptabilityReport> {
+        let db = self.lock_db()?;
+        let mut report = DecryptabilityReport::default();
+        for login in db.get_all()? {
+            report.total += 1;
+            match db.encdec.decrypt(login.sec_fields.as_bytes().into()) {
+                Ok(_) => {}
+                Err(DbCryptoApiError::DecryptionFailed { .. }) => report.undecryptable += 1,
+                Err(e) => return Err(Error::CryptoError(e)),
+            }
+        }
+        Ok(report)
     }
 
     #[handle_error(Error)]
@@ -799,6 +830,135 @@ mod tests {
         assert!(matches!(
             store.get_many(vec![a.id.clone(), b.id]),
             Err(LoginsApiError::UnexpectedLoginsApiError { .. })
+        ));
+    }
+
+    #[test]
+    fn test_check_decryptability() {
+        ensure_initialized();
+
+        let store = LoginStore::new_in_memory();
+        assert_eq!(
+            store.check_decryptability().unwrap(),
+            DecryptabilityReport::default()
+        );
+
+        store
+            .add(test_entry("https://www.a.com", "a-user"))
+            .unwrap();
+        let b = store
+            .add(test_entry("https://www.b.com", "b-user"))
+            .unwrap();
+        store
+            .add(test_entry("https://www.c.com", "c-user"))
+            .unwrap();
+        assert_eq!(
+            store.check_decryptability().unwrap(),
+            DecryptabilityReport {
+                total: 3,
+                ..Default::default()
+            }
+        );
+
+        store
+            .lock_db()
+            .unwrap()
+            .db
+            .execute(
+                "UPDATE loginsL SET secFields = 'not-a-ciphertext' WHERE guid = ?",
+                [&b.id],
+            )
+            .unwrap();
+
+        assert_eq!(
+            store.check_decryptability().unwrap(),
+            DecryptabilityReport {
+                total: 3,
+                undecryptable: 1,
+            }
+        );
+    }
+
+    /// A `KeyManager` that can be told to stop handing out the key with a given error, the way a
+    /// cancelled primary password prompt does, and counts how often it was asked.
+    struct FailingKeyManager {
+        key: String,
+        error: Mutex<Option<fn() -> db_crypto::DbCryptoApiError>>,
+        calls: AtomicUsize,
+    }
+
+    impl KeyManager for FailingKeyManager {
+        fn get_key(&self) -> db_crypto::ApiResult<Vec<u8>> {
+            self.calls.fetch_add(1, Ordering::SeqCst);
+            match *self.error.lock() {
+                Some(error) => Err(error()),
+                None => Ok(self.key.as_bytes().into()),
+            }
+        }
+    }
+
+    fn store_failing_with(
+        error: fn() -> db_crypto::DbCryptoApiError,
+    ) -> (LoginStore, Arc<FailingKeyManager>) {
+        let key_manager = Arc::new(FailingKeyManager {
+            key: create_key().unwrap(),
+            error: Mutex::new(None),
+            calls: AtomicUsize::new(0),
+        });
+        let store = store_with_encdec(Arc::new(ManagedEncryptorDecryptor::new(
+            key_manager.clone(),
+        )));
+        for origin in [
+            "https://www.a.com",
+            "https://www.b.com",
+            "https://www.c.com",
+        ] {
+            store.add(test_entry(origin, "user")).unwrap();
+        }
+        *key_manager.error.lock() = Some(error);
+        key_manager.calls.store(0, Ordering::SeqCst);
+        (store, key_manager)
+    }
+
+    #[test]
+    fn test_check_decryptability_stops_at_a_key_error() {
+        ensure_initialized();
+
+        let (store, key_manager) =
+            store_failing_with(|| db_crypto::DbCryptoApiError::AuthenticationCanceled);
+        assert!(matches!(
+            store.check_decryptability(),
+            Err(LoginsApiError::AuthenticationCanceled)
+        ));
+        assert_eq!(
+            key_manager.calls.load(Ordering::SeqCst),
+            1,
+            "a key error must not be retried for every login"
+        );
+    }
+
+    #[test]
+    fn test_check_decryptability_keeps_the_kind_of_key_error() {
+        ensure_initialized();
+
+        let (store, _) =
+            store_failing_with(|| db_crypto::DbCryptoApiError::NSSAuthenticationError {
+                reason: "token locked".into(),
+            });
+        assert!(matches!(
+            store.check_decryptability(),
+            Err(LoginsApiError::NSSAuthenticationError { reason }) if reason == "token locked"
+        ));
+
+        // The encryptor reports any failure of the key manager other than authentication as a
+        // missing key.
+        let (store, _) =
+            store_failing_with(|| db_crypto::DbCryptoApiError::UnexpectedDbCryptoApiError {
+                reason: "callback failed".into(),
+            });
+        assert!(matches!(
+            store.check_decryptability(),
+            Err(LoginsApiError::MissingKey)
         ));
     }
 

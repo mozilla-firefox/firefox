@@ -94,6 +94,12 @@ dictionary LoginCandidate {
     string password_field;
 };
 
+/// What `check_decryptability()` found, see there.
+dictionary DecryptabilityReport {
+    u64 total;
+    u64 undecryptable;
+};
+
 /// Metrics tracking deletion of logins that cannot be decrypted, see `delete_undecryptable_records_for_remote_replacement`
 /// for more details
 dictionary LoginsDeletionMetrics {
@@ -300,6 +306,12 @@ interface LoginStore {
     /// logins which fail to decrypt.
     [Throws=LoginsApiError]
     sequence<Login> get_many(sequence<string> ids);
+
+    /// Count the logins that do not decrypt with the current key, without returning or deleting
+    /// anything. Fails with the key manager's error (e.g. `AuthenticationCanceled`, `MissingKey`)
+    /// as soon as the key itself is unavailable, rather than asking for it once per login.
+    [Throws=LoginsApiError]
+    DecryptabilityReport check_decryptability();
 
     /// Run maintenance on the DB
     ///

@@ -693,6 +693,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_logins_checksum_method_loginstore_bridged_engine(
     ): Int
+    external fun uniffi_logins_checksum_method_loginstore_check_decryptability(
+    ): Int
     external fun uniffi_logins_checksum_method_loginstore_count(
     ): Int
     external fun uniffi_logins_checksum_method_loginstore_count_by_form_action_origin(
@@ -820,6 +822,8 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_logins_fn_method_loginstore_bridged_engine(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
+    external fun uniffi_logins_fn_method_loginstore_check_decryptability(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_logins_fn_method_loginstore_count(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Long
     external fun uniffi_logins_fn_method_loginstore_count_by_form_action_origin(`ptr`: Long,`formActionOrigin`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -1433,6 +1437,13 @@ public interface LoginStoreInterface {
      */
     fun `bridgedEngine`(): LoginsBridgedEngine
     
+    /**
+     * Count the logins that do not decrypt with the current key, without returning or deleting
+     * anything. Fails with the key manager's error (e.g. `AuthenticationCanceled`, `MissingKey`)
+     * as soon as the key itself is unavailable, rather than asking for it once per login.
+     */
+    fun `checkDecryptability`(): DecryptabilityReport
+    
     fun `count`(): kotlin.Long
     
     fun `countByFormActionOrigin`(`formActionOrigin`: kotlin.String): kotlin.Long
@@ -1790,6 +1801,25 @@ open class LoginStore: Disposable, AutoCloseable, LoginStoreInterface
     callWithHandle {
     uniffiRustCallWithError(LoginsApiException) { _status ->
     UniffiLib.uniffi_logins_fn_method_loginstore_bridged_engine(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
+     * Count the logins that do not decrypt with the current key, without returning or deleting
+     * anything. Fails with the key manager's error (e.g. `AuthenticationCanceled`, `MissingKey`)
+     * as soon as the key itself is unavailable, rather than asking for it once per login.
+     */
+    @Throws(LoginsApiException::class)override fun `checkDecryptability`(): DecryptabilityReport {
+            return FfiConverterTypeDecryptabilityReport.lift(
+    callWithHandle {
+    uniffiRustCallWithError(LoginsApiException) { _status ->
+    UniffiLib.uniffi_logins_fn_method_loginstore_check_decryptability(
         it,
         _status)
 }
@@ -2779,6 +2809,47 @@ public object FfiConverterTypeLoginsBridgedEngine: FfiConverter<LoginsBridgedEng
 
     override fun write(value: LoginsBridgedEngine, buf: ByteBuffer) {
         buf.putLong(lower(value))
+    }
+}
+
+
+
+/**
+ * What `check_decryptability()` found, see there.
+ */
+data class DecryptabilityReport (
+    var `total`: kotlin.ULong
+    , 
+    var `undecryptable`: kotlin.ULong
+    
+){
+    
+
+    
+
+    
+    companion object
+}
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeDecryptabilityReport: FfiConverterRustBuffer<DecryptabilityReport> {
+    override fun read(buf: ByteBuffer): DecryptabilityReport {
+        return DecryptabilityReport(
+            FfiConverterULong.read(buf),
+            FfiConverterULong.read(buf),
+        )
+    }
+
+    override fun allocationSize(value: DecryptabilityReport) = (
+            FfiConverterULong.allocationSize(value.`total`) +
+            FfiConverterULong.allocationSize(value.`undecryptable`)
+    )
+
+    override fun write(value: DecryptabilityReport, buf: ByteBuffer) {
+            FfiConverterULong.write(value.`total`, buf)
+            FfiConverterULong.write(value.`undecryptable`, buf)
     }
 }
 

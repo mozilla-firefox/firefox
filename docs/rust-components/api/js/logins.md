@@ -15,6 +15,11 @@
     :exclude-members: BulkResultEntry
 ```
 
+```{js:autoclass} RustLogins.sys.DecryptabilityReport
+    :members:
+    :exclude-members: DecryptabilityReport
+```
+
 ```{js:autoclass} RustLogins.sys.DecryptionFailed
     :members:
     :exclude-members: DecryptionFailed

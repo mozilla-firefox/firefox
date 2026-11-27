@@ -186,6 +186,16 @@ impl GetErrorHandling for Error {
                 })
                 .report_error("logins-unexpected"),
             },
+            // The key manager's own errors keep their kind, so that callers can tell a cancelled
+            // primary password prompt apart from a key that cannot be used. A cancelled prompt is
+            // not an error worth reporting.
+            Self::CryptoError(e) => {
+                let handling = ErrorHandling::convert(crypto_error_to_api(e));
+                match e {
+                    DbCryptoApiError::AuthenticationCanceled => handling,
+                    _ => handling.report_error("logins-crypto-error"),
+                }
+            }
             // Unexpected errors that we report to Sentry.  We should watch the reports for these
             // and do one or more of these things if we see them:
             //   - Fix the underlying issue
@@ -195,6 +205,37 @@ impl GetErrorHandling for Error {
                 reason: self.to_string(),
             })
             .report_error("logins-unexpected"),
+        }
+    }
+}
+
+fn crypto_error_to_api(e: &DbCryptoApiError) -> LoginsApiError {
+    match e {
+        DbCryptoApiError::AuthenticationCanceled => LoginsApiError::AuthenticationCanceled,
+        DbCryptoApiError::NSSUninitialized => LoginsApiError::NSSUninitialized,
+        DbCryptoApiError::NSSAuthenticationError { reason } => {
+            LoginsApiError::NSSAuthenticationError {
+                reason: reason.clone(),
+            }
+        }
+        DbCryptoApiError::AuthenticationError { reason } => LoginsApiError::AuthenticationError {
+            reason: reason.clone(),
+        },
+        DbCryptoApiError::MissingKey => LoginsApiError::MissingKey,
+        DbCryptoApiError::InvalidKey => LoginsApiError::InvalidKey,
+        DbCryptoApiError::EncryptionFailed { reason } => LoginsApiError::EncryptionFailed {
+            reason: reason.clone(),
+        },
+        DbCryptoApiError::DecryptionFailed { reason } => LoginsApiError::DecryptionFailed {
+            reason: reason.clone(),
+        },
+        DbCryptoApiError::Interrupted { reason } => LoginsApiError::Interrupted {
+            reason: reason.clone(),
+        },
+        DbCryptoApiError::UnexpectedDbCryptoApiError { reason } => {
+            LoginsApiError::UnexpectedLoginsApiError {
+                reason: reason.clone(),
+            }
         }
     }
 }
