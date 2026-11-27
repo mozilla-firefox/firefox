@@ -706,6 +706,7 @@ using BoundsCheckMap = HashMap<BoundsCheckKey, BoundsCheckInfo,
 
 static MBoundsCheck* FindDominatingBoundsCheck(BoundsCheckMap& checks,
                                                MBoundsCheck* check,
+                                               const SimpleLinearSum& indexSum,
                                                size_t index) {
   // Since we are traversing the dominator tree in pre-order, when we
   // are looking at the |index|-th block, the next numDominated() blocks
@@ -714,7 +715,6 @@ static MBoundsCheck* FindDominatingBoundsCheck(BoundsCheckMap& checks,
   // So, this value is visible in all blocks if:
   // index <= index + ins->block->numDominated()
   // and becomes invalid after that.
-  SimpleLinearSum indexSum = ExtractLinearSum(check->index());
   BoundsCheckKey key(indexSum.term, check->length());
   BoundsCheckMap::AddPtr p = checks.lookupForAdd(key);
   if (!p || index >= p->value().validEnd) {
@@ -944,8 +944,9 @@ static bool TryEliminateBoundsCheck(BoundsCheckMap& checks, size_t blockIndex,
     return true;
   }
 
+  const SimpleLinearSum dominatedSum = ExtractLinearSum(dominated->index());
   MBoundsCheck* dominating =
-      FindDominatingBoundsCheck(checks, dominated, blockIndex);
+      FindDominatingBoundsCheck(checks, dominated, dominatedSum, blockIndex);
   if (!dominating) {
     return false;
   }
@@ -957,29 +958,32 @@ static bool TryEliminateBoundsCheck(BoundsCheckMap& checks, size_t blockIndex,
 
   MOZ_RELEASE_ASSERT(dominating->length() == dominated->length());
 
-  SimpleLinearSum sumA = ExtractLinearSum(dominating->index());
-  SimpleLinearSum sumB = ExtractLinearSum(dominated->index());
-  MOZ_RELEASE_ASSERT(sumA.term == sumB.term);
+  const SimpleLinearSum dominatingSum = ExtractLinearSum(dominating->index());
+  MOZ_RELEASE_ASSERT(dominatingSum.term == dominatedSum.term);
 
   // This bounds check is redundant.
   *eliminated = true;
 
   // Normalize the ranges according to the constant offsets in the two indexes.
-  int32_t minimumA, maximumA, minimumB, maximumB;
-  if (!mozilla::SafeAdd(sumA.constant, dominating->minimum(), &minimumA) ||
-      !mozilla::SafeAdd(sumA.constant, dominating->maximum(), &maximumA) ||
-      !mozilla::SafeAdd(sumB.constant, dominated->minimum(), &minimumB) ||
-      !mozilla::SafeAdd(sumB.constant, dominated->maximum(), &maximumB)) {
+  int32_t dominatingMin, dominatingMax, dominatedMin, dominatedMax;
+  if (!mozilla::SafeAdd(dominatingSum.constant, dominating->minimum(),
+                        &dominatingMin) ||
+      !mozilla::SafeAdd(dominatingSum.constant, dominating->maximum(),
+                        &dominatingMax) ||
+      !mozilla::SafeAdd(dominatedSum.constant, dominated->minimum(),
+                        &dominatedMin) ||
+      !mozilla::SafeAdd(dominatedSum.constant, dominated->maximum(),
+                        &dominatedMax)) {
     return false;
   }
 
   // Update the dominating check to cover both ranges, denormalizing the
   // result per the constant offset in the index.
   int32_t newMinimum, newMaximum;
-  if (!mozilla::SafeSub(std::min(minimumA, minimumB), sumA.constant,
-                        &newMinimum) ||
-      !mozilla::SafeSub(std::max(maximumA, maximumB), sumA.constant,
-                        &newMaximum)) {
+  if (!mozilla::SafeSub(std::min(dominatingMin, dominatedMin),
+                        dominatingSum.constant, &newMinimum) ||
+      !mozilla::SafeSub(std::max(dominatingMax, dominatedMax),
+                        dominatingSum.constant, &newMaximum)) {
     return false;
   }
 
