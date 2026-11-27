@@ -142,7 +142,8 @@ class CanvasChild final : public PCanvasChild, public SupportsWeakPtr {
   void AttachSurface(const RefPtr<gfx::SourceSurface>& aSurface);
 
   /**
-   * The DrawTargetRecording is about to change, so detach the old snapshot.
+   * Detach a returned snapshot or one whose draw target is about to change.
+   * If requested, preserve cached data before its shared memory is reused.
    */
   void DetachSurface(const RefPtr<gfx::SourceSurface>& aSurface,
                      bool aInvalidate = false);

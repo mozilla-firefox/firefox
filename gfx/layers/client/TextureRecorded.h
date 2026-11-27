@@ -70,13 +70,15 @@ class RecordedTextureData final : public TextureData {
 
   ~RecordedTextureData() override;
 
-  void DetachSnapshotWrapper(bool aInvalidate = false, bool aRelease = true);
+  void DetachAndReleaseSnapshotWrapper(bool aInvalidate = false);
 
   RefPtr<CanvasChild> mCanvasChild;
   gfx::IntSize mSize;
   gfx::SurfaceFormat mFormat;
   RefPtr<gfx::DrawTargetRecording> mDT;
+  // Snapshot recorded ahead of time when caching CPU readback data.
   RefPtr<gfx::SourceSurface> mSnapshot;
+  // Reusable wrapper for the recorded snapshot returned by BorrowSnapshot.
   RefPtr<gfx::SourceSurface> mSnapshotWrapper;
   OpenMode mLockedMode = OpenMode::OPEN_NONE;
   RemoteTextureId mLastRemoteTextureId;

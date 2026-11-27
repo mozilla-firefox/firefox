@@ -95,6 +95,8 @@ static Atomic<uint32_t> sCurrentExportSurfaces(0);
 // Limit the memory used by in-flight export surfaces
 static Atomic<size_t> sCurrentExportSurfaceMemory(0);
 
+// The wrapper has its own recording reference. During replay, its alias
+// resolves to the same SourceSurface as the underlying recorded snapshot.
 class SourceSurfaceCanvasRecording final : public gfx::SourceSurface {
  public:
   MOZ_DECLARE_REFCOUNTED_VIRTUAL_TYPENAME(SourceSurfaceCanvasRecording, final)
