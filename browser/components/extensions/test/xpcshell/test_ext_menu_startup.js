@@ -340,9 +340,16 @@ add_task(async function test_menu_onInstalled() {
     "correct error creating menu"
   );
 
+  // Wait for the removal to be written to the store, so that this write's
+  // notification can't resolve the promise waiting for the "removeall" write.
+  promisePersistedMenusUpdated = TestUtils.topicObserved(
+    "webext-persisted-menus-updated"
+  );
+
   extension.sendMessage("removemenu");
   await extension.awaitMessage("updated");
   await extension.terminateBackground();
+  await promisePersistedMenusUpdated;
 
   // menu removed
   await expectExtensionMenus(extension, [
