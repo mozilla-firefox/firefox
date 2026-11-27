@@ -13,6 +13,9 @@ const { CREATION_ERRORS, WidgetCreator } = ChromeUtils.importESModule(
 const { GeneratedWidgetsProvider } = ChromeUtils.importESModule(
   "moz-src:///toolkit/components/widgets/GeneratedWidgetsProvider.sys.mjs"
 );
+const { WidgetManager } = ChromeUtils.importESModule(
+  "moz-src:///toolkit/components/widgets/WidgetManager.sys.mjs"
+);
 const { MockEngineManager } = ChromeUtils.importESModule(
   "resource://testing-common/AIWindowTestUtils.sys.mjs"
 );
@@ -32,6 +35,10 @@ const ZipReader = Components.Constructor(
 const PROVIDER_PREF = "extensions.widgets.generated.enabled";
 
 const LOCAL_PROMPT_PREF = "browser.widgets.generated.localPrompt";
+
+const NEW_TAB_BRANCH = "browser.newtabpage.activity-stream.";
+
+const ORDER_PREF = `${NEW_TAB_BRANCH}widgets.order`;
 
 const PROMPT = "weather in Paris";
 
@@ -177,6 +184,29 @@ function simulateDeclineRequestResponse(args) {
   };
 }
 
+function widgetOrder() {
+  return Services.prefs
+    .getStringPref(ORDER_PREF, "")
+    .split(",")
+    .filter(Boolean);
+}
+
+async function openNewTab() {
+  let tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    "about:newtab",
+    false
+  );
+  let browser = tab.linkedBrowser;
+  if (
+    browser.webProgress.isLoadingDocument ||
+    browser.currentURI?.spec == "about:blank"
+  ) {
+    await BrowserTestUtils.browserStopped(browser, null, true);
+  }
+  return tab;
+}
+
 add_setup(async function () {
   mockEngine = new MockEngineManager();
   // The widget-generation service takes no `purpose`. MockEngineManager finds
@@ -188,7 +218,22 @@ add_setup(async function () {
     })
   );
   await setGeneratorRecords();
-  await SpecialPowers.pushPrefEnv({ set: [[PROVIDER_PREF, true]] });
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [PROVIDER_PREF, true],
+      [`${NEW_TAB_BRANCH}feeds.discoverystreamfeed`, true],
+      [`${NEW_TAB_BRANCH}discoverystream.endpoints`, "data:"],
+      [
+        `${NEW_TAB_BRANCH}discoverystream.config`,
+        JSON.stringify({ collapsible: true, enabled: true }),
+      ],
+      [`${NEW_TAB_BRANCH}nova.enabled`, true],
+      [`${NEW_TAB_BRANCH}widgets.system.enabled`, true],
+      [`${NEW_TAB_BRANCH}widgets.enabled`, true],
+      [`${NEW_TAB_BRANCH}widgets.generated.enabled`, true],
+      [ORDER_PREF, ""],
+    ],
+  });
 
   registerCleanupFunction(async () => {
     build.restore();
@@ -1075,7 +1120,7 @@ add_task(async function test_a_long_name_is_packaged() {
   Assert.equal(name.length, 76, "Long name");
 });
 
-add_task(async function test_a_package_installs_and_its_page_loads() {
+add_task(async function test_an_installed_widget_loads_on_new_tab() {
   let path = await generate(
     { prompt: PROMPT },
     simulateWriteFileResponse(FILES),
@@ -1083,18 +1128,121 @@ add_task(async function test_a_package_installs_and_its_page_loads() {
   );
   let { id } = await GeneratedWidgetsProvider.install(path);
   registerCleanupFunction(() => GeneratedWidgetsProvider.uninstall(id));
-  let policy = WebExtensionPolicy.getByID(id);
-  Assert.ok(policy?.active, "Running");
-  let text = await BrowserTestUtils.withNewTab(
-    policy.getURL("widget.html"),
-    browser =>
-      SpecialPowers.spawn(browser, [], async () => {
-        await ContentTaskUtils.waitForCondition(
-          () => content.document.body?.textContent,
-          "Waiting for the widget"
-        );
-        return content.document.body.textContent;
-      })
+  let widget = await TestUtils.waitForCondition(
+    () => WidgetManager.getWidgetByID(id),
+    "Widget registered"
   );
-  Assert.equal(text, "21.5°C", "Page");
+  widget.enabled = true;
+  let base = WebExtensionPolicy.getByID(id).getURL();
+
+  let tab = await openNewTab();
+  await SpecialPowers.spawn(tab.linkedBrowser, [id], async widgetId => {
+    await ContentTaskUtils.waitForCondition(
+      () =>
+        content.document.querySelector(
+          `moz-widget[widget-id="${widgetId}"] > iframe[src]`
+        ),
+      "Waiting for the card"
+    );
+  });
+  let frame = await TestUtils.waitForCondition(
+    () =>
+      tab.linkedBrowser.browsingContext
+        .getAllBrowsingContextsInSubtree()
+        .find(
+          context =>
+            context.currentURI?.spec.startsWith(base) &&
+            !context.webProgress?.isLoadingDocument
+        ),
+    "Waiting for the widget"
+  );
+  let text = await SpecialPowers.spawn(frame, [], async () => {
+    await ContentTaskUtils.waitForCondition(
+      () => content.document.body?.textContent,
+      "Waiting for the text"
+    );
+    return content.document.body.textContent;
+  });
+  Assert.equal(text, "21.5°C", "Widget text");
+  BrowserTestUtils.removeTab(tab);
+});
+
+add_task(async function test_an_uninstalled_widget_leaves_new_tab() {
+  let removed = await installGeneratedWidget({ name: "Removed" });
+  let kept = await installGeneratedWidget({ name: "Kept" });
+  await TestUtils.waitForCondition(
+    () => widgetOrder().includes(removed) && widgetOrder().includes(kept),
+    "New widgets ordered"
+  );
+  let others = widgetOrder().filter(id => id != removed && id != kept);
+  Services.prefs.setStringPref(
+    ORDER_PREF,
+    [removed, kept, ...others].join(",")
+  );
+  WidgetManager.getWidgetByID(removed).enabled = true;
+  let widget = WidgetManager.getWidgetByID(kept);
+  widget.enabled = true;
+  widget.size = "medium";
+
+  let tab = await openNewTab();
+  await SpecialPowers.spawn(tab.linkedBrowser, [[removed, kept]], ids =>
+    ContentTaskUtils.waitForCondition(
+      () =>
+        ids.every(id =>
+          content.document.querySelector(`moz-widget[widget-id="${id}"]`)
+        ),
+      "Waiting for both cards"
+    )
+  );
+
+  await GeneratedWidgetsProvider.uninstall(removed);
+  await TestUtils.waitForCondition(
+    () => !widgetOrder().includes(removed),
+    "Removed from the order"
+  );
+  Assert.deepEqual(widgetOrder(), [kept, ...others], "Order pref");
+
+  await BrowserTestUtils.reloadTab(tab);
+  await SpecialPowers.spawn(
+    tab.linkedBrowser,
+    [removed, kept],
+    async (removedId, keptId) => {
+      let card = await ContentTaskUtils.waitForCondition(
+        () =>
+          content.document.querySelector(`moz-widget[widget-id="${keptId}"]`),
+        "Waiting for the kept card"
+      );
+      Assert.ok(
+        !content.document.querySelector(`[data-widget-id="${removedId}"]`),
+        "Card removed"
+      );
+      Assert.equal(
+        content.document.querySelector("#widgets-container [data-widget-id]")
+          .dataset.widgetId,
+        keptId,
+        "Order kept"
+      );
+      Assert.equal(card.wrappedJSObject.size, "medium", "Size kept");
+    }
+  );
+  BrowserTestUtils.removeTab(tab);
+});
+
+add_task(async function test_a_never_enabled_widget_leaves_the_order() {
+  let id = await installGeneratedWidget({ name: "Never enabled" });
+  await TestUtils.waitForCondition(
+    () => widgetOrder().includes(id),
+    "New widget ordered"
+  );
+  ok(!WidgetManager.getWidgetByID(id).enabled, "Never enabled");
+
+  await GeneratedWidgetsProvider.uninstall(id);
+  await TestUtils.waitForCondition(
+    () => !widgetOrder().includes(id),
+    "Removed from the order"
+  );
+});
+
+add_task(function test_the_preloaded_new_tab_is_removed() {
+  NewTabPagePreloading.removePreloadedBrowser(window);
 });

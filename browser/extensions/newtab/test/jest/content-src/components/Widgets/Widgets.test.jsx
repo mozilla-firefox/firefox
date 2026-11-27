@@ -1366,10 +1366,14 @@ describe("<Widgets> extension widget", () => {
   };
   const EXTENSION_WIDGETS = {
     [EXTENSION_ID]: {
+      id: EXTENSION_ID,
+      extensionID: EXTENSION_ID,
       src: EXTENSION_SRC,
       name: "Tally",
       telemetryName: EXTENSION_ID,
       validSizes: ["medium", "large"],
+      enabled: true,
+      size: "large",
     },
   };
 
@@ -1429,6 +1433,106 @@ describe("<Widgets> extension widget", () => {
     expect(
       container.querySelector('[data-widget-id="extensionWidget"]')
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("<Widgets> generated widget", () => {
+  const GENERATED_ID = "generated@mozilla.org";
+
+  function generatedWidgetState(extraPrefs = {}) {
+    return {
+      ...makeNovaWidgetState([], {
+        "widgets.generated.enabled": true,
+        "widgets.order": GENERATED_ID,
+        ...extraPrefs,
+      }),
+      ExtensionWidgets: {
+        [GENERATED_ID]: {
+          id: GENERATED_ID,
+          extensionID: GENERATED_ID,
+          src: "moz-extension://uuid/widget.html",
+          name: "Tally",
+          validSizes: ["medium", "large"],
+          enabled: true,
+          size: "medium",
+          telemetryName: "generated",
+          generated: true,
+          systemEnabledPref: "widgets.generated.enabled",
+        },
+      },
+    };
+  }
+
+  it("renders in the row at its size", () => {
+    const { container } = renderWidgets(generatedWidgetState());
+    const card = container.querySelector(
+      `moz-widget[widget-id="${GENERATED_ID}"]`
+    );
+    expect(card.getAttribute("size")).toBe("medium");
+  });
+
+  it("hides through WIDGETS_EXTENSIONS_SET", () => {
+    const { container, store } = renderWidgets(generatedWidgetState());
+    fireEvent.click(
+      container.querySelector(
+        'panel-item[data-l10n-id="newtab-widget-section-menu-hide-all"]'
+      )
+    );
+    const actions = actionsFrom(store);
+    expect(actions).toContainEqual(
+      expect.objectContaining({
+        type: at.WIDGETS_EXTENSIONS_SET,
+        data: { id: GENERATED_ID, enabled: false },
+      })
+    );
+    expect(
+      actions.find(action => action.type === at.WIDGETS_HIDE_ALL).data.targets
+    ).toContainEqual({
+      enabledPref: undefined,
+      telemetryName: "generated",
+      active: true,
+    });
+  });
+
+  it("resizes through WIDGETS_EXTENSIONS_SET on maximize", () => {
+    const { container, store } = renderWidgets(
+      generatedWidgetState({
+        "widgets.system.maximized": true,
+        "widgets.maximized": false,
+      })
+    );
+    fireEvent.click(container.querySelector("#toggle-widgets-size-button"));
+    const actions = actionsFrom(store);
+    expect(actions).toContainEqual(
+      expect.objectContaining({
+        type: at.WIDGETS_EXTENSIONS_SET,
+        data: { id: GENERATED_ID, size: "large" },
+      })
+    );
+    expect(
+      actions.find(action => action.type === at.SET_MULTIPLE_PREFS).data.values
+    ).not.toHaveProperty("undefined");
+  });
+
+  it("leaves WidgetManager alone while unavailable", () => {
+    const { container, store } = renderWidgets({
+      ...makeNovaWidgetState([["focusTimer", "medium"]], {
+        "widgets.system.maximized": true,
+        "widgets.maximized": false,
+      }),
+      ExtensionWidgets: generatedWidgetState().ExtensionWidgets,
+    });
+    fireEvent.click(container.querySelector("#toggle-widgets-size-button"));
+    fireEvent.click(
+      container.querySelector(
+        'panel-item[data-l10n-id="newtab-widget-section-menu-hide-all"]'
+      )
+    );
+    expect(
+      actionsFrom(store).filter(
+        action => action.type === at.WIDGETS_EXTENSIONS_SET
+      )
+    ).toEqual([]);
   });
 });
 

@@ -159,14 +159,14 @@ describe("<MozWidgetCard>", () => {
     ]);
   });
 
-  it("writes the size pref and records change_size", () => {
+  it("sets the size through its feed and records change_size", () => {
     const { dispatch, menu } = renderCard();
     fireEvent.click(menu.querySelector("panel-item[data-size='large']"));
 
     expect(dispatch).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: at.SET_PREF,
-        data: { name: ENTRY.sizePref, value: "large" },
+        type: at.WIDGETS_EXTENSIONS_SET,
+        data: { id: ENTRY.extensionID, size: "large" },
       })
     );
     expect(findUserEvent(dispatch, "change_size").data).toMatchObject({

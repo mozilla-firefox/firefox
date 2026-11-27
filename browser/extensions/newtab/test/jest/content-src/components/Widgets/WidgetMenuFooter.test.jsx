@@ -145,6 +145,29 @@ describe("<WidgetMenuFooter>", () => {
     expect(onAfterHide).toHaveBeenCalledTimes(1);
   });
 
+  it("turns off an extension widget through its feed", () => {
+    const { container, dispatch } = renderFooter({
+      widgetId: "generated@widget",
+      widgetName: "generated",
+      enabledPref: undefined,
+      extensionID: "generated@widget",
+    });
+    fireEvent.click(
+      container.querySelector(
+        "panel-item[data-l10n-id='newtab-widget-menu-hide']"
+      )
+    );
+
+    expect(dispatch.mock.calls[0][0]).toMatchObject({
+      type: at.WIDGETS_EXTENSIONS_SET,
+      data: { id: "generated@widget", enabled: false },
+    });
+    expect(dispatch.mock.calls[1][0]).toMatchObject({
+      type: at.WIDGETS_ENABLED,
+      data: { widget_name: "generated", enabled: false },
+    });
+  });
+
   it("opens Learn more in a new tab and runs onLearnMore after it", () => {
     const onLearnMore = jest.fn();
     const { container, dispatch } = renderFooter({ onLearnMore });
