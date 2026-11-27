@@ -208,7 +208,7 @@ void* base_chunk_alloc(size_t aSize, size_t aAlignment);
 void base_chunk_dealloc(void* aChunk, size_t aSize, ChunkType aType);
 
 void* arena_chunk_alloc(chunk_allocator_t* aChunkAllocator, size_t aSize,
-                        size_t aAlignment);
+                        size_t aAlignment, size_t aCommitSize);
 
 void arena_chunk_dealloc(chunk_allocator_t* aChunkAllocator, void* aChunk,
                          size_t aSize);

@@ -64,10 +64,13 @@ typedef size_t arena_id_t;
 // allocations to a specific memory region as is required for
 // SpiderMonkey's sandbox.
 typedef struct chunk_allocator_s {
-  // Map aSize bytes of memory with alignment aAligment.
-  // The returned pages are expected to be committed with read-write
-  // permissions.
-  void* (*map)(size_t aSize, size_t aAlignment);
+  // Map aSize bytes of memory with alignment aAligment.  The first
+  // aCommitSize bytes are committed with read-write permissions; any
+  // remainder is reserved but left inaccessible, so a caller that wants a
+  // trailing guard region never sees it mapped read-write (which would let
+  // an adjacent growable stack race into it).  aCommitSize == aSize commits
+  // the whole mapping.
+  void* (*map)(size_t aSize, size_t aAlignment, size_t aCommitSize);
 
   // Unmap aSize bytes of previously mapped memory starting at aAddr.
   // The pages are returned to the allocator.
