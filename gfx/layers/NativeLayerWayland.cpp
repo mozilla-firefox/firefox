@@ -1442,8 +1442,11 @@ void NativeLayerWaylandExternal::AttachExternalImage(
     surface->DisableRecycle();
   }
 
+  // ConvertHLGToPQ() handles P010 surfaces only, other formats are sent
+  // as they are.
   bool needsHGLConversion =
       (mIsHDR && surface->GetTransferFunction() == gfx::TransferFunction::HLG &&
+       surface->GetFormat() == gfx::SurfaceFormat::P010 &&
        !WaylandDisplayGet()->IsTFSupported(
            WP_COLOR_MANAGER_V1_TRANSFER_FUNCTION_HLG));
   if (needsHGLConversion) {
