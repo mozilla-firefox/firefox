@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<meta charset=utf-8>
+<title>COLRv1 glyphs painted in the text color, in one color</title>
+<style>
+@font-face { font-family: COLRv1Paint; src: url("COLRv1Paint.ttf"); }
+div { position: absolute; left: 0; font: 40px/1 COLRv1Paint; }
+#upper { top: 0; color: red; }
+#lower { top: 50px; color: red; }
+</style>
+
+<!-- The same two rows as colrv1-fg-color.html, both red. That document must
+     not look like this one. -->
+<div id="upper">AAAA</div>
+<div id="lower">AAAA</div>
+
+<script>
+document.fonts.ready.then(() => { document.documentElement.className = ""; });
+</script>

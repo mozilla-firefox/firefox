@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<meta charset=utf-8>
+<title>COLRv1 glyphs using one palette</title>
+<style>
+@font-face { font-family: COLRv1Paint; src: url("COLRv1Paint.ttf"); }
+@font-palette-values --one { font-family: COLRv1Paint; override-colors: 0 #ff0000, 1 #ffff00; }
+div { position: absolute; left: 0; font: 40px/1 COLRv1Paint; }
+#upper { top: 0; font-palette: --one; }
+#lower { top: 50px; font-palette: --one; }
+</style>
+
+<!-- The same two rows as colrv1-palette-cache.html, both drawn from --one.
+     That document must not look like this one. -->
+<div id="upper">EEEE</div>
+<div id="lower">EEEE</div>
+
+<script>
+document.fonts.ready.then(() => { document.documentElement.className = ""; });
+</script>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<meta charset=utf-8>
+<title>COLRv1 glyphs using two palettes at once</title>
+<style>
+@font-face { font-family: COLRv1Paint; src: url("COLRv1Paint.ttf"); }
+@font-palette-values --one { font-family: COLRv1Paint; override-colors: 0 #ff0000, 1 #ffff00; }
+@font-palette-values --two { font-family: COLRv1Paint; override-colors: 0 #0000ff, 1 #00ffff; }
+div { position: absolute; left: 0; font: 40px/1 COLRv1Paint; }
+#upper { top: 0; font-palette: --one; }
+#lower { top: 50px; font-palette: --two; }
+</style>
+
+<!-- Glyph E is PaintGlyph -> PaintLinearGradient over palette entries 0 and 1,
+     so the two rows differ only by their palette, and share a text color and a
+     glyph ID. A cache of rasterized color glyphs that fails to discard entries
+     when the palette changes serves the first row's colors to the second, which
+     makes this document collapse into colrv1-palette-cache-notref.html. -->
+<div id="upper">EEEE</div>
+<div id="lower">EEEE</div>
+
+<script>
+document.fonts.ready.then(() => { document.documentElement.className = ""; });
+</script>

@@ -192,6 +192,16 @@ fuzzy(0-128,0-264) == colrv1-07.html colrv1-07-ref.html
 == colrv1-08.html colrv1-08-ref.html
 == colrv1-09.html colrv1-09-ref.html
 
+# COLRv1 paint-graph shapes that CAhem.ttf does not contain, using
+# COLRv1Paint.ttf (see colrv1-paint-generate.py for the glyphs).
+# Glyphs painted in the text color, in two colors in one document. The != is
+# there because a rasterized-glyph cache outlives a single reftest page, so the
+# two documents of the == can agree by reusing the same stale entry.
+== colrv1-fg-color.html colrv1-fg-color-ref.html
+!= colrv1-fg-color.html colrv1-fg-color-notref.html
+# Two palettes in one document must not render as one palette.
+!= colrv1-palette-cache.html colrv1-palette-cache-notref.html
+
 == woff2-1.html woff2-1-ref.html
 == woff2-totalsfntsize.html woff2-totalsfntsize-ref.html
 

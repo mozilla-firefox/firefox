@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<meta charset=utf-8>
+<title>COLRv1 glyphs painted in the text color, in two colors at once</title>
+<style>
+@font-face { font-family: COLRv1Paint; src: url("COLRv1Paint.ttf"); }
+div { position: absolute; left: 0; font: 40px/1 COLRv1Paint; }
+#upper { top: 0; color: red; }
+#lower { top: 50px; color: blue; }
+</style>
+
+<!-- Glyph A is PaintGlyph -> PaintSolid(palette index 0xFFFF), so it renders in
+     the text color. Paint order here is red then blue; the reference paints the
+     same two rows in the opposite order. Anything that caches a rasterized
+     color glyph by glyph ID alone reuses the first row's color for the second,
+     making the two documents disagree. -->
+<div id="upper">AAAA</div>
+<div id="lower">AAAA</div>
+
+<script>
+document.fonts.ready.then(() => { document.documentElement.className = ""; });
+</script>
