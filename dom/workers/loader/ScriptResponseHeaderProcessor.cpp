@@ -40,7 +40,7 @@ nsresult ScriptResponseHeaderProcessor::ProcessCrossOriginEmbedderPolicyHeader(
 // https://github.com/whatwg/html/pull/4001
 nsresult ScriptResponseHeaderProcessor::EnsureExpectedModuleType(
     nsIRequest* aRequest) {
-  if (mModuleType == JS::ModuleType::Text) {
+  if (mModuleType == Some(JS::ModuleType::Text)) {
     return NS_OK;
   }
 
@@ -50,7 +50,14 @@ nsresult ScriptResponseHeaderProcessor::EnsureExpectedModuleType(
   channel->GetContentType(mimeType);
   NS_ConvertUTF8toUTF16 typeString(mimeType);
 
-  if (mModuleType == JS::ModuleType::JavaScriptOrWasm) {
+  if (mModuleType.isNothing()) {
+    if (nsContentUtils::IsJavascriptMIMEType(typeString)) {
+      return NS_OK;
+    }
+    return NS_ERROR_DOM_NETWORK_ERR;
+  }
+
+  if (*mModuleType == JS::ModuleType::JavaScriptOrWasm) {
     if (nsContentUtils::IsJavascriptMIMEType(typeString)) {
       return NS_OK;
     }
@@ -63,7 +70,7 @@ nsresult ScriptResponseHeaderProcessor::EnsureExpectedModuleType(
 #endif
   }
 
-  if (mModuleType == JS::ModuleType::JSON &&
+  if (*mModuleType == JS::ModuleType::JSON &&
       nsContentUtils::IsJsonMimeType(typeString)) {
     return NS_OK;
   }

@@ -6,6 +6,7 @@
 #define mozilla_dom_workers_ScriptResponseHeaderProcessor_h_
 
 #include "js/Modules.h"
+#include "mozilla/Maybe.h"
 #include "mozilla/StaticPrefs_browser.h"
 #include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/dom/WorkerCommon.h"
@@ -34,7 +35,7 @@ class ScriptResponseHeaderProcessor final : public nsIRequestObserver {
   ScriptResponseHeaderProcessor(RefPtr<ThreadSafeWorkerRef>& aWorkerRef,
                                 bool aIsMainScript,
                                 bool aRequiresStrictMimeCheck,
-                                JS::ModuleType aModuleType)
+                                Maybe<JS::ModuleType> aModuleType)
       : mWorkerRef(aWorkerRef),
         mIsMainScript(aIsMainScript),
         mRequiresStrictMimeCheck(aRequiresStrictMimeCheck),
@@ -86,7 +87,7 @@ class ScriptResponseHeaderProcessor final : public nsIRequestObserver {
   RefPtr<ThreadSafeWorkerRef> mWorkerRef;
   const bool mIsMainScript;
   const bool mRequiresStrictMimeCheck;
-  const JS::ModuleType mModuleType;
+  const Maybe<JS::ModuleType> mModuleType;
 };
 
 }  // namespace workerinternals::loader

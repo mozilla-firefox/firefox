@@ -1050,9 +1050,10 @@ nsresult WorkerScriptLoader::LoadScript(
   // For each debugger script, a non-debugger script load of the same script
   // should have occured prior that processed the headers.
   if (!IsDebuggerScript()) {
-    JS::ModuleType moduleType = request->IsModuleRequest()
-                                    ? request->AsModuleRequest()->mModuleType
-                                    : JS::ModuleType::JavaScriptOrWasm;
+    Maybe<JS::ModuleType> moduleType;
+    if (request->IsModuleRequest()) {
+      moduleType = Some(request->AsModuleRequest()->mModuleType);
+    }
 
     bool requiresStrictMimeCheck =
         GetContentPolicyType(request) ==
