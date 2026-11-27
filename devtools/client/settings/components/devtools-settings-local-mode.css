@@ -26,6 +26,23 @@ li {
   border-block-end: var(--border-width) solid var(--border-color);
 }
 
+.highlighted {
+  animation: highlight 8s ease;
+
+  @media (prefers-reduced-motion) {
+    animation-timing-function: steps(1, end);
+  }
+}
+
+@keyframes highlight {
+  from {
+    background-color: var(--background-color-information);
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
 p {
   margin: 0;
 }

@@ -69,6 +69,23 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
     }));
   };
 
+  /**
+   * Scrolls to a mapping and highlights it.
+   *
+   * @param {string} prefPrefix The mapping's pref prefix, e.g. "devtools.local-mode.mappings.0."
+   */
+  async highlightMapping(prefPrefix) {
+    await this.updateComplete;
+    const item = this.shadowRoot?.querySelector(
+      `li[data-pref-prefix="${prefPrefix}"]`
+    );
+    if (!item) {
+      return;
+    }
+    item.scrollIntoView({ block: "center" });
+    item.classList.add("highlighted");
+  }
+
   #addMapping = async () => {
     const mappingOrigin = LocalModeMappings.getNextAvailableOrigin();
     const path = await this.#chooseFolder(mappingOrigin);

@@ -64,6 +64,18 @@ export class SettingsPanel {
     callbacks[event.action]({ toolbox: this.toolbox, event });
   };
 
+  /**
+   * Scrolls to a Local Mode mapping and highlights it.
+   *
+   * @param {string} prefPrefix The mapping's pref prefix, e.g. "devtools.local-mode.mappings.0."
+   */
+  async highlightLocalModeMapping(prefPrefix) {
+    await this.element?.updateComplete;
+    await this.element?.shadowRoot
+      ?.querySelector("devtools-settings-local-mode")
+      ?.highlightMapping(prefPrefix);
+  }
+
   destroy() {
     this.#abortController.abort();
     this.element?.setToolbox(null);
