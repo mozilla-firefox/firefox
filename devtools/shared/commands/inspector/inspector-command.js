@@ -260,11 +260,16 @@ class InspectorCommand {
         timeoutInMs * getSystemInfo().timeoutMultiplier
       );
     }).then(() => null);
+    const offTargetDestroyed = this.commands.targetCommand.targetFront.on(
+      "target-destroyed",
+      () => clearTimeout(timeoutId)
+    );
     const onQuerySelectors = querySelectors(rootNodeFront);
     const result = await Promise.race([onTimeout, onQuerySelectors]);
 
     // Make sure to clear the timeout in case onQuerySelectors resolved first.
     clearTimeout(timeoutId);
+    offTargetDestroyed();
 
     return result;
   }

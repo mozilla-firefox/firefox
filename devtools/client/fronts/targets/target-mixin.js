@@ -354,6 +354,14 @@ function TargetMixin(parentClass) {
       return this._url;
     }
 
+    get urlOrigin() {
+      const parsedURL = URL.parse(this._url);
+      if (!parsedURL) {
+        return null;
+      }
+      return parsedURL.origin;
+    }
+
     get isWorkerTarget() {
       // XXX Remove the check on `workerDescriptor` as part of Bug 1667404.
       return (
