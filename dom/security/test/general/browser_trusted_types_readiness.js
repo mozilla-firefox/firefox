@@ -145,6 +145,10 @@ add_task(async function test_readiness() {
     ],
     [
       "csp=none&strict=self&script=trusted_html",
+      "doc-top_htmlsink-trusted_writesink-none_ttcsp-none_strictcsp-enforce_created-1_used-1_lib-0_js-1",
+    ],
+    [
+      "csp=none&strict=selfplus&script=trusted_html",
       "doc-top_htmlsink-trusted_writesink-none_ttcsp-none_strictcsp-none_created-1_used-1_lib-0_js-1",
     ],
     [

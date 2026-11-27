@@ -14,6 +14,10 @@ const STRICT_CSPS = {
     "Content-Security-Policy",
     "script-src 'nonce-n' 'strict-dynamic'; base-uri 'self'",
   ],
+  selfplus: [
+    "Content-Security-Policy",
+    "script-src 'nonce-n' 'strict-dynamic'; base-uri 'self' https://example.org",
+  ],
 };
 
 // "plain" pages have no script at all, "empty" ones an empty script element,

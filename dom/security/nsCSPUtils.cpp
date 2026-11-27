@@ -1840,6 +1840,20 @@ bool nsCSPDirective::hasReportSampleKeyword() const {
   return false;
 }
 
+bool nsCSPDirective::isStrict() const {
+  bool hasNoneOrSelf = false;
+  for (nsCSPBaseSrc* src : mSrcs) {
+    if (src->isReportSample()) {
+      continue;
+    }
+    if (!src->isKeyword(CSP_NONE) && !src->isSelf()) {
+      return false;
+    }
+    hasNoneOrSelf = true;
+  }
+  return hasNoneOrSelf;
+}
+
 bool nsCSPDirective::ContainsTrustedTypesDirectivePolicyName(
     const nsAString& aPolicyName) const {
   MOZ_ASSERT(mDirective == nsIContentSecurityPolicy::TRUSTED_TYPES_DIRECTIVE);
@@ -2067,9 +2081,7 @@ bool nsCSPPolicy::isStrict() const {
   }
   for (nsCSPDirective* directive : mDirectives) {
     if (directive->equals(nsIContentSecurityPolicy::BASE_URI_DIRECTIVE)) {
-      // This works because 'none' is only included by the parser when no
-      // other source except 'report-sample' is used.
-      return directive->allows(CSP_NONE);
+      return directive->isStrict();
     }
   }
   return false;
