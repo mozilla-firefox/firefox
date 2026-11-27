@@ -62,11 +62,6 @@ static HashNumber HashEvalString(JSLinearString* str) {
   // (because that's most likely to contain differences). We always
   // sample the end, and take 16 evenly spaced samples of everything
   // else.
-  //
-  // Note that Latin1 and two-byte strings with the same contents get different
-  // hashes here. This is intentional: two-byte hashing of Latin1 chars is
-  // slower, and evaluating the same long string in both encodings at the same
-  // eval site is rare enough that recompiling in that case is fine.
   auto hashSamples = [&](const auto* chars) {
     HashNumber hash = mozilla::HashGeneric(length);
     uint32_t stride = (length - SampleLength) / (NumSamples - 1);
