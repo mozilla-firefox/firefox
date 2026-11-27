@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.241
- * pdfjsBuild = 808186117
+ * pdfjsVersion = 7.0.247
+ * pdfjsBuild = e47398270
  */
 /******/ var __webpack_modules__ = ({
 
@@ -1807,35 +1807,36 @@ class WidgetAnnotation extends Annotation {
     if (data.actions === undefined) {
       data.actions = (0,core_utils.collectActions)(xref, dict, util.AnnotationActionEventType);
     }
-    let fieldValue = (0,core_utils.getInheritableProperty)({
+    const fieldType = (0,core_utils.getInheritableProperty)({
       dict,
-      key: "V",
-      getArray: true
+      key: "FT"
     });
-    data.fieldValue = this._decodeFormValue(fieldValue);
+    data.fieldType = fieldType instanceof primitives.Name ? fieldType.name : null;
     const defaultFieldValue = (0,core_utils.getInheritableProperty)({
       dict,
       key: "DV",
       getArray: true
     });
     data.defaultFieldValue = this._decodeFormValue(defaultFieldValue);
-    if (fieldValue === undefined && annotationGlobals.xfaDatasets) {
-      const path = this._title.str;
-      if (path) {
-        this._hasValueFromXFA = true;
-        data.fieldValue = fieldValue = annotationGlobals.xfaDatasets.getValue(path);
-      }
-    }
-    if (fieldValue === undefined && data.defaultFieldValue !== null) {
-      data.fieldValue = data.defaultFieldValue;
+    const fieldValue = (0,core_utils.getInheritableProperty)({
+      dict,
+      key: "V",
+      getArray: true
+    });
+    const {
+      xfaDatasets
+    } = annotationGlobals;
+    const path = this._title.str;
+    if (fieldValue !== undefined) {
+      data.fieldValue = this._decodeFormValue(fieldValue);
+    } else if (xfaDatasets && path) {
+      this._hasValueFromXFA = true;
+      data.fieldValue = xfaDatasets.getValue(path);
+    } else {
+      data.fieldValue = data.fieldType === "Tx" ? null : data.defaultFieldValue;
     }
     data.alternativeText = (0,string_utils.stringToPDFString)(dict.get("TU") || "");
     data.hasAppearance ||= this._needAppearances && data.fieldValue !== undefined && data.fieldValue !== null;
-    const fieldType = (0,core_utils.getInheritableProperty)({
-      dict,
-      key: "FT"
-    });
-    data.fieldType = fieldType instanceof primitives.Name ? fieldType.name : null;
     const localResources = (0,core_utils.getInheritableProperty)({
       dict,
       key: "DR"
@@ -47557,7 +47558,7 @@ class WorkerMessageHandler {
       docId,
       apiVersion
     } = docParams;
-    const workerVersion = "7.0.241";
+    const workerVersion = "7.0.247";
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match the Worker version "${workerVersion}".`);
     }

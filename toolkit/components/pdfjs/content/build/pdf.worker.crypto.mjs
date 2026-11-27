@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.241
- * pdfjsBuild = 808186117
+ * pdfjsVersion = 7.0.247
+ * pdfjsBuild = e47398270
  */
 export const __webpack_esm_ids__ = ["crypto"];
 export const __webpack_esm_modules__ = {
