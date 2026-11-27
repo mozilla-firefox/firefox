@@ -75,7 +75,10 @@ object HomeToolbarStoreBuilder {
                             settings = context.components.settings,
                             translationsFeatureSettings = TranslationsEnabledSettings.dataStore(context),
                             menuCustomizationRepository =
-                                if (context.components.settings.isMenuCustomizationScreenEnabled) {
+                                if (
+                                    context.components.settings.isMenuCustomizationScreenEnabled ||
+                                        context.components.settings.isToolsMenuCustomizationEnabled
+                                ) {
                                     context.components.menuCustomizationRepository
                                 } else {
                                     null

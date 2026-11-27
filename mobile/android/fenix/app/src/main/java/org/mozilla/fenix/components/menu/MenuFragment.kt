@@ -425,7 +425,11 @@ class MenuFragment : BottomSheetDialogFragment() {
                     customizationInfo = readMenuCustomization(),
                     customizedSectionsInfo = readSectionsCustomization(),
                 )
-            MenuAccessPoint.Home -> HomeMenuConfiguration.sections(customizationInfo = readMenuCustomization())
+            MenuAccessPoint.Home ->
+                HomeMenuConfiguration.sections(
+                    customizationInfo = readMenuCustomization(),
+                    customizedSectionsInfo = readSectionsCustomization(),
+                )
             MenuAccessPoint.External ->
                 CustomTabMenuConfiguration.sections(
                     isToolbarAtBottom = requireContext().isToolbarAtBottom(),

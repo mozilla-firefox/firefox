@@ -9,7 +9,9 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Test
 import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
+import org.mozilla.fenix.components.menu.CustomizedItemInfo
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
+import org.mozilla.fenix.components.menu.CustomizedSectionInfo
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.PAGE_CONTROLS_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.READER_VIEW_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.TABS_CONTROLS_GROUP_ID
@@ -21,6 +23,7 @@ import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Downloads
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Extensions
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.History
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.IPProtection
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.More
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.MozillaAccount
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Passwords
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Quit
@@ -218,6 +221,142 @@ class HomeMenuConfigurationTest {
         notifications.forEach { notification ->
             assertFalse(HomeMenuConfiguration.hasNotificationToShow(setOf(notification), customizationInfo = null))
         }
+    }
+
+    @Test
+    fun `GIVEN extensions is hidden in browser tools WHEN building the home menu THEN hide extensions and keep all other sections`() {
+        val sectionsInfo = toolsSectionInfoWithoutExtensions()
+        val expected = HomeMenuConfiguration.sections().filterNot { it.id == EXTENSIONS_GROUP_ID }
+        val toolsVisibleInfo =
+            BrowserMenuConfiguration.defaultMenuInfo(isToolbarAtBottom = false, isExpandedToolbarEnabled = false)
+
+        assertEquals(expected, HomeMenuConfiguration.sections(customizedSectionsInfo = sectionsInfo))
+        assertEquals(
+            expected,
+            HomeMenuConfiguration.sections(
+                customizationInfo = toolsVisibleInfo,
+                customizedSectionsInfo = sectionsInfo,
+            ),
+        )
+    }
+
+    @Test
+    fun `GIVEN extensions is kept or reordered in browser tools WHEN building the home menu THEN keep the extensions section`() {
+        val defaultToolsInfo = BrowserMenuConfiguration.defaultSectionsInfo().getValue(TOOLS_GROUP_ID)
+        val reorderedToolsInfo = defaultToolsInfo.copy(items = defaultToolsInfo.items.reversed())
+
+        assertEquals(
+            HomeMenuConfiguration.sections(),
+            HomeMenuConfiguration.sections(customizedSectionsInfo = mapOf(TOOLS_GROUP_ID to defaultToolsInfo)),
+        )
+        assertEquals(
+            HomeMenuConfiguration.sections(),
+            HomeMenuConfiguration.sections(customizedSectionsInfo = mapOf(TOOLS_GROUP_ID to reorderedToolsInfo)),
+        )
+        assertEquals(
+            HomeMenuConfiguration.sections(),
+            HomeMenuConfiguration.sections(customizedSectionsInfo = emptyMap()),
+        )
+    }
+
+    @Test
+    fun `GIVEN extensions is only inside the browser tools more item WHEN building the home menu THEN keep the extensions section`() {
+        val toolsInfo =
+            CustomizedSectionInfo(
+                sectionId = TOOLS_GROUP_ID,
+                items = listOf(CustomizedItemInfo(More(emptyList()).id, subItemIds = listOf(Extensions.id))),
+                hiddenItems = emptyList(),
+            )
+
+        assertEquals(
+            HomeMenuConfiguration.sections(),
+            HomeMenuConfiguration.sections(customizedSectionsInfo = mapOf(TOOLS_GROUP_ID to toolsInfo)),
+        )
+    }
+
+    @Test
+    fun `GIVEN browser tools is hidden even when its items keep extensions WHEN building the home menu THEN hide extensions`() {
+        val toolsHidden =
+            menuInfo(
+                shown =
+                    listOf(
+                        BrowserMenuConfiguration.LIBRARY_GROUP_ID,
+                        BrowserMenuConfiguration.ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                    ),
+                hidden = listOf(TOOLS_GROUP_ID),
+            )
+        val sectionsInfo = BrowserMenuConfiguration.defaultSectionsInfo()
+
+        val result =
+            HomeMenuConfiguration.sections(
+                customizationInfo = toolsHidden,
+                customizedSectionsInfo = sectionsInfo,
+            )
+
+        assertFalse(result.any { it.id == EXTENSIONS_GROUP_ID })
+    }
+
+    @Test
+    fun `GIVEN an extension update notification WHEN checking highlight with customized tools items THEN follow whether extensions is shown`() {
+        val notifications = setOf(SupportedMenuNotifications.ExtensionUpdate)
+        val extensionsHidden = toolsSectionInfoWithoutExtensions()
+        val extensionsKept = BrowserMenuConfiguration.defaultSectionsInfo()
+        val toolsHidden =
+            menuInfo(
+                shown =
+                    listOf(
+                        BrowserMenuConfiguration.LIBRARY_GROUP_ID,
+                        BrowserMenuConfiguration.ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                    ),
+                hidden = listOf(TOOLS_GROUP_ID),
+            )
+
+        assertFalse(
+            HomeMenuConfiguration.hasNotificationToShow(
+                notifications = notifications,
+                customizationInfo = null,
+                customizedSectionsInfo = extensionsHidden,
+            )
+        )
+        assertTrue(
+            HomeMenuConfiguration.hasNotificationToShow(
+                notifications = notifications,
+                customizationInfo = null,
+                customizedSectionsInfo = extensionsKept,
+            )
+        )
+        assertFalse(
+            HomeMenuConfiguration.hasNotificationToShow(
+                notifications = notifications,
+                customizationInfo = toolsHidden,
+                customizedSectionsInfo = extensionsKept,
+            )
+        )
+    }
+
+    @Test
+    fun `GIVEN extension update and downloads notifications WHEN only extensions is hidden THEN still highlight for downloads`() {
+        val notifications = setOf(SupportedMenuNotifications.ExtensionUpdate, SupportedMenuNotifications.Downloads)
+
+        assertTrue(
+            HomeMenuConfiguration.hasNotificationToShow(
+                notifications = notifications,
+                customizationInfo = null,
+                customizedSectionsInfo = toolsSectionInfoWithoutExtensions(),
+            )
+        )
+    }
+
+    private fun toolsSectionInfoWithoutExtensions(): Map<String, CustomizedSectionInfo> {
+        val defaultTools = BrowserMenuConfiguration.defaultSectionsInfo().getValue(TOOLS_GROUP_ID)
+        val (extensionsItems, otherItems) = defaultTools.items.partition { it.id == Extensions.id }
+        return mapOf(
+            TOOLS_GROUP_ID to
+                defaultTools.copy(
+                    items = otherItems,
+                    hiddenItems = defaultTools.hiddenItems + extensionsItems,
+                )
+        )
     }
 
     private fun menuInfo(shown: List<String>, hidden: List<String> = emptyList()) =

@@ -7,6 +7,7 @@ package org.mozilla.fenix.components.menu.configuration
 import androidx.annotation.VisibleForTesting
 import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
+import org.mozilla.fenix.components.menu.CustomizedSectionInfo
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Bookmarks
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeHomepage
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.DefaultBrowserBanner
@@ -47,12 +48,20 @@ object HomeMenuConfiguration {
      *
      * @param customizationInfo The order and visibility of the browser menu sections chosen by the user. The default
      *   sections are shown if this is `null`.
+     * @param customizedSectionsInfo The items of each browser menu section chosen by the user, keyed by section id. The
+     *   Extensions section is left out when Extensions is not shown in the browser Tools section.
      */
-    fun sections(customizationInfo: CustomizedMenuInfo? = null): List<MenuSectionConfiguration> {
-        val defaultSections = defaultSections()
-        if (customizationInfo == null) return defaultSections
+    fun sections(
+        customizationInfo: CustomizedMenuInfo? = null,
+        customizedSectionsInfo: Map<String, CustomizedSectionInfo> = emptyMap(),
+    ): List<MenuSectionConfiguration> {
+        val shownSections =
+            defaultSections().filterNot {
+                it.id == EXTENSIONS_GROUP_ID && !isExtensionsShownInBrowserMenu(customizedSectionsInfo)
+            }
+        if (customizationInfo == null) return shownSections
 
-        val (promoBanner, following) = defaultSections.partition { it.id == PROMO_BANNER_GROUP_ID }
+        val (promoBanner, following) = shownSections.partition { it.id == PROMO_BANNER_GROUP_ID }
         val followingByBrowserId = following.associateBy { browserSectionIds.getValue(it.id) }
         return promoBanner + customizationInfo.visibleSectionIds.mapNotNull { followingByBrowserId[it] }
     }
@@ -64,16 +73,25 @@ object HomeMenuConfiguration {
      * @param notifications The notifications to check.
      * @param customizationInfo The order and visibility of the browser menu sections chosen by the user, or `null` for
      *   the default.
+     * @param customizedSectionsInfo The items of each browser menu section chosen by the user, keyed by section id. The
+     *   Extensions section is left out when Extensions is not shown in the browser Tools section.
      */
     fun hasNotificationToShow(
         notifications: Collection<SupportedMenuNotifications>,
         customizationInfo: CustomizedMenuInfo?,
+        customizedSectionsInfo: Map<String, CustomizedSectionInfo> = emptyMap(),
     ): Boolean {
         val notificationItems = notifications.mapNotNull { it.menuItem }
         if (notificationItems.isEmpty()) return false
 
-        val shownItems = sections(customizationInfo).flatMap { it.items }
+        val shownItems = sections(customizationInfo, customizedSectionsInfo).flatMap { it.items }
         return notificationItems.any { it in shownItems }
+    }
+
+    /** Whether Extensions is shown in the Tools section of the browser menu. */
+    private fun isExtensionsShownInBrowserMenu(customizedSectionsInfo: Map<String, CustomizedSectionInfo>): Boolean {
+        val toolsInfo = customizedSectionsInfo[BrowserMenuConfiguration.TOOLS_GROUP_ID] ?: return true
+        return toolsInfo.items.any { Extensions.id == it.id || Extensions.id in it.subItemIds }
     }
 
     private val SupportedMenuNotifications.menuItem: FenixMenuItem?

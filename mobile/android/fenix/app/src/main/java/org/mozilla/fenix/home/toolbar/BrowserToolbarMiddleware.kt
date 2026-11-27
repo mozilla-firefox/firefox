@@ -82,6 +82,8 @@ import org.mozilla.fenix.components.appstate.VoiceSearchAction.VoiceInputRequest
 import org.mozilla.fenix.components.menu.MenuAccessPoint
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
 import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration
+import org.mozilla.fenix.components.menu.customizedSectionsInfoFlow
+import org.mozilla.fenix.components.menu.customizedSectionsInfoIfEnabled
 import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
 import org.mozilla.fenix.ext.nav
 import org.mozilla.fenix.home.HomeFragmentDirections
@@ -624,8 +626,9 @@ class BrowserToolbarMiddleware(
             combine(
                     appStore.flow().map { it.supportedMenuNotifications }.distinctUntilChanged(),
                     menuCustomizationRepository?.customizedMenuInfo ?: flowOf(null),
-                ) { notifications, info ->
-                    HomeMenuConfiguration.hasNotificationToShow(notifications, info)
+                    menuCustomizationRepository.customizedSectionsInfoFlow(settings.isToolsMenuCustomizationEnabled),
+                ) { notifications, info, sectionsInfo ->
+                    HomeMenuConfiguration.hasNotificationToShow(notifications, info, sectionsInfo)
                 }
                 .distinctUntilChanged()
                 .collect {
@@ -753,6 +756,9 @@ class BrowserToolbarMiddleware(
                         HomeMenuConfiguration.hasNotificationToShow(
                             appStore.state.supportedMenuNotifications,
                             menuCustomizationRepository?.customizedMenuInfo?.value,
+                            menuCustomizationRepository.customizedSectionsInfoIfEnabled(
+                                settings.isToolsMenuCustomizationEnabled
+                            ),
                         ),
                     onClick = MenuClicked(source),
                 )
