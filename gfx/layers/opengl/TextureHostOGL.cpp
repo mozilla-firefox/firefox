@@ -567,11 +567,10 @@ SurfaceDescriptor SurfaceTextureHost::GetSurfaceDescriptor() {
 AndroidHardwareBufferTextureSource::AndroidHardwareBufferTextureSource(
     TextureSourceProvider* aProvider,
     AndroidHardwareBuffer* aAndroidHardwareBuffer, gfx::SurfaceFormat aFormat,
-    GLenum aTarget, GLenum aWrapMode, gfx::IntSize aSize)
+    GLenum aWrapMode, gfx::IntSize aSize)
     : mGL(aProvider->GetGLContext()),
       mAndroidHardwareBuffer(aAndroidHardwareBuffer),
       mFormat(aFormat),
-      mTextureTarget(aTarget),
       mWrapMode(aWrapMode),
       mSize(aSize),
       mEGLImage(EGL_NO_IMAGE),
@@ -665,16 +664,28 @@ bool AndroidHardwareBufferTextureSource::EnsureEGLImage() {
     mEGLImage = egl->fCreateImage(
         EGL_NO_CONTEXT, LOCAL_EGL_NATIVE_BUFFER_ANDROID, clientBuffer, attrs);
   }
-  MOZ_ASSERT(mEGLImage);
+  if (!mEGLImage) {
+    gfxCriticalNoteOnce << "AHB compositor: failed to create EGLImage";
+    return false;
+  }
+
+  gl::GLContext::LocalErrorScope errorScope(*mGL);
 
   mGL->fGenTextures(1, &mTextureHandle);
-  mGL->fBindTexture(LOCAL_GL_TEXTURE_EXTERNAL, mTextureHandle);
-  mGL->fTexParameteri(LOCAL_GL_TEXTURE_EXTERNAL, LOCAL_GL_TEXTURE_WRAP_T,
+  mGL->fBindTexture(LOCAL_GL_TEXTURE_2D, mTextureHandle);
+  mGL->fTexParameteri(LOCAL_GL_TEXTURE_2D, LOCAL_GL_TEXTURE_WRAP_T,
                       LOCAL_GL_CLAMP_TO_EDGE);
-  mGL->fTexParameteri(LOCAL_GL_TEXTURE_EXTERNAL, LOCAL_GL_TEXTURE_WRAP_S,
+  mGL->fTexParameteri(LOCAL_GL_TEXTURE_2D, LOCAL_GL_TEXTURE_WRAP_S,
                       LOCAL_GL_CLAMP_TO_EDGE);
-  mGL->fEGLImageTargetTexture2D(LOCAL_GL_TEXTURE_EXTERNAL, mEGLImage);
-
+  mGL->fEGLImageTargetTexture2D(LOCAL_GL_TEXTURE_2D, mEGLImage);
+  const GLenum error = errorScope.GetError();
+  if (!mTextureHandle || error != LOCAL_GL_NO_ERROR) {
+    gfxCriticalNoteOnce << "AHB compositor: failed to bind EGLImage, GL error: "
+                        << error;
+    DeleteTextureHandle();
+    DestroyEGLImage();
+    return false;
+  }
   return true;
 }
 
@@ -707,14 +718,14 @@ void AndroidHardwareBufferTextureSource::BindTexture(
     return;
   }
 
+  gl->fActiveTexture(aTextureUnit);
   if (!EnsureEGLImage()) {
     return;
   }
 
-  gl->fActiveTexture(aTextureUnit);
-  gl->fBindTexture(mTextureTarget, mTextureHandle);
+  gl->fBindTexture(LOCAL_GL_TEXTURE_2D, mTextureHandle);
 
-  ApplySamplingFilterToBoundTexture(gl, aSamplingFilter, mTextureTarget);
+  ApplySamplingFilterToBoundTexture(gl, aSamplingFilter, LOCAL_GL_TEXTURE_2D);
 }
 
 bool AndroidHardwareBufferTextureSource::IsValid() const { return !!gl(); }
@@ -810,15 +821,18 @@ void AndroidHardwareBufferTextureHost::PushResourceUpdates(
                     ? &wr::TransactionBuilder::AddExternalImage
                     : &wr::TransactionBuilder::UpdateExternalImage;
 
-  // Prefer TextureExternal unless the backend requires TextureRect.
-  TextureHost::NativeTexturePolicy policy =
-      TextureHost::BackendNativeTexturePolicy(
-          aResources.GetCapabilities().mBackendType, GetSize());
-  auto imageType = policy == TextureHost::NativeTexturePolicy::REQUIRE
-                       ? wr::ExternalImageType::TextureHandle(
-                             wr::ImageBufferKind::TextureRect)
-                       : wr::ExternalImageType::TextureHandle(
-                             wr::ImageBufferKind::TextureExternal);
+  const auto policy = BackendNativeTexturePolicy(
+      aResources.GetCapabilities().mBackendType, GetSize());
+  auto imageType =
+      wr::ExternalImageType::TextureHandle(wr::ImageBufferKind::Texture2D);
+  if (policy == NativeTexturePolicy::REQUIRE) {
+    // SWGL uses a rectangle texture for the pixels mapped by MapPlane().
+    imageType =
+        wr::ExternalImageType::TextureHandle(wr::ImageBufferKind::TextureRect);
+  } else if (policy == NativeTexturePolicy::FORBID) {
+    // LockSWGL returns the mapped pixels as raw data.
+    imageType = wr::ExternalImageType::Buffer();
+  }
 
   switch (GetFormat()) {
     case gfx::SurfaceFormat::R8G8B8X8:

@@ -126,18 +126,32 @@ bool RenderAndroidHardwareBufferTextureHost::EnsureLockable() {
     mEGLImage = egl->fCreateImage(
         EGL_NO_CONTEXT, LOCAL_EGL_NATIVE_BUFFER_ANDROID, clientBuffer, attrs);
   }
-  MOZ_ASSERT(mEGLImage);
+  if (!mEGLImage) {
+    gfxCriticalNoteOnce << "AHB WebRender: failed to create EGLImage";
+    return false;
+  }
 
+  gl::GLContext::LocalErrorScope errorScope(*mGL);
   mGL->fGenTextures(1, &mTextureHandle);
-  mGL->fBindTexture(LOCAL_GL_TEXTURE_EXTERNAL, mTextureHandle);
-  mGL->fTexParameteri(LOCAL_GL_TEXTURE_EXTERNAL, LOCAL_GL_TEXTURE_WRAP_T,
+  ActivateBindAndTexParameteri(mGL, LOCAL_GL_TEXTURE0, LOCAL_GL_TEXTURE_2D,
+                               mTextureHandle);
+  mGL->fTexParameteri(LOCAL_GL_TEXTURE_2D, LOCAL_GL_TEXTURE_WRAP_S,
                       LOCAL_GL_CLAMP_TO_EDGE);
-  mGL->fTexParameteri(LOCAL_GL_TEXTURE_EXTERNAL, LOCAL_GL_TEXTURE_WRAP_S,
+  mGL->fTexParameteri(LOCAL_GL_TEXTURE_2D, LOCAL_GL_TEXTURE_WRAP_T,
                       LOCAL_GL_CLAMP_TO_EDGE);
-  mGL->fEGLImageTargetTexture2D(LOCAL_GL_TEXTURE_EXTERNAL, mEGLImage);
-
-  ActivateBindAndTexParameteri(mGL, LOCAL_GL_TEXTURE0,
-                               LOCAL_GL_TEXTURE_EXTERNAL_OES, mTextureHandle);
+  // Binding the EGLImage to GL_TEXTURE_2D shares the single-plane RGBA8
+  // or RGBX8 buffer storage. WebRender can sample it with sampler2D
+  // without copying the pixels. Video images that require an external
+  // sampler use separate texture hosts.
+  mGL->fEGLImageTargetTexture2D(LOCAL_GL_TEXTURE_2D, mEGLImage);
+  const GLenum error = errorScope.GetError();
+  if (!mTextureHandle || error != LOCAL_GL_NO_ERROR) {
+    gfxCriticalNoteOnce << "AHB WebRender: failed to bind EGLImage, GL error: "
+                        << error;
+    DeleteTextureHandle();
+    DestroyEGLImage();
+    return false;
+  }
   return true;
 }
 
@@ -239,12 +253,12 @@ RenderAndroidHardwareBufferTextureHost::ReadTexImage() {
   }
 
   layers::ShaderConfigOGL config = layers::ShaderConfigFromTargetAndFormat(
-      LOCAL_GL_TEXTURE_EXTERNAL, mAndroidHardwareBuffer->mFormat);
+      LOCAL_GL_TEXTURE_2D, mAndroidHardwareBuffer->mFormat);
   int shaderConfig = config.mFeatures;
 
   bool ret = mGL->ReadTexImageHelper()->ReadTexImage(
-      surf, mTextureHandle, LOCAL_GL_TEXTURE_EXTERNAL, GetSize(),
-      gfx::Matrix4x4(), shaderConfig, /* aYInvert */ false);
+      surf, mTextureHandle, LOCAL_GL_TEXTURE_2D, GetSize(), gfx::Matrix4x4(),
+      shaderConfig, /* aYInvert */ false);
   if (!ret) {
     return nullptr;
   }
@@ -284,7 +298,7 @@ RenderAndroidHardwareBufferTextureHost::CreateTextureSource(
     layers::TextureSourceProvider* aProvider) {
   return new layers::AndroidHardwareBufferTextureSource(
       aProvider, mAndroidHardwareBuffer, mAndroidHardwareBuffer->mFormat,
-      LOCAL_GL_TEXTURE_EXTERNAL, LOCAL_GL_CLAMP_TO_EDGE, GetSize());
+      LOCAL_GL_CLAMP_TO_EDGE, GetSize());
 }
 
 }  // namespace wr

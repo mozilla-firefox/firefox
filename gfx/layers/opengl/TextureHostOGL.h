@@ -420,7 +420,7 @@ class AndroidHardwareBufferTextureSource : public TextureSource,
   AndroidHardwareBufferTextureSource(
       TextureSourceProvider* aProvider,
       AndroidHardwareBuffer* aAndroidHardwareBuffer, gfx::SurfaceFormat aFormat,
-      GLenum aTarget, GLenum aWrapMode, gfx::IntSize aSize);
+      GLenum aWrapMode, gfx::IntSize aSize);
 
   const char* Name() const override { return "SurfaceTextureSource"; }
 
@@ -435,7 +435,7 @@ class AndroidHardwareBufferTextureSource : public TextureSource,
 
   gfx::SurfaceFormat GetFormat() const override { return mFormat; }
 
-  GLenum GetTextureTarget() const override { return mTextureTarget; }
+  GLenum GetTextureTarget() const override { return LOCAL_GL_TEXTURE_2D; }
 
   GLenum GetWrapMode() const override { return mWrapMode; }
 
@@ -453,7 +453,6 @@ class AndroidHardwareBufferTextureSource : public TextureSource,
   RefPtr<gl::GLContext> mGL;
   RefPtr<AndroidHardwareBuffer> mAndroidHardwareBuffer;
   const gfx::SurfaceFormat mFormat;
-  const GLenum mTextureTarget;
   const GLenum mWrapMode;
   const gfx::IntSize mSize;
 
