@@ -299,6 +299,14 @@ object MainMenuSelectors : SelectorContainer {
             groups = setOf(Group.HOME_BANNER, Group.HOME_PAGE_MAIN_MENU_ITEMS),
         )
 
+    val DEFAULT_BROWSER_BANNER_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.browser_menu_default_banner_button),
+            description = "Make Firefox your default banner button",
+            groups = setOf(Group.HOME_BANNER, Group.HOME_PAGE_MAIN_MENU_ITEMS),
+        )
+
     val DEFAULT_BROWSER_BANNER_DISMISS =
         Selector(
             strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,

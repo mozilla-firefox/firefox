@@ -1757,4 +1757,19 @@ class SettingsTest {
 
         assertEquals(listOf(false, true), values)
     }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `WHEN isDefaultBrowser changes THEN isDefaultBrowserFlow emits the new value`() = runTest {
+        settings.isDefaultBrowser = false
+        val values = mutableListOf<Boolean>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            settings.isDefaultBrowserFlow.toList(values)
+        }
+
+        settings.isDefaultBrowser = true
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(listOf(false, true), values)
+    }
 }

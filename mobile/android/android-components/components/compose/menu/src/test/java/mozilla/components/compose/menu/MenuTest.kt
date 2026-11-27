@@ -220,6 +220,16 @@ class MenuTest {
     }
 
     @Test
+    fun `WHEN clicking the button of a banner THEN dispatch its click event`() {
+        val events = mutableListOf<MenuAction>()
+        setMenu(listOf(MenuItemsGroup.Row(id = "banner", items = listOf(banner))), middleware = recording(events))
+
+        composeTestRule.onNodeWithText(BANNER_BUTTON).performClick()
+
+        assertEquals(listOf<MenuAction>(BannerClicked), events.filterIsInstance<MenuEvent>())
+    }
+
+    @Test
     fun `WHEN dismissing a banner THEN dispatch its dismiss event`() {
         val closeButtonContentDescription =
             testContext.getString(MozacMenuR.string.mozac_menu_banner_dismiss_description)
@@ -357,6 +367,7 @@ class MenuTest {
             title = MenuItemTitle(Text.String(BANNER_TITLE)),
             summary = MenuItemSummary(Text.String(BANNER_SUBTITLE)),
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_globe_24),
+            actionButtonText = Text.String(BANNER_BUTTON),
             onClickEvent = BannerClicked,
             onDismissEvent = BannerDismissed,
         )
@@ -371,5 +382,6 @@ class MenuTest {
     private companion object {
         const val BANNER_TITLE = "Banner title"
         const val BANNER_SUBTITLE = "Banner subtitle"
+        const val BANNER_BUTTON = "Banner button"
     }
 }

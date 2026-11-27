@@ -65,6 +65,7 @@ class MenuItemEventsTest {
                 title = MenuItemTitle(Text.String("Banner")),
                 summary = MenuItemSummary(Text.String("Subtitle")),
                 icon = MenuItemIconRes(0),
+                actionButtonText = Text.String("Button"),
                 onClickEvent = TestEvent("click"),
                 onDismissEvent = TestEvent("dismiss"),
             )

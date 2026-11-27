@@ -3325,6 +3325,20 @@ class Settings(
             default = false,
         )
 
+    /** The value of [isDefaultBrowser], and every change of it. */
+    val isDefaultBrowserFlow: Flow<Boolean> = callbackFlow {
+        val key = appContext.getPreferenceKey(R.string.pref_key_default_browser)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, changedKey ->
+            if (changedKey == null || changedKey == key) {
+                trySend(isDefaultBrowser)
+            }
+        }
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+        send(isDefaultBrowser)
+        awaitClose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+        .distinctUntilChanged()
+
     /** Indicates if the sponsored tiles are suppressed. */
     var suppressSponsoredTopSitesEnabled by
         booleanPreference(

@@ -4,7 +4,6 @@
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <resources>
   <dimen name="mozac_menu_extra_small_padding">2dp</dimen>
-  <dimen name="mozac_menu_banner_bottom_padding">10dp</dimen>
   <dimen name="mozac_menu_item_min_height">52dp</dimen>
   <dimen name="mozac_menu_item_with_summary_min_height">56dp</dimen>
 </resources>

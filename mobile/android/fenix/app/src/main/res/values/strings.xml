@@ -285,6 +285,8 @@
     <string name="browser_menu_default_banner_title">Make %1$s your default</string>
     <!-- Label text within the set as default banner  -->
     <string name="browser_menu_default_banner_subtitle_2">Fast, private, and made for you.</string>
+    <!-- Button in the banner prompting the user to set Firefox as their default browser (tapping it sets the app as default browser on the device) -->
+    <string name="browser_menu_default_banner_button">Make default</string>
 
     <!-- Extensions management fragment -->
     <!-- Text displayed when there are no extensions to be shown -->

@@ -127,6 +127,7 @@ class MenuItemProvidersFactory(
                     settings = settings,
                     appName = context.getString(R.string.app_name),
                     target = target,
+                    scope = menuViewScope,
                     setAsDefaultBrowser = setAsDefaultBrowserDelegate,
                 )
 

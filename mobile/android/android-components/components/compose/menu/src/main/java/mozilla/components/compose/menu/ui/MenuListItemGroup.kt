@@ -33,8 +33,13 @@ internal fun ListMenuItemsGroup(
     onClick: (MenuEvent) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isBanner = items.singleOrNull() is BannerMenuItem
+
     Column(
-        modifier = modifier.clip(shape = MaterialTheme.shapes.extraLarge).menuListGroupSemantics(items.size),
+        modifier =
+            modifier
+                .then(if (isBanner) Modifier else Modifier.clip(MaterialTheme.shapes.extraLarge))
+                .menuListGroupSemantics(items.size),
         verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static25),
     ) {
         items.forEachIndexed { index, it ->
@@ -82,9 +87,10 @@ internal fun ListMenuItemsGroup(
                         title = it.title.text,
                         summary = it.summary,
                         icon = it.icon,
+                        actionButtonText = it.actionButtonText,
                         onDismiss = { onClick(it.onDismissEvent) },
                         onClick = { onClick(it.onClickEvent) },
-                        modifier = itemModifier,
+                        modifier = Modifier,
                     )
             }
         }

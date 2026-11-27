@@ -103,7 +103,8 @@ data class StandardMenuItem(
  * @param title The title of the banner.
  * @param summary Summary to show for this banner.
  * @param icon Icon to show for this banner.
- * @param onClickEvent [MenuEvent] to dispatch when the banner is clicked.
+ * @param onClickEvent [MenuEvent] to dispatch when the banner or its call-to-action button is clicked.
+ * @param actionButtonText The text of the call-to-action button.
  * @param onDismissEvent [MenuEvent] to dispatch when the banner is dismissed.
  */
 data class BannerMenuItem(
@@ -111,6 +112,7 @@ data class BannerMenuItem(
     override val summary: MenuItemSummary,
     override val icon: MenuItemIcon,
     override val onClickEvent: MenuEvent,
+    val actionButtonText: Text,
     val onDismissEvent: MenuEvent,
 ) : MenuItem() {
     override val contentDescription: Text? = null

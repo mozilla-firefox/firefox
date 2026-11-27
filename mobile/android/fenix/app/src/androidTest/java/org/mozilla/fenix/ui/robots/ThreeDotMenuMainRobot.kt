@@ -387,6 +387,9 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
             .onNodeWithText(getStringResource(R.string.browser_menu_default_banner_subtitle_2))
             .assertIsDisplayed()
         composeTestRule
+            .onNodeWithText(getStringResource(R.string.browser_menu_default_banner_button))
+            .assertIsDisplayed()
+        composeTestRule
             .onNodeWithContentDescription(getStringResource(MozacMenuR.string.mozac_menu_banner_dismiss_description))
             .assertIsDisplayed()
     }
