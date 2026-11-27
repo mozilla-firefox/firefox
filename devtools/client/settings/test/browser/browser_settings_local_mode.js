@@ -35,6 +35,7 @@ add_task(test_local_mode_edit_origin_refresh);
 add_task(test_local_mode_change_folder);
 add_task(test_local_mode_navigate);
 add_task(test_local_mode_toggle);
+add_task(test_local_mode_remove);
 
 async function test_local_mode_mappings_listed() {
   setMapping(0, { origin: "firefox.localhost", path: TEST_FOLDER });
@@ -372,6 +373,39 @@ async function test_local_mode_toggle() {
 
   await closeTabAndToolbox();
   clearMappings();
+}
+
+async function test_local_mode_remove() {
+  setMapping(0, { origin: "firefox.localhost", path: TEST_FOLDER });
+  const { root } = await openSettings();
+  const editor = await getLocalModeEditor(root);
+  const [item] = getMappingItems(editor);
+  const originPref = `${LOCAL_MODE_MAPPINGS_PREF_PREFIX}0.origin`;
+
+  const onCancelled = BrowserTestUtils.promiseAlertDialogOpen("cancel");
+  item.querySelector(".remove").click();
+  await onCancelled;
+  await waitForTick();
+  ok(
+    Services.prefs.prefHasUserValue(originPref),
+    "Cancelling the confirmation keeps the mapping"
+  );
+
+  const onUpdated = LocalModeMappings.once("updated");
+  const onAccepted = BrowserTestUtils.promiseAlertDialogOpen("accept");
+  item.querySelector(".remove").click();
+  await onAccepted;
+  await onUpdated;
+  ok(
+    !Services.prefs.getChildList(LOCAL_MODE_MAPPINGS_PREF_PREFIX).length,
+    "Accepting the confirmation removes the mapping's prefs"
+  );
+  await waitFor(
+    () => !getMappingItems(editor).length,
+    "Removing a mapping removes it from the list"
+  );
+
+  await closeTabAndToolbox();
 }
 
 /**
