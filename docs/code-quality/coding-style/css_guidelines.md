@@ -169,6 +169,18 @@ directly in it; it needs no `& {}`.
 }
 ```
 
+Exception: keep the `@media` block at the top level when the rule would hold
+nothing outside it. Nesting it there creates a more complex rule structure than
+needed, which costs more than a top-level `@media` block.
+
+```css
+@media -moz-pref("browser.example.enabled") {
+  .legacy-panel {
+    display: none;
+  }
+}
+```
+
 ### Other formatting
 
 - Put declarations before nested rules.
