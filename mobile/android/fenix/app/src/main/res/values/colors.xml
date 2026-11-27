@@ -70,16 +70,8 @@
     <color name="fx_mobile_action_color_primary_disabled">@color/photonInk20A20</color>
 
     <!-- Text -->
-    <!-- Text Inverted/On Color -->
-    <color name="fx_mobile_text_color_oncolor_primary">@color/photonLightGrey05</color>
-    <!-- Text Inverted/On Color -->
-    <color name="fx_mobile_text_color_oncolor_secondary">@color/photonLightGrey40</color>
     <!-- Action Primary disabled text -->
     <color name="fx_mobile_text_color_action_primary_disabled">@color/photonDarkGrey90A50</color>
-
-    <!-- Icon -->
-    <!-- Icon inverted (on color) -->
-    <color name="fx_mobile_icon_color_oncolor">@color/photonLightGrey05</color>
 
     <!-- Private theme color variables -->
 

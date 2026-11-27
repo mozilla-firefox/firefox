@@ -21,7 +21,7 @@
         android:background="@android:color/transparent"
         android:contentDescription="@string/content_description_close_button"
         android:padding="12dp"
-        app:tint="@color/fx_mobile_icon_color_oncolor"
+        app:tint="@color/novaWhite"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@drawable/mozac_ic_cross_24" />
@@ -48,7 +48,7 @@
         android:paddingHorizontal="1dp"
         android:text="@string/share_header_2"
         android:textAppearance="@style/HeaderTextStyle"
-        android:textColor="@color/fx_mobile_text_color_oncolor_primary"
+        android:textColor="@color/novaWhite"
         android:textSize="20sp"
         android:layout_marginStart="4dp"
         app:layout_constraintStart_toEndOf="@id/groupDot"
