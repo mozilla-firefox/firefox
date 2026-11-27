@@ -26,7 +26,6 @@ struct AnimationPerformanceWarning {
     OpacityFrameInactive,
     HasRenderingObserver,
     HasCurrentColor,
-    MaybeAnchorOrAncestorOf,
   };
 
   explicit AnimationPerformanceWarning(Type aType) : mType(aType) {
