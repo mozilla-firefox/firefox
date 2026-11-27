@@ -5,6 +5,7 @@
 package org.mozilla.fenix.components.menu.configuration
 
 import androidx.annotation.VisibleForTesting
+import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Bookmarks
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeHomepage
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.DefaultBrowserBanner
@@ -28,8 +29,34 @@ object HomeMenuConfiguration {
     @VisibleForTesting internal val ACCOUNTS_AND_SETTINGS_GROUP_ID = "accounts_and_settings"
     @VisibleForTesting internal val QUIT_GROUP_ID = "quit"
 
-    /** The menu shown on the home screen. */
-    fun sections(): List<MenuSectionConfiguration> =
+    private val browserSectionIds: Map<String, String> =
+        mapOf(
+            VPN_GROUP_ID to BrowserMenuConfiguration.VPN_GROUP_ID,
+            // Extensions sits in the Tools section of the browser menu.
+            EXTENSIONS_GROUP_ID to BrowserMenuConfiguration.TOOLS_GROUP_ID,
+            LIBRARY_GROUP_ID to BrowserMenuConfiguration.LIBRARY_GROUP_ID,
+            ACCOUNTS_AND_SETTINGS_GROUP_ID to BrowserMenuConfiguration.ACCOUNTS_AND_SETTINGS_GROUP_ID,
+            QUIT_GROUP_ID to BrowserMenuConfiguration.QUIT_GROUP_ID,
+        )
+
+    /**
+     * The menu shown on the home screen.
+     *
+     * The promo banner is not part of the browser menu, so it always stays first.
+     *
+     * @param customizationInfo The order and visibility of the browser menu sections chosen by the user. The default
+     *   sections are shown if this is `null`.
+     */
+    fun sections(customizationInfo: CustomizedMenuInfo? = null): List<MenuSectionConfiguration> {
+        val defaultSections = defaultSections()
+        if (customizationInfo == null) return defaultSections
+
+        val (promoBanner, following) = defaultSections.partition { it.id == PROMO_BANNER_GROUP_ID }
+        val followingByBrowserId = following.associateBy { browserSectionIds.getValue(it.id) }
+        return promoBanner + customizationInfo.visibleSectionIds.mapNotNull { followingByBrowserId[it] }
+    }
+
+    private fun defaultSections(): List<MenuSectionConfiguration> =
         listOf(
             MenuSectionConfiguration(
                 id = PROMO_BANNER_GROUP_ID,

@@ -47,11 +47,11 @@ import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
 object BrowserMenuConfiguration {
     @VisibleForTesting internal const val PAGE_CONTROLS_GROUP_ID = "page_controls"
     @VisibleForTesting internal const val READER_VIEW_GROUP_ID = "reader_view"
-    @VisibleForTesting internal const val VPN_GROUP_ID = "vpn"
-    @VisibleForTesting internal const val TOOLS_GROUP_ID = "tools"
-    @VisibleForTesting internal const val LIBRARY_GROUP_ID = "library"
-    @VisibleForTesting internal const val ACCOUNTS_AND_SETTINGS_GROUP_ID = "accounts_and_settings"
-    @VisibleForTesting internal const val QUIT_GROUP_ID = "quit"
+    internal const val VPN_GROUP_ID = "vpn"
+    internal const val TOOLS_GROUP_ID = "tools"
+    internal const val LIBRARY_GROUP_ID = "library"
+    internal const val ACCOUNTS_AND_SETTINGS_GROUP_ID = "accounts_and_settings"
+    internal const val QUIT_GROUP_ID = "quit"
     @VisibleForTesting internal const val TABS_CONTROLS_GROUP_ID = "tabs_controls"
 
     /** Ids of the sections of the browser menu which the user cannot remove. */
