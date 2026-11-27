@@ -41,14 +41,6 @@
         <item>@string/private_string</item>
     </string-array>
 
-    <array name="collection_icon_colors">
-        <item>@color/fx_mobile_icon_color_accent_violet</item>
-        <item>@color/fx_mobile_icon_color_accent_blue</item>
-        <item>@color/fx_mobile_icon_color_accent_pink</item>
-        <item>@color/fx_mobile_icon_color_accent_green</item>
-        <item>@color/fx_mobile_icon_color_accent_yellow</item>
-    </array>
-
     <string name="remote_settings_server_prod">production</string>
     <string name="remote_settings_server_dev">development</string>
     <string name="remote_settings_server_stage">staging</string>

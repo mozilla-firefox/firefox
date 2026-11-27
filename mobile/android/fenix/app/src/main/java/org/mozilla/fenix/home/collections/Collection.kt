@@ -21,16 +21,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import kotlin.math.abs
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.feature.tab.collections.TabCollection
 import mozilla.components.ui.icons.R as iconsR
@@ -39,7 +37,6 @@ import org.mozilla.fenix.R.string
 import org.mozilla.fenix.compose.ContextualMenu
 import org.mozilla.fenix.compose.MenuItem
 import org.mozilla.fenix.compose.list.ExpandableListHeader
-import org.mozilla.fenix.ext.getIconColor
 import org.mozilla.fenix.home.fake.FakeHomepagePreview
 import org.mozilla.fenix.theme.FirefoxTheme
 
@@ -109,13 +106,7 @@ fun Collection(
                         start = 16.dp,
                         end = 8.dp, // (24.dp - 16.dp) hardcoded in ExpandableListHeader
                     ),
-                tint =
-                    Paint()
-                        .apply {
-                            color = Color(collection.getIconColor(LocalContext.current))
-                            blendMode = BlendMode.SrcIn
-                        }
-                        .color,
+                tint = collection.iconColor(),
             )
 
             ExpandableListHeader(
@@ -157,6 +148,13 @@ fun Collection(
             }
         }
     }
+}
+
+@Composable
+private fun TabCollection.iconColor(): Color {
+    val palette = FirefoxTheme.tabGroupColors
+    val colors = listOf(palette.purple, palette.blue, palette.pink, palette.green, palette.yellow)
+    return colors[abs(id % colors.size).toInt()].primary
 }
 
 @Composable

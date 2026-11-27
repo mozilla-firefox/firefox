@@ -84,11 +84,6 @@
     <!-- Icon -->
     <!-- Icon inverted (on color) -->
     <color name="fx_mobile_icon_color_oncolor">@color/photonLightGrey05</color>
-    <color name="fx_mobile_icon_color_accent_violet">@color/photonViolet20</color>
-    <color name="fx_mobile_icon_color_accent_blue">@color/photonBlue20</color>
-    <color name="fx_mobile_icon_color_accent_pink">@color/photonPink20</color>
-    <color name="fx_mobile_icon_color_accent_green">@color/photonGreen20</color>
-    <color name="fx_mobile_icon_color_accent_yellow">@color/photonYellow20</color>
 
     <!-- Normal theme colors for dark mode -->
     <color name="accent_normal_theme">@color/photonViolet50</color>

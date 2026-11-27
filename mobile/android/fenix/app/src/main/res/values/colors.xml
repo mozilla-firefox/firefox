@@ -84,11 +84,6 @@
     <!-- Icon -->
     <!-- Icon inverted (on color) -->
     <color name="fx_mobile_icon_color_oncolor">@color/photonLightGrey05</color>
-    <color name="fx_mobile_icon_color_accent_violet">@color/photonViolet70</color>
-    <color name="fx_mobile_icon_color_accent_blue">@color/photonBlue60</color>
-    <color name="fx_mobile_icon_color_accent_pink">@color/photonPink60</color>
-    <color name="fx_mobile_icon_color_accent_green">@color/photonGreen60</color>
-    <color name="fx_mobile_icon_color_accent_yellow">@color/photonYellow60</color>
 
     <!-- Private theme color variables -->
 
