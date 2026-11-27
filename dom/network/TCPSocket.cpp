@@ -1053,6 +1053,13 @@ TCPSocket::OnTransportStatus(nsITransport* aTransport, nsresult aStatus,
     return NS_OK;
   }
 
+  // STATUS_CONNECTED_TO is delivered asynchronously, so the socket may already
+  // have been closed. Registering the handshake listener or going to "open"
+  // now would undo CloseHelper().
+  if (mReadyState != TCPReadyState::Connecting) {
+    return NS_OK;
+  }
+
   if (mSsl) {
     // The TCP handshake is done, but the TLS handshake is still in flight.
     // Wait for HandshakeDone() before reporting "open".
