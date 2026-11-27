@@ -121,7 +121,7 @@ NS_IMETHODIMP StartModuleLoadRunnable::RunOnWorkletThread() {
 
   // Part of Step 2. This sets the Top-level flag to true
   RefPtr<ModuleLoadRequest> request = new ModuleLoadRequest(
-      JS::ModuleType::JavaScript, SRIMetadata(), mReferrer, loadContext,
+      JS::ModuleType::JavaScriptOrWasm, SRIMetadata(), mReferrer, loadContext,
       ModuleLoadRequest::Kind::TopLevel, moduleLoader, nullptr);
 
   request->mURL = mURI->GetSpecOrDefault();

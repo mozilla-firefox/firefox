@@ -601,7 +601,7 @@ already_AddRefed<ModuleLoadRequest> ModuleLoader::CreateTopLevel(
     nsIURI* aReferrer, ScriptLoadContext* aContext,
     ScriptLoadRequestType aRequestType) {
   RefPtr<ModuleLoadRequest> request = new ModuleLoadRequest(
-      JS::ModuleType::JavaScript, aIntegrity, aReferrer, aContext,
+      JS::ModuleType::JavaScriptOrWasm, aIntegrity, aReferrer, aContext,
       ModuleLoadRequest::Kind::TopLevel, this, nullptr);
 
   GetScriptLoader()->TryUseCache(aReferrerPolicy, aFetchOptions, aURI, request,

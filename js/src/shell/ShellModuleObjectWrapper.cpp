@@ -370,7 +370,7 @@ bool ModuleTypeToString(JSContext* cx, JS::Handle<JSObject*> owner,
     case JS::ModuleType::Unknown:
       to.setString(cx->names().unknown);
       break;
-    case JS::ModuleType::JavaScript:
+    case JS::ModuleType::JavaScriptOrWasm:
       to.setString(cx->names().js);
       break;
     case JS::ModuleType::JSON:

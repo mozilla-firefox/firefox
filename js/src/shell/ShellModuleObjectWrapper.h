@@ -25,7 +25,7 @@ class ShellModuleObjectWrapper : public js::NativeObject {
   static const JSClass class_;
   static ShellModuleObjectWrapper* create(
       JSContext* cx, JS::Handle<ModuleObject*> moduleObj,
-      JS::ModuleType moduleType = JS::ModuleType::JavaScript);
+      JS::ModuleType moduleType = JS::ModuleType::JavaScriptOrWasm);
   ModuleObject* get();
   JS::ModuleType getModuleType();
 };

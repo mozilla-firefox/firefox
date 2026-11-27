@@ -5516,7 +5516,7 @@ static bool ParseModule(JSContext* cx, unsigned argc, Value* vp) {
 
   UniqueChars filename;
   CompileOptions options(cx);
-  JS::ModuleType moduleType = JS::ModuleType::JavaScript;
+  JS::ModuleType moduleType = JS::ModuleType::JavaScriptOrWasm;
   if (args.length() > 1) {
     if (!args[1].isString()) {
       const char* typeName = InformalValueTypeName(args[1]);
@@ -5565,7 +5565,7 @@ static bool ParseModule(JSContext* cx, unsigned argc, Value* vp) {
 
   RootedObject module(cx);
   switch (moduleType) {
-    case JS::ModuleType::JavaScript:
+    case JS::ModuleType::JavaScriptOrWasm:
     case JS::ModuleType::JSON: {
       if (!args[0].isString()) {
         const char* typeName = InformalValueTypeName(args[0]);

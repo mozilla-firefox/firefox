@@ -498,7 +498,7 @@ nsContentPolicyType ScriptLoadRequestToContentPolicyType(
   if (aRequest->GetScriptLoadContext()->IsPreload()) {
     if (aRequest->IsModuleRequest()) {
       switch (aRequest->AsModuleRequest()->mModuleType) {
-        case JS::ModuleType::JavaScript:
+        case JS::ModuleType::JavaScriptOrWasm:
           return nsIContentPolicy::TYPE_INTERNAL_MODULE_PRELOAD;
         case JS::ModuleType::JSON:
           return nsIContentPolicy::TYPE_INTERNAL_JSON_PRELOAD;
@@ -520,7 +520,7 @@ nsContentPolicyType ScriptLoadRequestToContentPolicyType(
       case JS::ModuleType::Unknown:
       case JS::ModuleType::Bytes:
         MOZ_CRASH("Unexpected module type");
-      case JS::ModuleType::JavaScript:
+      case JS::ModuleType::JavaScriptOrWasm:
         return nsIContentPolicy::TYPE_INTERNAL_MODULE;
       case JS::ModuleType::JSON:
         return nsIContentPolicy::TYPE_JSON;

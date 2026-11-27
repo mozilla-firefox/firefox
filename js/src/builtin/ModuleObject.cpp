@@ -310,7 +310,7 @@ static bool GetModuleType(JSContext* cx,
     }
   }
 
-  moduleType = JS::ModuleType::JavaScript;
+  moduleType = JS::ModuleType::JavaScriptOrWasm;
   return true;
 }
 
@@ -323,7 +323,7 @@ bool ModuleRequestObject::isInstance(HandleValue value) {
 ModuleRequestObject* ModuleRequestObject::create(
     JSContext* cx, Handle<JSAtom*> specifier,
     Handle<ImportAttributeVector> maybeAttributes, ImportPhase phase) {
-  JS::ModuleType moduleType = JS::ModuleType::JavaScript;
+  JS::ModuleType moduleType = JS::ModuleType::JavaScriptOrWasm;
   if (!GetModuleType(cx, maybeAttributes, moduleType)) {
     return nullptr;
   }

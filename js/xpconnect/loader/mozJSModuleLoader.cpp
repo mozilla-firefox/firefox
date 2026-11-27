@@ -1069,7 +1069,7 @@ nsresult mozJSModuleLoader::IsESModuleLoaded(const nsACString& aLocation,
   NS_ENSURE_SUCCESS(rv, rv);
 
   if (mModuleLoader->IsModuleFetched(
-          JS::loader::ModuleMapKey(info.URI(), ModuleType::JavaScript))) {
+          JS::loader::ModuleMapKey(info.URI(), ModuleType::JavaScriptOrWasm))) {
     *retval = true;
     return NS_OK;
   }
@@ -1205,7 +1205,7 @@ nsresult mozJSModuleLoader::ImportESModule(
   RefPtr<SyncLoadContext> context = new SyncLoadContext();
 
   RefPtr<ModuleLoadRequest> request = new ModuleLoadRequest(
-      JS::ModuleType::JavaScript, dom::SRIMetadata(),
+      JS::ModuleType::JavaScriptOrWasm, dom::SRIMetadata(),
       /* aReferrer = */ nullptr, context, ModuleLoadRequest::Kind::TopLevel,
       mModuleLoader, nullptr);
 

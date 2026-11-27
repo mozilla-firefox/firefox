@@ -97,7 +97,7 @@ class WorkerModuleLoader : public JS::loader::ModuleLoaderBase {
     // https://html.spec.whatwg.org/#module-type-allowed
     // If moduleType is "css" and the CSSStyleSheet interface is not exposed in
     // settings's realm, then return false.
-    return aModuleType == JS::ModuleType::JavaScript ||
+    return aModuleType == JS::ModuleType::JavaScriptOrWasm ||
            aModuleType == JS::ModuleType::JSON ||
            aModuleType == JS::ModuleType::Text;
   }
