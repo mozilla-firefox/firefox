@@ -41,15 +41,22 @@ uint32_t PageloadEventData::sPageLoadEventCounter = 0;
 // sample taken first.
 //
 // Nightly: page_load_domain every 10 pageloads, page_load for the rest.
-// Dev edition: page_load_domain every 1000 pageloads, page_load for the rest.
+// Beta and Dev Edition: page_load_domain every 1000 pageloads, page_load for
+// the rest.
 // Release: page_load_domain every 1000 pageloads, page_load every 3 of the
 // rest.
 
+static constexpr std::string_view kUpdateChannel =
+    MOZ_STRINGIFY(MOZ_UPDATE_CHANNEL);
+
 // Normal sampling
-#if defined(NIGHTLY_BUILD) || defined(MOZ_DEV_EDITION)
+#ifdef NIGHTLY_BUILD
 static constexpr uint64_t kNormalSamplingInterval = 1;  // Every pageload.
 #else
-static constexpr uint64_t kNormalSamplingInterval = 3;  // Every 3 pageloads.
+static constexpr uint64_t kNormalSamplingInterval =
+    (kUpdateChannel == "beta" || kUpdateChannel == "aurora")
+        ? 1   // Every pageload.
+        : 3;  // Every 3 pageloads.
 #endif
 
 // Domain sampling
@@ -534,8 +541,7 @@ void PageloadEventData::SendAsPageLoadDomainEvent() {
     extra.appVersionMajor = mozilla::Some(static_cast<uint32_t>(majorVersion));
   }
 
-  if constexpr (std::string_view(MOZ_STRINGIFY(MOZ_UPDATE_CHANNEL)) ==
-                "release") {
+  if constexpr (kUpdateChannel == "release") {
     nsAutoCString country;
     if (NS_SUCCEEDED(mozilla::Preferences::GetCString("browser.search.region",
                                                       country)) &&
