@@ -1605,6 +1605,23 @@ class nsIFrame : public nsQueryFrame {
     return GetBidiData().embeddingLevel;
   }
 
+  // This frame (or its descendant) may be an anchor. This is set when the
+  // frame becomes an anchor of a positioned frame, implicit or explicit, or an
+  // ancestor of one. Note that this flag is persistent, meaning that it will
+  // remain set even if the frame stops being an anchor to any positioned frame.
+  // Note(dshin): `nsFrameState` would be a nicer place, if we free a bit at
+  // one point.
+  NS_DECLARE_FRAME_PROPERTY_SMALL_VALUE(
+      MaybeAnchorPosAnchorOrAncestorOfProperty, bool)
+
+  bool MaybeAnchorPosAnchorOrAncestorOf() const {
+    return HasProperty(MaybeAnchorPosAnchorOrAncestorOfProperty());
+  }
+
+  void SetMaybeAnchorPosAnchorOrAncestorOf() {
+    SetProperty(MaybeAnchorPosAnchorOrAncestorOfProperty(), true);
+  }
+
   /**
    * Return the distance between the border edge of the frame and the
    * margin edge of the frame.  Like GetRect(), returns the dimensions
