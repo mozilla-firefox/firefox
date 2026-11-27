@@ -15,12 +15,31 @@ ChromeUtils.defineESModuleGetters(lazy, {
   AsyncShutdown: "resource://gre/modules/AsyncShutdown.sys.mjs",
   ClientID: "resource://gre/modules/ClientID.sys.mjs",
   DoHConfigController: "moz-src:///toolkit/components/doh/DoHConfig.sys.mjs",
+  DoHDiscovery: "moz-src:///toolkit/components/doh/DoHDiscovery.sys.mjs",
   EnrollmentType: "resource://nimbus/ExperimentAPI.sys.mjs",
   Heuristics: "moz-src:///toolkit/components/doh/DoHHeuristics.sys.mjs",
   NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   clearTimeout: "resource://gre/modules/Timer.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
 });
+
+// When true (and no DoHConfig applies), run RFC 9462 DDR discovery.
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "kDDREnabled",
+  "network.trr.ddr.enabled",
+  false
+);
+
+// When false, DDR discovery still runs (and records telemetry) but the
+// discovered resolver is not set as the system TRR endpoint. Lets us measure
+// DDR availability without switching users' DNS.
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "kDDRUseResolver",
+  "network.trr.ddr.use_resolver",
+  false
+);
 
 // When this is set we suppress automatic TRR selection beyond dry-run as well
 // as sending observer notifications during heuristics throttling.
@@ -118,6 +137,7 @@ const TRR_SELECT_DRY_RUN_RESULT_PREF =
 
 const kLinkStatusChangedTopic = "network:link-status-changed";
 const kConnectivityTopic = "network:captive-portal-connectivity-changed";
+const kNetworkIDChangedTopic = "network:networkid-changed";
 const kPrefChangedTopic = "nsPref:changed";
 
 // Helper function to hash the network ID concatenated with telemetry client ID.
@@ -159,6 +179,13 @@ export const DoHController = {
       }
 
       await this.maybeEnableHeuristics();
+    } else if (this.shouldRunDDR()) {
+      // No DoHConfig applies, but DDR is enabled and DoH is off. Run heuristics
+      // and, if they pass, try to discover a designated resolver (RFC 9462).
+      let enabled = await this.maybeEnableDDR();
+      if (!enabled && Services.prefs.getBoolPref(FIRST_RUN_PREF, false)) {
+        await this.rollback();
+      }
     } else if (Services.prefs.getBoolPref(FIRST_RUN_PREF, false)) {
       await this.rollback();
     }
@@ -282,6 +309,109 @@ export const DoHController = {
     Services.obs.addObserver(this, kConnectivityTopic);
 
     this._heuristicsAreEnabled = true;
+  },
+
+  // RFC 9462 DDR runs when the pref is on, no DoHConfig provides a provider,
+  // and the user hasn't set a TRR mode/URI of their own.
+  shouldRunDDR() {
+    return (
+      lazy.kDDREnabled &&
+      Services.prefs.getIntPref(NETWORK_TRR_MODE_PREF, 0) === 0 &&
+      !Services.prefs.prefHasUserValue(NETWORK_TRR_MODE_PREF) &&
+      !Services.prefs.prefHasUserValue(NETWORK_TRR_URI_PREF)
+    );
+  },
+
+  _ddrModeActive: false,
+  // Resolves to whether DDR mode was enabled.
+  async maybeEnableDDR() {
+    if (Services.prefs.getBoolPref(DISABLED_PREF, false)) {
+      return false;
+    }
+
+    let policyResult = await lazy.Heuristics.checkEnterprisePolicy();
+    if (policyResult != "no_policy_set") {
+      Services.prefs.setBoolPref(SKIP_HEURISTICS_PREF, true);
+      return false;
+    }
+    Services.prefs.clearUserPref(SKIP_HEURISTICS_PREF);
+
+    this._ddrModeActive = true;
+    this.runHeuristicsThrottled("startup");
+    Services.obs.addObserver(this, kLinkStatusChangedTopic);
+    Services.obs.addObserver(this, kConnectivityTopic);
+    Services.obs.addObserver(this, kNetworkIDChangedTopic);
+
+    this._heuristicsAreEnabled = true;
+    return true;
+  },
+
+  // Incremented whenever the network changes, so that a DDR attempt started on
+  // a previous network doesn't apply its result to the current one.
+  _ddrNetworkGeneration: 0,
+
+  // The network ID of the network that the current DDR attempt, or the
+  // designated resolver in use, belongs to. Empty if unknown.
+  _ddrNetworkID: "",
+
+  // Separate so that tests can control it.
+  _getNetworkID() {
+    return lazy.gNetworkLinkService.networkID;
+  },
+
+  // Runs DDR discovery and, if a designated resolver is found and verified
+  // (RFC 9462), enables DoH with it - unless network.trr.ddr.use_resolver is
+  // false, in which case discovery and verification still run (for telemetry)
+  // but the resolver is not used. DoH is disabled otherwise, unless the network
+  // changed in the meantime and a newer attempt is responsible for the result.
+  async runDDR() {
+    let generation = this._ddrNetworkGeneration;
+    let isCurrent = () => generation == this._ddrNetworkGeneration;
+    this._ddrNetworkID = this._getNetworkID();
+
+    let discovered = await lazy.DoHDiscovery.discover();
+    let verified =
+      discovered && isCurrent() && (await lazy.DoHDiscovery.verify(discovered));
+    if (!isCurrent()) {
+      return;
+    }
+
+    if (!verified || !lazy.kDDRUseResolver) {
+      await this.setState("disabled");
+      return;
+    }
+
+    Services.dns.setDetectedTrrURI(discovered.uri);
+    await this.setState("enabled");
+  },
+
+  // RFC 9462 section 4: a designated resolver must only be used on the network
+  // that designated it, so stop using it as soon as the network changes rather
+  // than when the heuristics for the new network complete.
+  _onDDRNetworkChanged() {
+    this._ddrNetworkGeneration++;
+    if (Services.prefs.getIntPref(ROLLOUT_MODE_PREF, 0) != 0) {
+      this.setState("disabled");
+    }
+  },
+
+  // Link status changes also happen for changes that don't affect which network
+  // we're on, so only the link going down counts as a new network, unless the
+  // network ID is unknown and we can't tell.
+  _onDDRLinkStatusChanged() {
+    if (!lazy.gNetworkLinkService.isLinkUp || !this._ddrNetworkID) {
+      this._onDDRNetworkChanged();
+    }
+  },
+
+  _onDDRNetworkIDChanged() {
+    if (this._getNetworkID() == this._ddrNetworkID) {
+      return;
+    }
+    this._onDDRNetworkChanged();
+    // Platforms report the link change before the new network ID, so the
+    // heuristics run it triggered may have been for the previous network.
+    this.runHeuristicsThrottled("netchange");
   },
 
   _runsWhileThrottling: 0,
@@ -422,7 +552,13 @@ export const DoHController = {
     } else {
       Glean.networking.dohHeuristicsResult.set(lazy.Heuristics.Telemetry.pass);
       Glean.networking.dohHeuristicsPassCount.add(1);
-      await this.setState("enabled");
+      if (this._ddrModeActive) {
+        // Heuristics passed - try to discover a designated resolver. If none is
+        // found, DoH stays off for this network.
+        await this.runDDR();
+      } else {
+        await this.setState("enabled");
+      }
     }
 
     // For telemetry, we group the heuristics results into three categories.
@@ -537,6 +673,11 @@ export const DoHController = {
   async disableHeuristics(state) {
     await this.setState(state);
 
+    if (this._ddrModeActive) {
+      Services.obs.removeObserver(this, kNetworkIDChangedTopic);
+      this._ddrModeActive = false;
+    }
+
     if (!this._heuristicsAreEnabled) {
       return;
     }
@@ -647,6 +788,9 @@ export const DoHController = {
       case kConnectivityTopic:
         this.onConnectivityAvailable();
         break;
+      case kNetworkIDChangedTopic:
+        this._onDDRNetworkIDChanged();
+        break;
       case kPrefChangedTopic:
         this.onPrefChanged(data);
         break;
@@ -688,6 +832,10 @@ export const DoHController = {
 
   _lastDebounceTimestamp: 0,
   onConnectionChanged() {
+    if (this._ddrModeActive) {
+      this._onDDRLinkStatusChanged();
+    }
+
     if (!lazy.gNetworkLinkService.isLinkUp) {
       // Network is down - reset debounce timer.
       this._cancelDebounce();
