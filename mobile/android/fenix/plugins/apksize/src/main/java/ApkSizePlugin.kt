@@ -4,7 +4,6 @@
 
 import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.AndroidComponentsExtension
-import com.android.build.api.variant.BuiltArtifact
 import com.android.build.api.variant.BuiltArtifactsLoader
 import com.android.build.gradle.AppPlugin
 import org.gradle.api.DefaultTask
@@ -21,7 +20,11 @@ import org.gradle.kotlin.dsl.withType
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.nio.file.Files
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
 
 /**
  * This plugin generates a [ApkSizeTask] for each variant of the target
@@ -74,11 +77,14 @@ abstract class ApkSizeTask : DefaultTask() {
     @TaskAction
     fun logApkSize() {
         val builtArtifacts = artifactsLoader.get().load(artifactsDirectory.get())
-            ?: throw RuntimeException("Cannot load APK metadata")
+            ?: throw IllegalStateException("Cannot load APK metadata")
 
         val variantName = builtArtifacts.variantName.replaceFirstChar { it.uppercase() }
-        val apkSizes = determineApkSizes(builtArtifacts.elements)
-        val json = buildPerfherderJson(variantName, apkSizes)
+        val apks = builtArtifacts.elements.map { File(it.outputFile) }
+        val apkSizes = apks.associate { it.name to Files.size(it.toPath()) }
+        // Every apk of a variant contains the same dex files, so just pick the first one.
+        val dexStats = determineDexStats(apks.first())
+        val json = buildPerfherderJson(variantName, apkSizes, dexStats)
 
         val isAutomation = mozAutomation.orNull == "1"
         val uploadPath = mozPerfherderUpload.orNull
@@ -88,74 +94,155 @@ abstract class ApkSizeTask : DefaultTask() {
             outputFile.writeText(json.toString())
         }
     }
+}
 
-    private fun determineApkSizes(artifacts: Collection<BuiltArtifact>): Map<String, Long> {
-        return artifacts.associate {
-            val file = File(it.outputFile)
-            file.name to Files.size(file.toPath())
-        }
+/**
+ * Sizes and class count summed over the `classes*.dex` files of an APK. Each class is defined in
+ * exactly one dex file, so the class count is the number of classes in the APK.
+ */
+internal data class DexStats(
+    val uncompressedSize: Long,
+    val compressedSize: Long,
+    val classCount: Long,
+) {
+    operator fun plus(other: DexStats) = DexStats(
+        uncompressedSize + other.uncompressedSize,
+        compressedSize + other.compressedSize,
+        classCount + other.classCount,
+    )
+}
+
+private val DEX_FILE_NAME = Regex("classes\\d*\\.dex")
+private val DEX_MAGIC = "dex\n".toByteArray()
+private const val DEX_HEADER_SIZE = 0x70
+private const val CLASS_DEFS_SIZE_OFFSET = 0x60
+
+internal fun determineDexStats(apk: File): DexStats = ZipFile(apk).use { zip ->
+    val dexEntries = zip.entries().asSequence().filter { DEX_FILE_NAME.matches(it.name) }.toList()
+    check(dexEntries.isNotEmpty()) { "${apk.name} contains no dex files" }
+    dexEntries.map { readDexStats(zip, it) }.reduce(DexStats::plus)
+}
+
+private fun readDexStats(zip: ZipFile, entry: ZipEntry): DexStats {
+    val header = zip.getInputStream(entry).use { it.readNBytes(DEX_HEADER_SIZE) }
+    check(header.size == DEX_HEADER_SIZE && header.copyOf(DEX_MAGIC.size).contentEquals(DEX_MAGIC)) {
+        "${entry.name} is not a dex file"
+    }
+    val buffer = ByteBuffer.wrap(header).order(ByteOrder.LITTLE_ENDIAN)
+    return DexStats(
+        uncompressedSize = entry.size,
+        compressedSize = entry.compressedSize,
+        classCount = buffer.getInt(CLASS_DEFS_SIZE_OFFSET).toUInt().toLong(),
+    )
+}
+
+/**
+ * Returns perfherder compatible JSON for tracking the file size of APKs and the size and contents
+ * of their dex code.
+ *
+ * ```
+ * {
+ *   "framework": {
+ *     "name": "build_metrics"
+ *   },
+ *   "suites": [
+ *     {
+ *       "name": "apk-size-[debug,nightly,beta,release]",
+ *       "lowerIsBetter": true,
+ *       "subtests": [
+ *         { "name": "app-arm64-v8a-debug.apk", "value": 98855735 },
+ *         { "name": "app-armeabi-v7a-debug.apk", "value": 92300031 },
+ *         { "name": "app-x86-debug.apk", "value": 103410909 },
+ *         { "name": "app-x86_64-debug.apk", "value": 102465675 }
+ *       ],
+ *       "value":98855735,
+ *       "shouldAlert":false
+ *     },
+ *     {
+ *       "name": "dex-size-[debug,nightly,beta,release]",
+ *       "lowerIsBetter": true,
+ *       "subtests": [
+ *         { "name": "compressed-size", "value": 11658374 },
+ *         { "name": "uncompressed-size", "value": 27869260 },
+ *         { "name": "class-count", "value": 41421 }
+ *       ],
+ *       "value":11658374,
+ *       "shouldAlert":false
+ *     }
+ *   ]
+ * }
+ * ```
+ */
+internal fun buildPerfherderJson(
+    variantName: String,
+    apkSize: Map<String, Long>,
+    dexStats: DexStats,
+): JSONObject {
+    val data = JSONObject()
+
+    val framework = JSONObject()
+    framework.put("name", "build_metrics")
+    data.put("framework", framework)
+
+    val suites = JSONArray()
+
+    val suite = JSONObject()
+    suite.put("name", "apk-size-$variantName")
+    suite.put("value", getSummarySize(apkSize))
+    suite.put("lowerIsBetter", true)
+    suite.put("alertChangeType", "absolute")
+    suite.put("alertThreshold", 1024 * 1024)
+
+    if (variantName.contains("debug", ignoreCase = true)) {
+        suite.put("shouldAlert", false)
     }
 
-    /**
-     * Returns perfherder compatible JSON for tracking the file size of APKs.
-     *
-     * ```
-     * {
-     *   "framework": {
-     *     "name": "build_metrics"
-     *   },
-     *   "suites": [
-     *     {
-     *       "name": "apk-size-[debug,nightly,beta,release]",
-     *       "lowerIsBetter": true,
-     *       "subtests": [
-     *         { "name": "app-arm64-v8a-debug.apk", "value": 98855735 },
-     *         { "name": "app-armeabi-v7a-debug.apk", "value": 92300031 },
-     *         { "name": "app-x86-debug.apk", "value": 103410909 },
-     *         { "name": "app-x86_64-debug.apk", "value": 102465675 }
-     *       ],
-     *       "value":98855735,
-     *       "shouldAlert":false
-     *     }
-     *   ]
-     * }
-     * ```
-     */
-    private fun buildPerfherderJson(variantName: String, apkSize: Map<String, Long>): JSONObject {
-        val data = JSONObject()
-
-        val framework = JSONObject()
-        framework.put("name", "build_metrics")
-        data.put("framework", framework)
-
-        val suites = JSONArray()
-
-        val suite = JSONObject()
-        suite.put("name", "apk-size-$variantName")
-        suite.put("value", getSummarySize(apkSize))
-        suite.put("lowerIsBetter", true)
-        suite.put("alertChangeType", "absolute")
-        suite.put("alertThreshold", 1024 * 1024)
-
-        if (variantName.contains("debug", ignoreCase = true)) {
-            suite.put("shouldAlert", false)
-        }
-
-        val subtests = JSONArray()
-        apkSize.forEach { (apk, size) ->
-            val subtest = JSONObject()
-            subtest.put("name", apk)
-            subtest.put("value", size)
-            subtests.put(subtest)
-        }
-        suite.put("subtests", subtests)
-
-        suites.put(suite)
-
-        data.put("suites", suites)
-
-        return data
+    val subtests = JSONArray()
+    apkSize.forEach { (apk, size) ->
+        val subtest = JSONObject()
+        subtest.put("name", apk)
+        subtest.put("value", size)
+        subtests.put(subtest)
     }
+    suite.put("subtests", subtests)
+
+    suites.put(suite)
+    suites.put(buildDexSuite(variantName, dexStats))
+
+    data.put("suites", suites)
+
+    return data
+}
+
+private fun buildDexSuite(variantName: String, dexStats: DexStats): JSONObject {
+    val suite = JSONObject()
+    suite.put("name", "dex-size-$variantName")
+    suite.put("value", dexStats.compressedSize)
+    suite.put("unit", "bytes")
+    suite.put("lowerIsBetter", true)
+    suite.put("alertChangeType", "absolute")
+    suite.put("alertThreshold", 50 * 1024)
+
+    if (variantName.contains("debug", ignoreCase = true)) {
+        suite.put("shouldAlert", false)
+    }
+
+    val subtests = JSONArray()
+    listOf(
+        Triple("compressed-size", dexStats.compressedSize, "bytes"),
+        Triple("uncompressed-size", dexStats.uncompressedSize, "bytes"),
+        Triple("class-count", dexStats.classCount, "count"),
+    ).forEach { (name, value, unit) ->
+        val subtest = JSONObject()
+        subtest.put("name", name)
+        subtest.put("value", value)
+        subtest.put("unit", unit)
+        subtest.put("lowerIsBetter", true)
+        subtests.put(subtest)
+    }
+    suite.put("subtests", subtests)
+
+    return suite
 }
 
 /**
