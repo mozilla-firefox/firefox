@@ -139,7 +139,6 @@ xpcshell:
                 by-test-platform:
                     linux.*: 2
                     default: default
-            geckoview-isolated-process: 2
             default:
                 by-test-platform:
                     windows.*-asan.*: 3
