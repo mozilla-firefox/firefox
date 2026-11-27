@@ -307,6 +307,59 @@ add_task(async function fields_identified_when_added_in_a_single_mutation() {
 });
 
 /**
+ * Tests that added fields with child nodes, such as a <select> with options or
+ * a <textarea> with text, are identified.
+ */
+add_task(async function fields_with_child_nodes_identified_when_added() {
+  const html = `
+    <form id="form">
+      <input id="name" autocomplete="name">
+      <input id="email" autocomplete="email">
+      <input id="tel" autocomplete="tel">
+    </form>
+    <script>
+      document.getElementById("email").addEventListener("input", () => {
+        const wrapper = document.createElement("div");
+        wrapper.innerHTML = \`
+          <textarea autocomplete="street-address">1 Main St</textarea>
+          <select autocomplete="country">
+            <option value="US">United States</option>
+            <option value="CA">Canada</option>
+          </select>\`;
+        document.getElementById("form").append(wrapper);
+      });
+    </script>`;
+
+  await BrowserTestUtils.withNewTab(
+    "https://example.org/document-builder.sjs?html=" + encodeURIComponent(html),
+    async browser => {
+      let fieldDetectionCompleted = getFieldDetectionCompletedPromiseResolver();
+      await SpecialPowers.spawn(browser, [], () => {
+        content.document.getElementById("email").focus();
+      });
+      await fieldDetectionCompleted;
+
+      fieldDetectionCompleted = getFieldDetectionCompletedPromiseResolver();
+      await SpecialPowers.spawn(browser, [], () => {
+        content.document.getElementById("email").setUserInput("a@b.c");
+      });
+      await fieldDetectionCompleted;
+      await verifyCurrentIdentifiedFields(browser, [
+        {
+          fields: [
+            { fieldName: "name" },
+            { fieldName: "email" },
+            { fieldName: "tel" },
+            { fieldName: "street-address" },
+            { fieldName: "country" },
+          ],
+        },
+      ]);
+    }
+  );
+});
+
+/**
  * Tests that new form-less fields are identified when all the previously
  * identified fields were removed.
  */

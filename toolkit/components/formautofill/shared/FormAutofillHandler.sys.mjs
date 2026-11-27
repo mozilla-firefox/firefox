@@ -875,18 +875,22 @@ export class FormAutofillHandler {
           return [addedNodes, removedNodes, changedSelectElements];
         };
 
-        const collectAllSubtreeElements = node => {
-          if (!node.childNodes.length) {
-            return node;
+        const FIELD_SELECTOR =
+          FormAutofillUtils.ELIGIBLE_ELEMENT_TYPES.join(",");
+        const collectFieldElements = node => {
+          if (node.nodeType != Node.ELEMENT_NODE) {
+            return [];
           }
-          return Array.from(node.childNodes).flatMap(childNode =>
-            collectAllSubtreeElements(childNode)
-          );
+          const fields = Array.from(node.querySelectorAll(FIELD_SELECTOR));
+          if (node.matches(FIELD_SELECTOR)) {
+            fields.unshift(node);
+          }
+          return fields;
         };
 
         const getCCAndAddressElements = nodes => {
           return nodes
-            .flatMap(node => collectAllSubtreeElements(node))
+            .flatMap(node => collectFieldElements(node))
             .filter(element =>
               FormAutofillUtils.isCreditCardOrAddressFieldType(element)
             );
