@@ -7,7 +7,6 @@ support-files = [
   "annotation_third.html",
   "head.js",
   "link_open_stories.json",
-  "newtab_sections.json",
   "redirect_to.sjs",
   "topstories.json",
   "file_pdf.PDF",
@@ -69,8 +68,6 @@ https_first_disabled = true
 ["browser_newtab_ping.js"]
 
 ["browser_newtab_runtime_metrics.js"]
-
-["browser_newtab_sections_column_layout.js"]
 
 ["browser_newtab_side_by_side_layout.js"]
 

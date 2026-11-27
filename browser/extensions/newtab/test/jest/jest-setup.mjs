@@ -154,15 +154,6 @@ if (globalThis.performance && !globalThis.performance.getEntriesByType) {
   });
 }
 
-// jsdom has no ResizeObserver, and CardSections observes its grid whenever Nova
-// is on. This one never calls back. A test that needs callbacks installs its
-// own and puts this one back afterwards.
-globalThis.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-};
-
 // Fail any test that logs to console.error (React act() warnings, PropType
 // errors, error-boundary logging, etc.). Tests that expect an error must spy
 // on console.error themselves (their inner spy swallows the calls, and its

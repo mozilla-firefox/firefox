@@ -6,6 +6,7 @@ import React, {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useRef,
   useState,
 } from "react";
 import { DSEmptyState } from "../DSEmptyState/DSEmptyState";
@@ -214,54 +215,6 @@ const prefToArray = (pref = "") => {
     .filter(item => item);
 };
 
-/**
- * Reads Nova's column count (--sections-col-count, set by CSS container
- * queries) on mount and whenever the sections wrapper resizes. Classic has no
- * --sections-col-count: it uses window.innerWidth, refreshed on focus.
- *
- * @param {boolean} novaEnabled
- * @returns {{
- *   activeColumnLayout: string,
- *   setActiveColumnLayout: Function,
- *   wrapperRef: Function,
- * }}
- */
-function useColumnLayout(novaEnabled) {
-  const [activeColumnLayout, setActiveColumnLayout] = useState(() =>
-    getActiveColumnLayout(window.innerWidth)
-  );
-  // The wrapper only appears once there's data, and the effect has to run again
-  // when it does.
-  const [wrapper, setWrapper] = useState(null);
-
-  useLayoutEffect(() => {
-    if (!novaEnabled || !wrapper) {
-      return undefined;
-    }
-    const syncLayout = () => {
-      const nextLayout = getNovaColumnLayout(wrapper);
-      if (nextLayout) {
-        setActiveColumnLayout(nextLayout);
-      }
-    };
-    syncLayout();
-
-    // Only a width change can change the column count.
-    let lastInlineSize = null;
-    const observer = new ResizeObserver(entries => {
-      const [{ inlineSize }] = entries.at(-1).contentBoxSize;
-      if (inlineSize !== lastInlineSize) {
-        lastInlineSize = inlineSize;
-        syncLayout();
-      }
-    });
-    observer.observe(wrapper);
-    return () => observer.disconnect();
-  }, [novaEnabled, wrapper]);
-
-  return { activeColumnLayout, setActiveColumnLayout, wrapperRef: setWrapper };
-}
-
 function CardSection({
   sectionPosition,
   section,
@@ -273,6 +226,7 @@ function CardSection({
   spocsLoading,
   activeColumnLayout,
   syncLayoutOnFocus,
+  gridRef,
 }) {
   const prefs = useSelector(state => state.Prefs.values);
 
@@ -553,8 +507,6 @@ function CardSection({
         onFocus={onFocus}
         attribution={rec.attribution}
         isActive={isActive}
-        // @nova-cleanup(remove-conditional): Always pass activeColumnLayout
-        columnLayout={novaEnabled ? activeColumnLayout : undefined}
       />
     );
   }
@@ -831,6 +783,7 @@ function CardSection({
           ))}
       </div>
       <div
+        ref={gridRef}
         className={`ds-section-grid ds-card-grid`}
         onFocusCapture={syncLayoutOnFocus}
         onKeyDown={handleCardKeyDown}
@@ -884,17 +837,53 @@ function CardSections({
     (prefs.trainhopConfig?.topicNavigation?.enabled ||
       prefs[PREF_TOPIC_NAVIGATION_ENABLED]) &&
     novaEnabled;
-  const { activeColumnLayout, setActiveColumnLayout, wrapperRef } =
-    useColumnLayout(novaEnabled);
+  const gridRef = useRef(null);
+  const layoutObserverRef = useRef(null);
+  const [activeColumnLayout, setActiveColumnLayout] = useState(() =>
+    getActiveColumnLayout(window.innerWidth)
+  );
 
-  // @nova-cleanup(remove-conditional): Remove along with the classic path; Nova
-  // keeps the layout current from useColumnLayout's observer.
-  const syncLayoutOnFocus = useCallback(() => {
-    const nextLayout = getActiveColumnLayout(window.innerWidth);
-    setActiveColumnLayout(currLayout =>
-      currLayout === nextLayout ? currLayout : nextLayout
-    );
-  }, [setActiveColumnLayout]);
+  useLayoutEffect(() => {
+    if (!novaEnabled || !gridRef.current) {
+      return undefined;
+    }
+    const columnLayout = getNovaColumnLayout(gridRef.current);
+    if (columnLayout) {
+      setActiveColumnLayout(columnLayout);
+    }
+    return () => layoutObserverRef.current?.disconnect();
+  }, [novaEnabled]);
+
+  const syncLayoutOnFocus = useCallback(
+    e => {
+      const grid = gridRef.current ?? e.currentTarget;
+      const syncLayout = () => {
+        let nextLayout = getActiveColumnLayout(window.innerWidth);
+        if (novaEnabled) {
+          nextLayout = getNovaColumnLayout(grid);
+        }
+        if (!nextLayout) {
+          return;
+        }
+        setActiveColumnLayout(currLayout =>
+          currLayout === nextLayout ? currLayout : nextLayout
+        );
+      };
+
+      syncLayout();
+
+      // A stale activeColumnLayout can leave the roving tabindex on a card the
+      // breakpoint hides. Observing the grid keeps it current. Observation
+      // starts on first focus and continues once focus leaves, because a
+      // resize then would otherwise go unnoticed.
+      if (novaEnabled && !layoutObserverRef.current) {
+        const observer = new ResizeObserver(syncLayout);
+        observer.observe(grid);
+        layoutObserverRef.current = observer;
+      }
+    },
+    [novaEnabled]
+  );
 
   // Handle a render before feed has been fetched by displaying nothing
   if (!data) {
@@ -955,8 +944,8 @@ function CardSections({
       anySectionsFollowed={anySectionsFollowed}
       spocsLoading={spocsLoading}
       activeColumnLayout={activeColumnLayout}
-      // @nova-cleanup(remove-conditional): Drop syncLayoutOnFocus
-      syncLayoutOnFocus={novaEnabled ? undefined : syncLayoutOnFocus}
+      syncLayoutOnFocus={syncLayoutOnFocus}
+      gridRef={sectionPosition === 0 ? gridRef : undefined}
     />
   ));
 
@@ -1054,11 +1043,7 @@ function CardSections({
       <DSEmptyState status={data.status} dispatch={dispatch} feed={feed} />
     </div>
   ) : (
-    <div
-      className="ds-section-wrapper"
-      // @nova-cleanup(remove-conditional): Always pass wrapperRef
-      ref={novaEnabled ? wrapperRef : undefined}
-    >
+    <div className="ds-section-wrapper">
       <SectionsOrderReporter
         sectionKeys={filteredSections.map(s => s.sectionKey).join(",")}
         dispatch={dispatch}

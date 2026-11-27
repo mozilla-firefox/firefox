@@ -5,14 +5,13 @@
 import { WIDGET_ROW_COMPONENTS } from "content-src/components/Widgets/WidgetsComponentRegistry.jsx";
 import { WidgetLocationContext } from "content-src/components/Widgets/WidgetPlacement";
 import { useContext } from "react";
-import { render, fireEvent, createEvent, act } from "@testing-library/react";
+import { render, fireEvent, createEvent } from "@testing-library/react";
 import { WrapWithProvider } from "test/jest/test-utils";
 import { INITIAL_STATE } from "common/Reducers.sys.mjs";
 import {
   CardSections,
   getOrphanTileIndexes,
 } from "content-src/components/DiscoveryStreamComponents/CardSections/CardSections";
-import { _DSCard as DSCard } from "content-src/components/DiscoveryStreamComponents/DSCard/DSCard";
 
 const PREF_SECTIONS_PERSONALIZATION_ENABLED =
   "discoverystream.sections.personalization.enabled";
@@ -1039,355 +1038,34 @@ describe("<CardSections />", () => {
     });
 
     describe("layout observer", () => {
-      // Records every observer so a test can deliver resizes by hand. jsdom
-      // runs no container queries, so a test sets --sections-col-count on the
-      // grid inline, then delivers the resize that would follow.
-      let observers;
-      let observeCalls;
-      let originalResizeObserver;
-
-      class CapturingResizeObserver {
-        constructor(callback) {
-          this.callback = callback;
-          this.targets = new Set();
-          this.disconnected = false;
-          observers.push(this);
-        }
-        observe(el) {
-          observeCalls.push(el);
-          this.targets.add(el);
-        }
-        unobserve(el) {
-          this.targets.delete(el);
-        }
-        disconnect() {
-          this.targets.clear();
-          this.disconnected = true;
-        }
-      }
-
-      const liveObservers = () => observers.filter(o => !o.disconnected);
-      const observedTargets = () =>
-        liveObservers().flatMap(o => [...o.targets]);
-      // toEqual compares DOM nodes by structure, so identical sections would
-      // match each other; compare identity instead.
-      const expectObserving = grid => {
-        const targets = observedTargets();
-        expect(targets).toHaveLength(1);
-        expect(targets[0]).toBe(grid);
-      };
-      const resize = inlineSize => {
-        const [observer] = liveObservers();
-        act(() =>
-          observer.callback([{ contentBoxSize: [{ inlineSize }] }], observer)
-        );
-      };
-      const setColumnCount = (grid, count) =>
-        grid.style.setProperty("--sections-col-count", `${count}`);
-      const wrapperOf = container =>
-        container.querySelector(".ds-section-wrapper");
-
-      const novaState = {
-        ...INITIAL_STATE,
-        Prefs: {
-          ...INITIAL_STATE.Prefs,
-          values: { ...INITIAL_STATE.Prefs.values, "nova.enabled": true },
-        },
-      };
-
-      // Three cards; col-2 has no tile at position 2, so CSS hides card 3.
-      const HIDES_THIRD_CARD_AT_COL_2 = {
-        ...DEFAULT_PROPS.data.sections[0],
-        data: [
-          { id: "rec-1", title: "Card 1", url: "https://example.com/1" },
-          { id: "rec-2", title: "Card 2", url: "https://example.com/2" },
-          { id: "rec-3", title: "Card 3", url: "https://example.com/3" },
-        ],
-        layout: {
-          title: "layout_name",
-          responsiveLayouts: [
-            {
-              columnCount: 1,
-              tiles: [
-                { size: "small", position: 0, hasAd: false, hasExcerpt: false },
-                { size: "medium", position: 1, hasAd: false, hasExcerpt: true },
-                { size: "small", position: 2, hasAd: false, hasExcerpt: false },
-              ],
-            },
-            {
-              columnCount: 2,
-              tiles: [
-                { size: "small", position: 0, hasAd: false, hasExcerpt: false },
-                { size: "medium", position: 1, hasAd: false, hasExcerpt: true },
-              ],
-            },
-          ],
-        },
-      };
-
-      // Focuses card 3, then switches the grid to two columns.
-      function renderWithTabStopOnThirdCard() {
-        const utils = renderCardSections(
-          { data: { sections: [HIDES_THIRD_CARD_AT_COL_2] } },
-          novaState
-        );
-        fireEvent.focus(
-          utils.container
-            .querySelectorAll("article.ds-card")[2]
-            .querySelector("a.ds-card-link")
-        );
-        expect(cardTabIndex(utils.container, 2)).toBe(0);
-        setColumnCount(wrapperOf(utils.container), 2);
-        resize(800);
-        return utils;
-      }
-
-      const expectTabStopOnFirstCardOnly = container => {
-        expect(cardTabIndex(container, 0)).toBe(0);
-        expect(cardTabIndex(container, 1)).toBe(-1);
-        expect(cardTabIndex(container, 2)).toBe(-1);
-      };
-
-      beforeEach(() => {
-        observers = [];
-        observeCalls = [];
-        originalResizeObserver = globalThis.ResizeObserver;
-        globalThis.ResizeObserver = CapturingResizeObserver;
-      });
-
       afterEach(() => {
-        globalThis.ResizeObserver = originalResizeObserver;
-        jest.restoreAllMocks();
+        delete globalThis.ResizeObserver;
       });
 
-      it("observes the sections wrapper on mount, without focus, exactly once", () => {
-        const { container } = renderCardSections({}, novaState);
-        const wrapper = wrapperOf(container);
-
-        expect(observeCalls).toHaveLength(1);
-        expect(observeCalls[0]).toBe(wrapper);
-        expectObserving(wrapper);
-      });
-
-      it("reads the layout from CSS on mount, before any resize", () => {
-        // The setup stub never calls back, so only the mount read can apply
-        // the wrapper's column count.
-        globalThis.ResizeObserver = originalResizeObserver;
-        const realGetComputedStyle = globalThis.getComputedStyle;
-        jest
-          .spyOn(globalThis, "getComputedStyle")
-          .mockImplementation((el, ...rest) => {
-            const style = realGetComputedStyle(el, ...rest);
-            if (!el.classList?.contains("ds-section-wrapper")) {
-              return style;
-            }
-            return {
-              getPropertyValue: name =>
-                name === "--sections-col-count"
-                  ? "2"
-                  : style.getPropertyValue(name),
-            };
-          });
-
-        // The first tab stop is card 2 at col-1 and card 1 at col-2.
-        const { container } = renderCardSections(
-          {
-            data: {
-              sections: [
-                {
-                  ...DEFAULT_PROPS.data.sections[0],
-                  data: [
-                    {
-                      id: "rec-1",
-                      title: "Card 1",
-                      url: "https://example.com/1",
-                    },
-                    {
-                      id: "rec-2",
-                      title: "Card 2",
-                      url: "https://example.com/2",
-                    },
-                  ],
-                  layout: {
-                    title: "layout_name",
-                    responsiveLayouts: [
-                      {
-                        columnCount: 1,
-                        tiles: [
-                          {
-                            size: "medium",
-                            position: 1,
-                            hasAd: false,
-                            hasExcerpt: true,
-                          },
-                          {
-                            size: "small",
-                            position: 0,
-                            hasAd: false,
-                            hasExcerpt: false,
-                          },
-                        ],
-                      },
-                      {
-                        columnCount: 2,
-                        tiles: [
-                          {
-                            size: "small",
-                            position: 0,
-                            hasAd: false,
-                            hasExcerpt: false,
-                          },
-                          {
-                            size: "medium",
-                            position: 1,
-                            hasAd: false,
-                            hasExcerpt: true,
-                          },
-                        ],
-                      },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-          novaState
-        );
-
-        // innerWidth (500px) alone would say col-1.
-        expect(cardTabIndex(container, 0)).toBe(0);
-        expect(cardTabIndex(container, 1)).toBe(-1);
-      });
-
-      it("moves the tab stop off a card a resize hides", () => {
-        const { container } = renderWithTabStopOnThirdCard();
-        expectTabStopOnFirstCardOnly(container);
-      });
-
-      it("doesn't re-render cards for a resize that keeps the layout", () => {
-        const { container } = renderCardSections({}, novaState);
-        setColumnCount(wrapperOf(container), 1);
-        const renderSpy = jest.spyOn(DSCard.prototype, "render");
-
-        resize(800);
-
-        expect(renderSpy).not.toHaveBeenCalled();
-      });
-
-      it("keeps the last layout when the column count can't be read", () => {
-        const { container } = renderWithTabStopOnThirdCard();
-
-        wrapperOf(container).style.removeProperty("--sections-col-count");
-        resize(900);
-
-        expectTabStopOnFirstCardOnly(container);
-      });
-
-      it("reads the style only when the wrapper's width changes", () => {
-        const { container } = renderCardSections({}, novaState);
-        setColumnCount(wrapperOf(container), 1);
-        const styleSpy = jest.spyOn(globalThis, "getComputedStyle");
-
-        resize(800);
-        expect(styleSpy).toHaveBeenCalledTimes(1);
-
-        // A height change arrives with the same inline size.
-        resize(800);
-        expect(styleSpy).toHaveBeenCalledTimes(1);
-      });
-
-      it("keeps observing the same wrapper when the placeholder section becomes the feed's", () => {
-        // A placeholder section has no sectionKey, so the feed's section
-        // remounts with a new grid; the wrapper around them stays.
-        const placeholderSection = {
-          ...DEFAULT_PROPS.data.sections[0],
-          sectionKey: undefined,
-          data: [{ placeholder: true }],
+      it("starts observing the grid on first focus, and only once", () => {
+        const observed = [];
+        globalThis.ResizeObserver = class {
+          observe(el) {
+            observed.push(el);
+          }
+          disconnect() {}
         };
-        const dispatch = jest.fn();
-        const { container, rerender } = render(
-          <WrapWithProvider state={novaState}>
-            <CardSections
-              dispatch={dispatch}
-              {...DEFAULT_PROPS}
-              data={{ sections: [placeholderSection] }}
-            />
-          </WrapWithProvider>
-        );
-        const wrapper = wrapperOf(container);
-        const placeholderGrid = container.querySelector(".ds-section-grid");
+        const novaState = {
+          ...INITIAL_STATE,
+          Prefs: {
+            ...INITIAL_STATE.Prefs,
+            values: { ...INITIAL_STATE.Prefs.values, "nova.enabled": true },
+          },
+        };
 
-        rerender(
-          <WrapWithProvider state={novaState}>
-            <CardSections dispatch={dispatch} {...DEFAULT_PROPS} />
-          </WrapWithProvider>
-        );
-
-        expect(container.querySelector(".ds-section-grid")).not.toBe(
-          placeholderGrid
-        );
-        expect(wrapperOf(container)).toBe(wrapper);
-        expect(observeCalls).toHaveLength(1);
-        expectObserving(wrapper);
-      });
-
-      it("starts observing when the data arrives after mount", () => {
-        const dispatch = jest.fn();
-        const { container, rerender } = render(
-          <WrapWithProvider state={novaState}>
-            <CardSections dispatch={dispatch} {...DEFAULT_PROPS} data={null} />
-          </WrapWithProvider>
-        );
-        expect(observers).toHaveLength(0);
-
-        rerender(
-          <WrapWithProvider state={novaState}>
-            <CardSections dispatch={dispatch} {...DEFAULT_PROPS} />
-          </WrapWithProvider>
-        );
-
-        expectObserving(wrapperOf(container));
-      });
-
-      it("creates no observer for the empty state", () => {
-        const { container } = renderCardSections(
-          { data: { ...DEFAULT_PROPS.data, sections: [] } },
-          novaState
-        );
-
-        expect(
-          container.querySelector(".ds-card-grid.empty")
-        ).toBeInTheDocument();
-        expect(liveObservers()).toHaveLength(0);
-      });
-
-      it("disconnects on unmount", () => {
-        const { unmount } = renderCardSections({}, novaState);
-        expect(liveObservers()).toHaveLength(1);
-
-        unmount();
-
-        expect(liveObservers()).toHaveLength(0);
-      });
-
-      it("passes the layout to cards in Nova", () => {
-        const renderSpy = jest.spyOn(DSCard.prototype, "render");
         const { container } = renderCardSections({}, novaState);
-        setColumnCount(wrapperOf(container), 2);
-        resize(800);
+        const grid = container.querySelector(".ds-section-grid.ds-card-grid");
+        expect(observed).toHaveLength(0);
 
-        expect(renderSpy.mock.contexts.at(-1).props.columnLayout).toBe("col-2");
-      });
+        fireEvent.focus(grid);
+        fireEvent.focus(grid);
 
-      it("creates no observer and passes no layout to cards in classic", () => {
-        const renderSpy = jest.spyOn(DSCard.prototype, "render");
-        renderCardSections();
-
-        expect(observers).toHaveLength(0);
-        expect(renderSpy).toHaveBeenCalled();
-        for (const card of renderSpy.mock.contexts) {
-          expect(card.props.columnLayout).toBeUndefined();
-        }
+        expect(observed).toEqual([grid]);
       });
     });
 

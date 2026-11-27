@@ -38,7 +38,7 @@ const PREVIEW_FALLBACK_SELECTOR =
  * the current column count, so every story preview has the same shape, else
  * its first widget or Recent activity card. Sponsored cards are skipped. CardSections gives each card a size
  * class per column count, `col-<count>-<size>`, and the count in force is the
- * --sections-col-count its grid inherits; the grid is a subgrid of the page, so
+ * --sections-col-count its grid sets; the grid is a subgrid of the page, so
  * its own tracks do not say.
  *
  * @param {Element} panel - the space's panel
