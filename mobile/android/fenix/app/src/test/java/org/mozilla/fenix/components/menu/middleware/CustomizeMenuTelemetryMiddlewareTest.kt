@@ -9,6 +9,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
+import mozilla.components.compose.menu.store.CustomizableMenuAction.EditGroupItemsClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
@@ -160,6 +161,18 @@ class CustomizeMenuTelemetryMiddlewareTest {
         store.dispatch(PreviewClicked)
 
         assertEquals(1, CustomizeMenu.previewClicked.testGetValue()?.size)
+    }
+
+    @Test
+    fun `WHEN the user taps the button to edit the items of a section THEN record its name`() {
+        val store = createStore()
+        assertNull(CustomizeMenu.editItemsClicked.testGetValue())
+
+        store.dispatch(EditGroupItemsClicked(TOOLS_GROUP_ID))
+
+        val events = CustomizeMenu.editItemsClicked.testGetValue()
+        assertNotNull(events)
+        assertEquals(TOOLS_GROUP_ID, events.single().extra?.getValue("section"))
     }
 
     private fun createStore(initialState: CustomizableMenuState = CustomizableMenuState(emptyList())) =

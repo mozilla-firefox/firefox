@@ -44,10 +44,11 @@ class CustomizeMenuTelemetryMiddleware : Middleware<CustomizableMenuState, Custo
             is BackPressed -> CustomizeMenu.backPressed.record()
             is ResetToDefaultConfirmed -> CustomizeMenu.resetToDefaultClicked.record()
             is PreviewClicked -> CustomizeMenu.previewClicked.record()
+            is EditGroupItemsClicked ->
+                CustomizeMenu.editItemsClicked.record(CustomizeMenu.EditItemsClickedExtra(section = action.groupId))
             is MenuEvent,
             is Init,
             is CustomizationStatusChanged,
-            is EditGroupItemsClicked,
             is AttemptedRemovalOfMandatorySection -> Unit
         }
     }
