@@ -66,6 +66,10 @@ permalink: /changelog/
     * ⚠️ **Breaking change**: `RecordingDevicesMiddleware` now requires an explicit `CoroutineScope` to be provided by callers. The constructor no longer supplies a default scope value, improving lifecycle ownership and scope management. [Bug 2086075](https://la.org/show_bug.cgi?id=2086075)
 * **service-firefox-accounts** and **concept-sync**
     * 🆕 Added an optional parameter determining whether or not to ignore cache when calling `DeviceConstellation.refreshDevices`. [Bug 2088410](https://bugzilla.mozilla.org/show_bug.cgi?id=2088410)
+* **feature-customtabs**
+    * 🆕 Added an optional `desktopMode` to `CustomTabIntentProcessor` to create custom tabs in desktop or mobile mode regardless of the browser default. [Bug 2095645](https://bugzilla.mozilla.org/show_bug.cgi?id=2095645)
+* **feature-tabs**
+    * 🆕 Added an optional `desktopMode` to `CustomTabsUseCases.AddCustomTabUseCase`, overriding `BrowserState.desktopMode`. [Bug 2095645](https://bugzilla.mozilla.org/show_bug.cgi?id=2095645)
 
 # 161.0
 * **browser-state**
