@@ -2953,16 +2953,11 @@ bool gfxFont::RenderColorGlyph(DrawTarget* aDrawTarget, gfxContext* aContext,
     }
     bounds.RoundOut();
 
-    // Tell the cache what colors we're using; if they have changed, it
+    // Tell the cache what palette we're using; if it has changed, it
     // will discard any currently-cached entries.
-    HashMap<uint32_t, RefPtr<SourceSurface>>::AddPtr cached;
     if (useCache) {
-      mColorGlyphCache->SetColors(aFontParams.currentColor,
-                                  aFontParams.palette);
-      cached = mColorGlyphCache->mCache.lookupForAdd(aGlyphId);
-      if (cached) {
-        snapshot = cached->value();
-      }
+      mColorGlyphCache->SetPalette(aFontParams.palette);
+      snapshot = mColorGlyphCache->Lookup(aGlyphId, aFontParams.currentColor);
     }
 
     const int kScale = 2;
@@ -2981,26 +2976,28 @@ bool gfxFont::RenderColorGlyph(DrawTarget* aDrawTarget, gfxContext* aContext,
         drawOptions.mCompositionOp = CompositionOp::OP_OVER;
         drawOptions.mAlpha = 1.0f;
         bool ok = false;
+        bool usedCurrentColor = false;
         if (paintGraph) {
           ok = COLRFonts::PaintGlyphGraph(
               colr, hbShaper->GetHBFont(), paintGraph, target, nullptr,
               aFontParams.scaledFont, drawOptions, -bounds.TopLeft(),
               aFontParams.currentColor, aFontParams.palette->Colors(), aGlyphId,
-              mFUnitsConvFactor);
+              mFUnitsConvFactor, &usedCurrentColor);
         } else {
           auto face(GetFontEntry()->GetHBFace());
           ok = COLRFonts::PaintGlyphLayers(
               colr, face, layers, target, nullptr, aFontParams.scaledFont,
               drawOptions, -bounds.TopLeft(), aFontParams.currentColor,
-              aFontParams.palette->Colors());
+              aFontParams.palette->Colors(), &usedCurrentColor);
         }
         if (ok) {
           snapshot = target->Snapshot();
           if (useCache) {
             // Save a snapshot of the rendering in the cache.
-            // (We ignore potential failure here, and just paint the snapshot
-            // without caching it.)
-            (void)mColorGlyphCache->mCache.add(cached, aGlyphId, snapshot);
+            mColorGlyphCache->Put(
+                aGlyphId,
+                usedCurrentColor ? Some(aFontParams.currentColor) : Nothing(),
+                snapshot);
           }
         }
       }
@@ -3037,13 +3034,60 @@ bool gfxFont::RenderColorGlyph(DrawTarget* aDrawTarget, gfxContext* aContext,
   return false;
 }
 
-void gfxFont::ColorGlyphCache::SetColors(sRGBColor aCurrentColor,
-                                         FontPalette* aPalette) {
-  if (aCurrentColor != mCurrentColor || aPalette != mPalette) {
+void gfxFont::ColorGlyphCache::SetPalette(FontPalette* aPalette) {
+  if (aPalette != mPalette) {
     mCache.clear();
-    mCurrentColor = aCurrentColor;
+    mOldCache.clear();
     mPalette = aPalette;
   }
+}
+
+already_AddRefed<SourceSurface> gfxFont::ColorGlyphCache::Lookup(
+    uint32_t aGlyphId, sRGBColor aCurrentColor) {
+  RefPtr<SourceSurface> surface = LookupKey(Key(aGlyphId));
+  if (!surface) {
+    surface = LookupKey(Key(aGlyphId, aCurrentColor));
+  }
+  return surface.forget();
+}
+
+void gfxFont::ColorGlyphCache::Put(uint32_t aGlyphId,
+                                   Maybe<sRGBColor> aCurrentColor,
+                                   SourceSurface* aSurface) {
+  uint64_t key = aCurrentColor ? Key(aGlyphId, *aCurrentColor) : Key(aGlyphId);
+  auto p = mCache.lookupForAdd(key);
+  MOZ_ASSERT(!p);
+  PutKey(p, key, aSurface);
+}
+
+already_AddRefed<SourceSurface> gfxFont::ColorGlyphCache::LookupKey(
+    uint64_t aKey) {
+  auto addPtr = mCache.lookupForAdd(aKey);
+  if (addPtr) {
+    return do_AddRef(addPtr->value());
+  }
+  auto p = mOldCache.lookup(aKey);
+  if (!p) {
+    return nullptr;
+  }
+  RefPtr<SourceSurface> surface = std::move(p->value());
+  mOldCache.remove(p);
+  PutKey(addPtr, aKey, surface);
+  return surface.forget();
+}
+
+void gfxFont::ColorGlyphCache::PutKey(Map::AddPtr& aPtr, uint64_t aKey,
+                                      SourceSurface* aSurface) {
+  // We ignore potential failure here, and just paint the snapshot without
+  // caching it.
+  if (mCache.count() < kMaxEntries) {
+    (void)mCache.add(aPtr, aKey, aSurface);
+    return;
+  }
+  // Starting a new generation invalidates aPtr.
+  mOldCache.swap(mCache);
+  mCache.clear();
+  (void)mCache.putNew(aKey, aSurface);
 }
 
 bool gfxFont::HasColorGlyphFor(uint32_t aCh, uint32_t aNextCh) {

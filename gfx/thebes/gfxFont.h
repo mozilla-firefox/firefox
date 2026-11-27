@@ -21,6 +21,7 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/FontPropertyTypes.h"
 #include "mozilla/HashTable.h"
+#include "mozilla/Maybe.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/RWLock.h"
 #include "mozilla/RefPtr.h"
@@ -2474,13 +2475,52 @@ class gfxFont {
     ColorGlyphCache() = default;
     ~ColorGlyphCache() = default;
 
-    void SetColors(mozilla::gfx::sRGBColor aCurrentColor,
-                   mozilla::gfx::FontPalette* aPalette);
+    // Discards cached renderings if the palette has changed.
+    void SetPalette(mozilla::gfx::FontPalette* aPalette);
 
-    mozilla::HashMap<uint32_t, RefPtr<mozilla::gfx::SourceSurface>> mCache;
+    already_AddRefed<mozilla::gfx::SourceSurface> Lookup(
+        uint32_t aGlyphId, mozilla::gfx::sRGBColor aCurrentColor);
+
+    // Must only be called after Lookup() has failed for the same glyph and
+    // color. aCurrentColor is the text color if the rendering depends on it,
+    // and Nothing() otherwise.
+    void Put(uint32_t aGlyphId,
+             mozilla::Maybe<mozilla::gfx::sRGBColor> aCurrentColor,
+             mozilla::gfx::SourceSurface* aSurface);
 
    private:
-    mozilla::gfx::sRGBColor mCurrentColor;
+    // Only glyphs that reference the text color (the "foreground" palette
+    // index) are keyed by it, so that other glyphs share one entry across
+    // text colors. COLR glyph IDs are 16-bit, which leaves the top bit free.
+    static constexpr uint64_t kUsesCurrentColor = uint64_t(1) << 63;
+    static uint64_t Key(uint32_t aGlyphId) { return uint64_t(aGlyphId) << 32; }
+    static uint64_t Key(uint32_t aGlyphId,
+                        mozilla::gfx::sRGBColor aCurrentColor) {
+      return kUsesCurrentColor | Key(aGlyphId) | aCurrentColor.ToABGR();
+    }
+
+    // Entries live in two generations of up to this many each: when the
+    // current one fills it becomes the old one, and a hit in the old one moves
+    // the entry back. A working set that fits in one generation is therefore
+    // never evicted, unlike with a single map that is cleared.
+    static constexpr uint32_t kMaxEntries = 512;
+
+    // DefaultHasher<uint64_t> drops the upper 32 bits, which hold the glyph ID.
+    struct KeyHasher : mozilla::DefaultHasher<uint64_t> {
+      static mozilla::HashNumber hash(uint64_t aKey) {
+        return mozilla::HashGeneric(aKey);
+      }
+    };
+    using Map = mozilla::HashMap<uint64_t, RefPtr<mozilla::gfx::SourceSurface>,
+                                 KeyHasher>;
+
+    already_AddRefed<mozilla::gfx::SourceSurface> LookupKey(uint64_t aKey);
+    // aPtr must come from mCache.lookupForAdd(aKey) with no mutation since.
+    void PutKey(Map::AddPtr& aPtr, uint64_t aKey,
+                mozilla::gfx::SourceSurface* aSurface);
+
+    Map mCache;
+    Map mOldCache;
     RefPtr<mozilla::gfx::FontPalette> mPalette;
   };
   mozilla::UniquePtr<ColorGlyphCache> mColorGlyphCache;

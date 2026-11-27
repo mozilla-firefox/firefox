@@ -94,11 +94,14 @@ class COLRFonts {
 
   static const GlyphLayers* GetGlyphLayers(hb_blob_t* aCOLR, uint32_t aGlyphId);
 
+  // For both paint functions, *aUsedCurrentColor (if given) is set to true if
+  // the rendering depended on aCurrentColor.
   static bool PaintGlyphLayers(
       hb_blob_t* aCOLR, hb_face_t* aFace, const GlyphLayers* aLayers,
       DrawTarget* aDrawTarget, layout::TextDrawTarget* aTextDrawer,
       ScaledFont* aScaledFont, DrawOptions aDrawOptions, const Point& aPoint,
-      const sRGBColor& aCurrentColor, const nsTArray<hb_color_t>* aColors);
+      const sRGBColor& aCurrentColor, const nsTArray<hb_color_t>* aColors,
+      bool* aUsedCurrentColor = nullptr);
 
   // COLRv1 support: color glyph is represented by a directed acyclic graph of
   // paint records.
@@ -113,7 +116,8 @@ class COLRFonts {
       DrawTarget* aDrawTarget, layout::TextDrawTarget* aTextDrawer,
       ScaledFont* aScaledFont, DrawOptions aDrawOptions, const Point& aPoint,
       const sRGBColor& aCurrentColor, const nsTArray<hb_color_t>* aColors,
-      uint32_t aGlyphId, float aFontUnitsToPixels);
+      uint32_t aGlyphId, float aFontUnitsToPixels,
+      bool* aUsedCurrentColor = nullptr);
 
   static Rect GetColorGlyphBounds(hb_blob_t* aCOLR, hb_font_t* aFont,
                                   uint32_t aGlyphId, DrawTarget* aDrawTarget,

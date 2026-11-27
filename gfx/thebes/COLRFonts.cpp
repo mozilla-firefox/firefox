@@ -159,6 +159,7 @@ struct PaintState {
   uint16_t mCoordCount;
   nsTArray<uint32_t>* mVisited;
   nsTHashMap<uint32_t, Rect>* mBoundsCache;
+  bool* mUsedCurrentColor = nullptr;
 
   const uint8_t* COLRv1BaseAddr() const {
     return reinterpret_cast<const uint8_t*>(mHeader.v1);
@@ -185,6 +186,9 @@ DeviceColor PaintState::GetColor(uint16_t aPaletteIndex, float aAlpha) const {
                               hb_color_get_blue(c), hb_color_get_alpha(c));
   } else if (aPaletteIndex == 0xffff) {
     color = mCurrentColor;
+    if (mUsedCurrentColor) {
+      *mUsedCurrentColor = true;
+    }
   } else {
     // Palette index out-of-range (a font bug), or palette failed to load.
     // Return partially-opaque gray, so shapes are at least somewhat visible.
@@ -2481,7 +2485,8 @@ bool COLRFonts::PaintGlyphLayers(
     hb_blob_t* aCOLR, hb_face_t* aFace, const GlyphLayers* aLayers,
     DrawTarget* aDrawTarget, layout::TextDrawTarget* aTextDrawer,
     ScaledFont* aScaledFont, DrawOptions aDrawOptions, const Point& aPoint,
-    const sRGBColor& aCurrentColor, const nsTArray<hb_color_t>* aColors) {
+    const sRGBColor& aCurrentColor, const nsTArray<hb_color_t>* aColors,
+    bool* aUsedCurrentColor) {
   const auto* glyphRecord = reinterpret_cast<const BaseGlyphRecord*>(aLayers);
   // Default to opaque rendering (non-webrender applies alpha with a layer)
   float alpha = 1.0;
@@ -2521,7 +2526,8 @@ bool COLRFonts::PaintGlyphLayers(
                    uint16_t(aColors->Length()),
                    0,
                    nullptr,
-                   nullptr};
+                   nullptr,
+                   aUsedCurrentColor};
   return glyphRecord->Paint(state, alpha, aPoint);
 }
 
@@ -2549,7 +2555,7 @@ bool COLRFonts::PaintGlyphGraph(
     DrawTarget* aDrawTarget, layout::TextDrawTarget* aTextDrawer,
     ScaledFont* aScaledFont, DrawOptions aDrawOptions, const Point& aPoint,
     const sRGBColor& aCurrentColor, const nsTArray<hb_color_t>* aColors,
-    uint32_t aGlyphId, float aFontUnitsToPixels) {
+    uint32_t aGlyphId, float aFontUnitsToPixels, bool* aUsedCurrentColor) {
   if (aTextDrawer) {
     // Currently we always punt to a blob for COLRv1 glyphs.
     aTextDrawer->FoundUnsupportedFeature();
@@ -2573,7 +2579,8 @@ bool COLRFonts::PaintGlyphGraph(
                    uint16_t(aColors->Length()),
                    uint16_t(coordCount),
                    &visitedOffsets,
-                   &boundsCache};
+                   &boundsCache,
+                   aUsedCurrentColor};
   state.mHeader.v1 =
       reinterpret_cast<const COLRv1Header*>(hb_blob_get_data(aCOLR, nullptr));
   AutoRestoreTransform saveTransform(aDrawTarget);
