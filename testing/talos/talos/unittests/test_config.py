@@ -1,4 +1,5 @@
 import copy
+import json
 import os
 import pathlib
 from unittest import mock
@@ -10,15 +11,32 @@ import pytest
 from talos.config import (
     DEFAULTS,
     ConfigurationError,
+    build_manifest,
+    convert_url,
+    determine_local_symbols_path,
+    fix_xperf,
     get_active_tests,
     get_browser_config,
     get_config,
     get_configs,
     get_test,
+    set_webserver,
+    setup_pdfpaint_test,
+    update_prefs,
 )
 from talos.test import PageloaderTest
 
 ORIGINAL_DEFAULTS = copy.deepcopy(DEFAULTS)
+DEFAULT_GECKO_PROFILE_ENTRIES = 128 * 1024 * 1024 // 8
+
+
+def patched_build_manifest(config, is_multidomain, manifestName):
+    return conftest.patched_build_manifest(config, manifestName)
+
+
+def develop_files():
+    tests_dir = pathlib.Path(__file__).resolve().parent.parent / "tests"
+    return set(tests_dir.rglob("*.develop"))
 
 
 class mock_test(PageloaderTest):
@@ -72,9 +90,10 @@ class mock_test(PageloaderTest):
     firstpaint = "value"
     userready = "value"
     fnbpaint = "value"
+    pdfpaint = False
 
 
-class Test_get_active_tests:
+class PyTest_get_active_tests:
     def test_raises_exception_for_undefined_test(self):
         with pytest.raises(ConfigurationError):
             get_active_tests({"activeTests": "undefined_test"})
@@ -86,7 +105,7 @@ class Test_get_active_tests:
             get_active_tests({"activeTests": "undef_test:undef_test2:undef_test3"})
 
 
-class Test_get_test:
+class PyTest_get_test:
     global_overrides = {
         "tpmozafterpaint": "overriden",
         "firstpaint": "overriden",
@@ -155,7 +174,7 @@ class Test_get_test:
         assert set(test_dict["xperf_counters"]) == set(counters + ["counter_extra"])
 
 
-class Test_get_browser_config:
+class PyTest_get_browser_config:
     required = (
         "extensions",
         "browser_path",
@@ -218,16 +237,17 @@ class Test_get_browser_config:
             pytest.fail("Must not raise exception on missing optional")
 
 
-class Test_get_config:
+class PyTest_get_config:
     @classmethod
     def setup_class(cls):
-        cls.argv = "--suite other-e10s --mainthread -e /some/random/path".split()
+        cls.existing_develop_files = develop_files()
+        cls.argv = "--suite other --mainthread -e /some/random/path".split()
         cls.argv_unprovided_tests = "-e /some/random/path".split()
         cls.argv_unknown_suite = (
             "--suite random-unknown-suite -e /some/random/path".split()
         )
         cls.argv_overrides_defaults = """
-        --suite other-e10s
+        --suite other
         --executablePath /some/random/path
         --cycles 20
         --gecko-profile
@@ -316,7 +336,8 @@ class Test_get_config:
 
     @classmethod
     def teardown_class(cls):
-        conftest.remove_develop_files()
+        for path in develop_files() - cls.existing_develop_files:
+            path.unlink()
 
     def test_correctly_overrides_test_valus(self):
         config = get_config(self.argv)
@@ -328,7 +349,7 @@ class Test_get_config:
 
         # expected keys are there
         assert config["browser_path"] == "/some/random/path"
-        assert config["suite"] == "other-e10s"
+        assert config["suite"] == "other"
         assert config["mainthread"] is True
 
         # default values overriden
@@ -358,7 +379,7 @@ class Test_get_config:
         assert test_config["cycles"] == 20
         assert test_config["timeout"] == 150
         assert test_config["gecko_profile_startup"] is True
-        assert test_config["gecko_profile_entries"] == 10000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert (
             test_config["url"] != "startup_test/tspaint_test.html"
         )  # interpolation was done
@@ -378,7 +399,7 @@ class Test_get_config:
         assert test_config["cycles"] == 20
         assert test_config["timeout"] == 150
         assert test_config["gecko_profile_startup"] is True
-        assert test_config["gecko_profile_entries"] == 10000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert (
             test_config["url"] != "startup_test/tspaint_test.html"
         )  # interpolation was done
@@ -391,7 +412,10 @@ class Test_get_config:
         # assert test_config['unit'] == 'ms'
         # TODO: this isn't overriden
         # assert test_config['webextensions'] != '${talos}/webextensions/dummy/dummy-signed.xpi'
-        assert test_config["preferences"] == {"xpinstall.signatures.required": False}
+        assert test_config["preferences"] == {
+            "xpinstall.signatures.required": False,
+            "extensions.blocklist.enabled": True,
+        }
 
     def test_ts_paint_heavy_has_expected_attributes(self):
         config = get_config(self.argv_ts_paint_heavy)
@@ -401,7 +425,7 @@ class Test_get_config:
         assert test_config["cycles"] == 20
         assert test_config["timeout"] == 150
         assert test_config["gecko_profile_startup"] is True
-        assert test_config["gecko_profile_entries"] == 10000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert (
             test_config["url"] != "startup_test/tspaint_test.html"
         )  # interpolation was done
@@ -422,14 +446,17 @@ class Test_get_config:
         assert test_config["cycles"] == 10
         assert test_config["timeout"] == 900
         assert test_config["gecko_profile_startup"] is True
-        assert test_config["gecko_profile_entries"] == 10000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["reinstall"] == [
             "sessionstore.jsonlz4",
             "sessionstore.js",
             "sessionCheckpoints.json",
         ]
         assert test_config["url"] == "about:home"
-        assert test_config["preferences"] == {"browser.startup.page": 3}
+        assert test_config["preferences"] == {
+            "browser.startup.page": 3,
+            "extensions.blocklist.enabled": True,
+        }
         # assert test_config['unit'] == 'ms'
 
     def test_sesssionrestore_no_auto_restore_has_expected_attributes(self):
@@ -438,16 +465,20 @@ class Test_get_config:
 
         assert test_config["name"] == "sessionrestore_no_auto_restore"
         assert test_config["cycles"] == 10
-        assert test_config["timeout"] == 900
+        assert test_config["timeout"] == 300
         assert test_config["gecko_profile_startup"] is True
-        assert test_config["gecko_profile_entries"] == 10000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["reinstall"] == [
             "sessionstore.jsonlz4",
             "sessionstore.js",
             "sessionCheckpoints.json",
         ]
         assert test_config["url"] == "about:home"
-        assert test_config["preferences"] == {"browser.startup.page": 1}
+        assert test_config["preferences"] == {
+            "browser.startup.page": 1,
+            "talos.sessionrestore.norestore": True,
+            "extensions.blocklist.enabled": True,
+        }
         # assert test_config['unit'] == 'ms'
 
     def test_sessionrestore_many_windows_has_expected_attributes(self):
@@ -458,14 +489,17 @@ class Test_get_config:
         assert test_config["cycles"] == 10
         assert test_config["timeout"] == 900
         assert test_config["gecko_profile_startup"] is True
-        assert test_config["gecko_profile_entries"] == 10000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["reinstall"] == [
             "sessionstore.jsonlz4",
             "sessionstore.js",
             "sessionCheckpoints.json",
         ]
         assert test_config["url"] == "about:home"
-        assert test_config["preferences"] == {"browser.startup.page": 3}
+        assert test_config["preferences"] == {
+            "browser.startup.page": 3,
+            "extensions.blocklist.enabled": True,
+        }
         # assert test_config['unit'] == 'ms'
 
     def test_tresize_has_expected_attributes(self):
@@ -473,13 +507,11 @@ class Test_get_config:
         test_config = config["tests"][0]
 
         assert test_config["name"] == "tresize"
-        assert test_config["cycles"] == 20
-        assert (
-            test_config["url"] != "startup_test/tresize/addon/content/tresize-test.html"
-        )
-        assert test_config["timeout"] == 150
+        assert test_config["tppagecycles"] == 20
+        assert test_config["tpmanifest"] != "${talos}/tests/tresize/tresize.manifest"
+        assert test_config["timeout"] == 900
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 1000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["tpmozafterpaint"] is True
         assert test_config["filters"] is not None
         # assert test_config['unit'] == 'ms'
@@ -494,11 +526,10 @@ class Test_get_config:
             test_config["tpmanifest"] != "${talos}/tests/cpstartup/cpstartup.manifest"
         )
         assert test_config["tppagecycles"] == 20
-        assert test_config["gecko_profile_entries"] == 1000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["tploadnocache"] is True
         assert test_config["unit"] == "ms"
         assert test_config["preferences"] == {
-            "addon.test.cpstartup.webserver": "${webserver}",
             "browser.link.open_newwindow": 3,
             "browser.link.open_newwindow.restriction": 2,
         }
@@ -511,12 +542,13 @@ class Test_get_config:
         assert test_config["tpcycles"] == 1
         assert test_config["tpmanifest"] != "${talos}/tests/tabpaint/tabpaint.manifest"
         assert test_config["tppagecycles"] == 20
-        assert test_config["gecko_profile_entries"] == 1000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["tploadnocache"] is True
         assert test_config["unit"] == "ms"
         assert test_config["preferences"] == {
             "browser.link.open_newwindow": 3,
             "browser.link.open_newwindow.restriction": 2,
+            "browser.newtab.preload": False,
         }
 
     def test_tabswitch_has_expected_attributes(self):
@@ -529,7 +561,7 @@ class Test_get_config:
             test_config["tpmanifest"] != "${talos}/tests/tabswitch/tabswitch.manifest"
         )
         assert test_config["tppagecycles"] == 5
-        assert test_config["gecko_profile_entries"] == 5000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["tploadnocache"] is True
         assert test_config["preferences"] == {
             "addon.test.tabswitch.urlfile": os.path.join(
@@ -551,7 +583,7 @@ class Test_get_config:
         assert test_config["tploadnocache"] is True
         assert test_config["tpmozafterpaint"] is False
         assert test_config["gecko_profile_interval"] == 10
-        assert test_config["gecko_profile_entries"] == 1000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -575,7 +607,7 @@ class Test_get_config:
         assert test_config["tploadnocache"] is True
         assert test_config["tpmozafterpaint"] is False
         assert test_config["gecko_profile_interval"] == 10
-        assert test_config["gecko_profile_entries"] == 1000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -595,7 +627,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 10
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -619,7 +651,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -641,7 +673,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -663,7 +695,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -685,7 +717,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -707,7 +739,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -729,7 +761,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -751,7 +783,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -773,7 +805,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -795,7 +827,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -817,7 +849,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -839,7 +871,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -861,7 +893,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -883,7 +915,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
@@ -905,14 +937,14 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert "win_counters" not in test_config
         assert "linux_counters" not in test_config
         assert "mac_counters" not in test_config
         assert test_config["filters"] is not None
         assert test_config["unit"] == "ms"
 
-    @mock.patch("talos.config.build_manifest", conftest.patched_build_manifest)
+    @mock.patch("talos.config.build_manifest", patched_build_manifest)
     def test_tp5n_has_expected_attributes(self):
         config = get_config(self.argv_tp5n)
         test_config = config["tests"][0]
@@ -924,7 +956,7 @@ class Test_get_config:
         assert test_config["tppagecycles"] == 1
         assert test_config["cycles"] == 1
         assert test_config["tpmozafterpaint"] is True
-        assert test_config["tptimeout"] == 5000
+        assert test_config["tptimeout"] == 10000
         assert test_config["mainthread"] is True
         assert test_config["win_counters"] == []
         assert test_config["linux_counters"] == []
@@ -941,6 +973,7 @@ class Test_get_config:
             "mainthread_readbytes",
             "mainthread_writecount",
             "mainthread_writebytes",
+            "time_to_session_store_window_restored_ms",
         ]
         assert test_config["xperf_providers"] == [
             "PROC_THREAD",
@@ -964,12 +997,12 @@ class Test_get_config:
         assert test_config["filters"] is not None
         assert test_config["timeout"] == 1800
         assert test_config["preferences"] == {
-            "extensions.enabledScopes": "",
+            "extensions.enabledScopes": 5,
             "talos.logfile": "browser_output.txt",
         }
         assert test_config["unit"] == "ms"
 
-    @mock.patch("talos.config.build_manifest", conftest.patched_build_manifest)
+    @mock.patch("talos.config.build_manifest", patched_build_manifest)
     def test_tp5o_has_expected_attributes(self):
         config = get_config(self.argv_tp5o)
         test_config = config["tests"][0]
@@ -986,12 +1019,12 @@ class Test_get_config:
         assert test_config["linux_counters"] == ["XRes"]
         assert test_config["mac_counters"] == []
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 4000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["filters"] is not None
         assert test_config["timeout"] == 1800
         assert test_config["unit"] == "ms"
 
-    @mock.patch("talos.config.build_manifest", conftest.patched_build_manifest)
+    @mock.patch("talos.config.build_manifest", patched_build_manifest)
     def test_tp5o_webext_has_expected_attributes(self):
         config = get_config(self.argv_tp5o_webext)
         test_config = config["tests"][0]
@@ -1008,14 +1041,14 @@ class Test_get_config:
         assert test_config["linux_counters"] == ["XRes"]
         assert test_config["mac_counters"] == []
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 4000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["filters"] is not None
         assert test_config["timeout"] == 1800
         assert test_config["unit"] == "ms"
         assert test_config["webextensions"] == "${talos}/webextensions/dummy/dummy.xpi"
         assert test_config["preferences"] == {"xpinstall.signatures.required": False}
 
-    @mock.patch("talos.config.build_manifest", conftest.patched_build_manifest)
+    @mock.patch("talos.config.build_manifest", patched_build_manifest)
     def test_tp5o_scroll_has_expected_attributes(self):
         config = get_config(self.argv_tp5o_scroll)
         test_config = config["tests"][0]
@@ -1025,13 +1058,14 @@ class Test_get_config:
         assert test_config["tpcycles"] == 1
         assert test_config["tppagecycles"] == 12
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["tpscrolltest"] is True
         assert test_config["tpmozafterpaint"] is False
         assert test_config["preferences"] == {
             "layout.frame_rate": 0,
             "docshell.event_starvation_delay_hint": 1,
-            "dom.send_after_paint_to_content": False,
+            "dom.send_after_paint_to_content": True,
+            "apz.paint_skipping.enabled": False,
             "layout.css.scroll-snap.spring-constant": "'10'",
             "layout.css.scroll-behavior.same-physics-as-user-input": False,
             "toolkit.framesRecording.bufferSize": 10000,
@@ -1046,7 +1080,7 @@ class Test_get_config:
         assert test_config["name"] == "v8_7"
         assert test_config["tpmanifest"] != "${talos}/tests/v8_7/v8.manifest"
         assert test_config["gecko_profile_interval"] == 1
-        assert test_config["gecko_profile_entries"] == 1000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["tpcycles"] == 1
         assert test_config["resolution"] == 20
         assert test_config["tpmozafterpaint"] is False
@@ -1064,7 +1098,7 @@ class Test_get_config:
         assert test_config["tpcycles"] == 1
         assert test_config["tppagecycles"] == 1
         assert test_config["gecko_profile_interval"] == 1
-        assert test_config["gecko_profile_entries"] == 5000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["preferences"] == {"dom.send_after_paint_to_content": False}
@@ -1082,11 +1116,12 @@ class Test_get_config:
         assert test_config["tpchrome"] is False
         assert test_config["timeout"] == 10000
         assert test_config["gecko_profile_interval"] == 1
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["preferences"] == {
             "full-screen-api.allow-trusted-requests-only": False,
             "layers.acceleration.force-enabled": False,
             "layers.acceleration.disabled": True,
+            "gfx.webrender.software": True,
             "layout.frame_rate": 0,
             "docshell.event_starvation_delay_hint": 1,
             "full-screen-api.warning.timeout": 500,
@@ -1107,7 +1142,7 @@ class Test_get_config:
         assert test_config["alert_threshold"] == 5.0
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 10000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["tpmanifest"] != "${talos}/tests/dromaeo/css.manifest"
         assert test_config["unit"] == "score"
 
@@ -1122,7 +1157,7 @@ class Test_get_config:
         assert test_config["alert_threshold"] == 5.0
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 2
-        assert test_config["gecko_profile_entries"] == 10000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["tpmanifest"] != "${talos}/tests/dromaeo/dom.manifest"
         assert test_config["unit"] == "score"
 
@@ -1137,7 +1172,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 10
-        assert test_config["gecko_profile_entries"] == 1000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["preferences"] == {
             "layout.frame_rate": 0,
             "docshell.event_starvation_delay_hint": 1,
@@ -1157,11 +1192,12 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 10
-        assert test_config["gecko_profile_entries"] == 1000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["preferences"] == {
             "layout.frame_rate": 0,
             "docshell.event_starvation_delay_hint": 1,
             "dom.send_after_paint_to_content": False,
+            "places.history.enabled": False,
         }
         assert test_config["filters"] is not None
         assert test_config["unit"] == "ms"
@@ -1179,7 +1215,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is True
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 1
-        assert test_config["gecko_profile_entries"] == 10000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["filters"] is not None
         assert test_config["unit"] == "ms"
 
@@ -1197,7 +1233,7 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is True
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 1
-        assert test_config["gecko_profile_entries"] == 10000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["filters"] is not None
         assert test_config["unit"] == "ms"
 
@@ -1212,11 +1248,12 @@ class Test_get_config:
         assert test_config["tpmozafterpaint"] is False
         assert test_config["tpchrome"] is False
         assert test_config["gecko_profile_interval"] == 1
-        assert test_config["gecko_profile_entries"] == 1000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["preferences"] == {
             "layout.frame_rate": 0,
             "docshell.event_starvation_delay_hint": 1,
-            "dom.send_after_paint_to_content": False,
+            "dom.send_after_paint_to_content": True,
+            "apz.paint_skipping.enabled": False,
             "layout.css.scroll-snap.spring-constant": "'10'",
             "layout.css.scroll-behavior.same-physics-as-user-input": False,
             "toolkit.framesRecording.bufferSize": 10000,
@@ -1252,7 +1289,7 @@ class Test_get_config:
         assert test_config["tppagecycles"] == 10
         assert test_config["tptimeout"] == 30000
         assert test_config["gecko_profile_interval"] == 1
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["filters"] is not None
         assert test_config["unit"] == "ms"
         assert test_config["lower_is_better"] is True
@@ -1271,25 +1308,23 @@ class Test_get_config:
         assert test_config["tppagecycles"] == 15
         assert test_config["tptimeout"] == 30000
         assert test_config["gecko_profile_interval"] == 1
-        assert test_config["gecko_profile_entries"] == 2000000
+        assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
         assert test_config["filters"] is not None
         assert test_config["unit"] == "ms"
         assert test_config["lower_is_better"] is True
         assert test_config["alert_threshold"] == 5.0
 
 
-# The tests in the Test_get_config class don't currently run, so these
-# pdfpaint tests live outside of it for now. See bug 1888132.
 @mock.patch("pathlib.Path.unlink", new=mock.MagicMock())
 @mock.patch("pathlib.Path.symlink_to", new=mock.MagicMock())
 def test_pdfpaint_has_expected_attributes_no_chunk(pdfpaint_dir_info):
     pdfpaint_dir, pdf_count = pdfpaint_dir_info
 
-    Test_get_config.setup_class()
+    PyTest_get_config.setup_class()
     with mock.patch.dict(
         os.environ, {"MOZ_FETCHES_DIR": "", "MOZBUILD_PATH": str(pdfpaint_dir)}
     ):
-        config = get_config(Test_get_config.argv_pdfpaint)
+        config = get_config(PyTest_get_config.argv_pdfpaint)
 
     test_config = config["tests"][0]
 
@@ -1303,7 +1338,7 @@ def test_pdfpaint_has_expected_attributes_no_chunk(pdfpaint_dir_info):
     assert test_config["tpcycles"] == 1
     assert test_config["tppagecycles"] == 15
     assert test_config["tptimeout"] == 60000
-    assert test_config["gecko_profile_entries"] == 16777216
+    assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
     assert test_config["filters"] is not None
     assert test_config["unit"] == "ms"
     assert test_config["lower_is_better"] is True
@@ -1315,8 +1350,8 @@ def test_pdfpaint_has_expected_attributes_no_chunk(pdfpaint_dir_info):
 def test_pdfpaint_has_expected_attributes_with_chunk(pdfpaint_dir_info):
     pdfpaint_dir, _ = pdfpaint_dir_info
 
-    Test_get_config.setup_class()
-    args = Test_get_config.argv_pdfpaint + ["--pdfPaintChunk", "1"]
+    PyTest_get_config.setup_class()
+    args = PyTest_get_config.argv_pdfpaint + ["--pdfPaintChunk", "1"]
     with mock.patch.dict(
         os.environ,
         {"MOZ_FETCHES_DIR": str(pdfpaint_dir), "MOZBUILD_PATH": ""},
@@ -1335,7 +1370,7 @@ def test_pdfpaint_has_expected_attributes_with_chunk(pdfpaint_dir_info):
     assert test_config["tpcycles"] == 1
     assert test_config["tppagecycles"] == 15
     assert test_config["tptimeout"] == 60000
-    assert test_config["gecko_profile_entries"] == 16777216
+    assert test_config["gecko_profile_entries"] == DEFAULT_GECKO_PROFILE_ENTRIES
     assert test_config["filters"] is not None
     assert test_config["unit"] == "ms"
     assert test_config["lower_is_better"] is True
@@ -1345,8 +1380,8 @@ def test_pdfpaint_has_expected_attributes_with_chunk(pdfpaint_dir_info):
 def test_pdfpaint_fails_on_bad_chunk(pdfpaint_dir_info):
     pdfpaint_dir, _ = pdfpaint_dir_info
 
-    Test_get_config.setup_class()
-    args = Test_get_config.argv_pdfpaint + ["--pdfPaintChunk", "10"]
+    PyTest_get_config.setup_class()
+    args = PyTest_get_config.argv_pdfpaint + ["--pdfPaintChunk", "10"]
     with pytest.raises(ConfigurationError):
         with mock.patch.dict(
             os.environ,
@@ -1360,8 +1395,8 @@ def test_pdfpaint_fails_on_bad_chunk(pdfpaint_dir_info):
 def test_pdfpaint_with_pdf_name(pdfpaint_dir_info):
     pdfpaint_dir, _ = pdfpaint_dir_info
 
-    Test_get_config.setup_class()
-    args = Test_get_config.argv_pdfpaint + ["--pdfPaintName", "1"]
+    PyTest_get_config.setup_class()
+    args = PyTest_get_config.argv_pdfpaint + ["--pdfPaintName", "1"]
     with mock.patch.dict(
         os.environ,
         {"MOZ_FETCHES_DIR": str(pdfpaint_dir), "MOZBUILD_PATH": ""},
@@ -1391,6 +1426,165 @@ def test_get_configs(get_config_mock, get_browser_config_mock):
 
     first, second = get_configs()
     assert (first, second) == ("first", "second")
+
+
+@pytest.mark.parametrize(
+    "webserver,url,expected",
+    [
+        ("", "page.html", "page.html"),
+        ("host:80", "https://example.com/page.html", "https://example.com/page.html"),
+        ("host:80", "tests/page.html", "http://host:80/tests/page.html"),
+        ("host:80", "about:blank", "about:blank"),
+    ],
+)
+def test_convert_url_prefixes_webserver_only_for_relative_urls(
+    webserver, url, expected
+):
+    assert convert_url({"webserver": webserver}, url) == expected
+
+
+@pytest.mark.parametrize(
+    "xperf_path,expected",
+    [
+        (None, None),
+        ('"c:/xperf.exe"', "c:/xperf.exe"),
+        ("'c:/xperf.exe'", "c:/xperf.exe"),
+        ('"c:/xperf.exe', '"c:/xperf.exe'),
+        ("c:/xperf.exe", "c:/xperf.exe"),
+    ],
+)
+def test_fix_xperf_strips_matching_surrounding_quotes(xperf_path, expected):
+    config = {"xperf_path": xperf_path}
+    fix_xperf(config)
+    assert config["xperf_path"] == expected
+
+
+def test_update_prefs_parses_extra_prefs():
+    config = {"extraPrefs": ["a.int=1", "a.bool=false", "a.str=x=y"]}
+    update_prefs(config)
+
+    assert "extraPrefs" not in config
+    assert config["preferences"] == {"a.int": 1, "a.bool": False, "a.str": "x=y"}
+
+
+def test_update_prefs_without_extra_prefs():
+    config = {"extraPrefs": [], "preferences": {"keep": True}}
+    update_prefs(config)
+
+    assert config["preferences"] == {"keep": True}
+
+
+def test_determine_local_symbols_path_defaults_only_in_develop_mode(tmp_path):
+    config = {}
+    determine_local_symbols_path(config)
+    assert config == {}
+
+    env = {"MOZ_DEVELOPER_OBJ_DIR": str(tmp_path)}
+    with mock.patch.dict(os.environ, env):
+        config = {"symbols_path": None, "develop": True}
+        determine_local_symbols_path(config)
+        assert config["symbols_path"] == os.path.join(
+            str(tmp_path), "dist", "crashreporter-symbols"
+        )
+
+        config = {"symbols_path": "/symbols", "develop": True}
+        determine_local_symbols_path(config)
+        assert config["symbols_path"] == "/symbols"
+
+        config = {"symbols_path": None, "develop": False}
+        determine_local_symbols_path(config)
+        assert config["symbols_path"] is None
+
+
+def test_build_manifest_multidomain(tmp_path):
+    manifest = tmp_path / "tp5n.manifest"
+    manifest.write_text(
+        "http://localhost/page_load_test/tp5n/example.com/index.html\n"
+        "http://localhost/page_load_test/tp5n/mozilla.org/index.html\n"
+    )
+
+    result = build_manifest({"webserver": "127.0.0.1:80"}, True, str(manifest))
+
+    assert result == str(manifest) + ".develop"
+    assert pathlib.Path(result).read_text().splitlines() == [
+        "http://example.com-talos/tests/tp5n/example.com/index.html",
+        "http://mozilla.org-talos/tests/tp5n/mozilla.org/index.html",
+    ]
+
+
+def test_build_manifest_single_domain(tmp_path):
+    manifest = tmp_path / "test.manifest"
+    manifest.write_text("http://localhost/page_load_test/a.html\n")
+
+    result = build_manifest({"webserver": "127.0.0.1:80"}, False, str(manifest))
+
+    assert pathlib.Path(result).read_text() == "http://127.0.0.1:80/tests/a.html\n"
+
+
+def test_get_test_restores_hero_and_skips_unlisted_counters():
+    class hero_test(PageloaderTest):
+        keys = ["tphero", "win_counters", "pdfpaint"]
+        tphero = False
+        pdfpaint = False
+
+    test_dict = get_test(
+        {"webserver": "host"}, {"tphero": True}, ["counter_a"], hero_test()
+    )
+
+    assert test_dict["tphero"] is False
+    assert test_dict["win_counters"] == ["counter_a"]
+    assert "linux_counters" not in test_dict
+
+
+def test_setup_pdfpaint_test_missing_pdfs_root(tmp_path):
+    env = {"MOZ_FETCHES_DIR": str(tmp_path / "missing")}
+    with mock.patch.dict(os.environ, env):
+        with pytest.raises(Exception, match="Cannot find webserver root"):
+            setup_pdfpaint_test({}, mock_test())
+
+
+@mock.patch("pathlib.Path.unlink", new=mock.MagicMock())
+@mock.patch("pathlib.Path.symlink_to", new=mock.MagicMock())
+def test_setup_pdfpaint_test_skips_password_protected_pdfs(tmp_path):
+    pdfs_root = tmp_path / "talos-pdfs"
+    pdfs_root.mkdir()
+    (pdfs_root / "test_manifest.json").write_text(
+        json.dumps([
+            {"file": "dir/open.pdf", "talos": True},
+            {"file": "secret.pdf", "talos": True, "password": "asdf"},
+        ])
+    )
+    test_instance = mock_test()
+
+    with mock.patch.dict(os.environ, {"MOZ_FETCHES_DIR": str(tmp_path)}):
+        setup_pdfpaint_test({}, test_instance)
+
+    manifest = pathlib.Path(test_instance.tpmanifest)
+    assert manifest == pdfs_root / "pdfpaint.manifest"
+    assert manifest.read_text().split() == [
+        "http://localhost/tests/pdfpaint/empty.pdf?file=/tests/pdfpaint/pdfs/open.pdf"
+    ]
+
+
+def test_get_config_rejects_non_positive_pdfpaint_chunk():
+    with pytest.raises(ConfigurationError, match="pdfpaint chunk"):
+        get_config(
+            "--activeTests pdfpaint --pdfPaintChunk 0 -e /some/random/path".split()
+        )
+
+
+def test_get_config_requires_active_tests_or_suite():
+    with pytest.raises(ConfigurationError, match="--activeTests or --suite"):
+        get_config(["-e", "/some/random/path"])
+
+
+def test_set_webserver_picks_local_port():
+    config = {}
+    set_webserver(config)
+
+    host, port = config["webserver"].split(":")
+    assert host == "127.0.0.1"
+    assert int(port) > 0
 
 
 if __name__ == "__main__":

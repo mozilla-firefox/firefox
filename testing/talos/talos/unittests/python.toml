@@ -1,8 +1,54 @@
 [DEFAULT]
 subsuite = "talos"
 
+["test_allowlist.py"]
+
+["test_cmanager_base.py"]
+
+["test_cmanager_linux.py"]
+
+["test_cmanager_mac.py"]
+
+["test_cmanager.py"]
+
+["test_cmanger_win32.py"]
+
+["test_cmdline.py"]
+
 ["test_config.py"]
 
+["test_ffsetup.py"]
+
+["test_filter.py"]
+
+["test_gecko_profile.py"]
+
+["test_heavy.py"]
+
+["test_mainthreadio.py"]
+
+["test_output.py"]
+
+["test_report.py"]
+
+["test_results.py"]
+
+["test_run_tests.py"]
+
+["test_talos_process.py"]
+
+["test_talosconfig.py"]
+
 ["test_test.py"]
+
+["test_ttest.py"]
+
+["test_utils.py"]
+
+["test_xtalos_etlparser.py"]
+
+["test_xtalos_scripts.py"]
+
+["test_xtalos_xperf_analyzer.py"]
 
 ["test_xtalos.py"]

@@ -43,6 +43,7 @@ avoid-dot-mozilla-without-xdg:
         - toolkit/components/antitracking/test/browser/browser_thirdPartyChecks_sandboxed_context.js
         # Files which reference .mozilla and have XDG handling in place
         - testing/talos/talos/heavy.py
+        - testing/talos/talos/unittests/test_heavy.py
         - toolkit/crashreporter/crash_helper_server/src/logging/env.rs
         - toolkit/moz.configure
         - toolkit/xre/nsXREDirProvider.cpp

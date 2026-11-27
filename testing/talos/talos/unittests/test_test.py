@@ -1,7 +1,8 @@
 import mozunit
 import pytest
 
-from talos.test import Test, TsBase, register_test, test_dict, ts_paint
+from talos import test as talos_test
+from talos.test import Test, TsBase, register_test, ts_paint
 
 
 class BasicTestA(Test):
@@ -25,7 +26,7 @@ class NotATest:
     pass
 
 
-class Test_register_test:
+class PyTest_register_test:
     def test_same_instance_returned(self):
         decorator = register_test()
         NewBasicTest = decorator(BasicTestA)
@@ -33,7 +34,7 @@ class Test_register_test:
         assert BasicTestA is NewBasicTest
 
     def test_class_registered(self):
-        _TESTS = test_dict()
+        _TESTS = talos_test.test_dict()
         decorator = register_test()
 
         # class registered
@@ -50,7 +51,7 @@ class Test_register_test:
             decorator(NotATest)
 
 
-class TestTest:
+class PyTestTest:
     def test_same_class_name(self):
         assert BasicTestA.name() == "BasicTestA"
 
@@ -122,8 +123,22 @@ class TestTest:
         assert test_instance.cycles == 20
         assert test_instance.desktop is False
 
+    def test_str_lists_name_and_non_null_attributes(self):
+        test_instance = BasicTestC()
 
-class TestTsBase:
+        assert str(test_instance) == "- name: BasicTestC\n  nonnull_attrib: value"
+
+    def test_description_strips_indentation(self):
+        class Documented(Test):
+            """
+            First line.
+                Second line.
+            """
+
+        assert Documented.description() == "First line.\nSecond line."
+
+
+class PyTestTsBase:
     ts_base_registered_keys = {
         "url",
         "url_timestamp",
@@ -133,6 +148,9 @@ class TestTsBase:
         "gecko_profile",
         "gecko_profile_interval",
         "gecko_profile_entries",
+        "gecko_profile_features",
+        "gecko_profile_threads",
+        "gecko_profile_extra_threads",
         "gecko_profile_startup",
         "preferences",
         "xperf_counters",
@@ -142,6 +160,7 @@ class TestTsBase:
         "tpmozafterpaint",
         "fnbpaint",
         "tphero",
+        "tpmanifest",
         "profile",
         "firstpaint",
         "userready",
@@ -151,7 +170,10 @@ class TestTsBase:
         "filters",
         "setup",
         "cleanup",
+        "pine",
+        "skip_reason",
         "webextensions",
+        "webextensions_folder",
         "reinstall",
     }
 
@@ -165,20 +187,32 @@ class TestTsBase:
         assert set(self.test_instance.keys) == self.ts_base_registered_keys
 
     def test_nonnull_keys_show_up(self):
-        assert dict(self.test_instance.items()) == {
+        default_items = {
             "name": "TsBase",
             "filters": self.test_instance.filters,
+            "gecko_profile_entries": 128 * 1024 * 1024 // 8,
+            "preferences": {"extensions.blocklist.enabled": True},
         }
+        assert dict(self.test_instance.items()) == default_items
 
         self.test_instance.update(timeout=500)
-        assert dict(self.test_instance.items()) == {
-            "name": "TsBase",
-            "filters": self.test_instance.filters,
-            "timeout": 500,
+        assert dict(self.test_instance.items()) == dict(default_items, timeout=500)
+
+    def test_blocklist_pref_added_to_given_preferences(self):
+        test_instance = TsBase(preferences={"some.pref": 1})
+
+        assert test_instance.preferences == {
+            "some.pref": 1,
+            "extensions.blocklist.enabled": True,
         }
 
+    def test_blocklist_pref_not_overridden(self):
+        test_instance = TsBase(preferences={"extensions.blocklist.enabled": False})
 
-class Test_ts_paint:
+        assert test_instance.preferences == {"extensions.blocklist.enabled": False}
+
+
+class PyTest_ts_paint:
     def test_test_nonnull_keys_show_up(self):
         test_instance = ts_paint()
         keys = {key for key, _ in test_instance.items()}
@@ -191,6 +225,7 @@ class Test_ts_paint:
             "url",
             "xperf_counters",
             "filters",
+            "preferences",
             "tpmozafterpaint",
         }
 

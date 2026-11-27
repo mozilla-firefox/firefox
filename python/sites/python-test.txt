@@ -7,6 +7,7 @@ pypi:pytest-taskgraph==0.2.0
 pypi:pytest==8.4.2
 pypi:ruff==0.17.6
 pypi:rumdl==0.3.5
+pypi:simplejson==3.20.1
 pypi:werkzeug==2.3.8
 pypi:zstandard==0.25.0
 requirements-txt:build/psutil_requirements.txt
