@@ -292,6 +292,7 @@ enum class FluentResourceFile : uint8_t {
   _COUNT
 };
 
+enum class AltText : bool { Exclude, Include };
 }  // namespace mozilla::dom
 
 /**
@@ -2282,6 +2283,14 @@ class nsContentUtils {
   static bool AppendNodeTextContent(const nsINode* aNode, bool aDeep,
                                     nsACString& aResult,
                                     const mozilla::fallible_t&);
+
+  /**
+   * Collect HTML-aware text content, optionally including image alternative
+   * text. https://html.spec.whatwg.org/#get-html-aware-text-content
+   */
+  static void GetHTMLAwareTextContent(const mozilla::dom::Element& aElement,
+                                      mozilla::dom::AltText aAltText,
+                                      nsAString& aResult);
 
   /**
    * Utility method that checks if a given node has any non-empty children. This

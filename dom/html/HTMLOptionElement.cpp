@@ -230,24 +230,7 @@ void HTMLOptionElement::AfterSetAttr(int32_t aNameSpaceID, nsAtom* aName,
 }
 
 void HTMLOptionElement::GetText(nsAString& aText) {
-  nsAutoString text;
-
-  nsIContent* child = nsINode::GetFirstChild();
-  while (child) {
-    if (Text* textChild = child->GetAsText()) {
-      textChild->AppendTextTo(text);
-    }
-    if (child->IsHTMLElement(nsGkAtoms::script) ||
-        child->IsSVGElement(nsGkAtoms::script)) {
-      child = child->GetNextNonChildNode(this);
-    } else {
-      child = child->GetNextNode(this);
-    }
-  }
-
-  // XXX No CompressWhitespace for nsAString.  Sad.
-  text.CompressWhitespace(true, true);
-  aText = std::move(text);
+  nsContentUtils::GetHTMLAwareTextContent(*this, AltText::Exclude, aText);
 }
 
 void HTMLOptionElement::SetText(const nsAString& aText, ErrorResult& aRv) {

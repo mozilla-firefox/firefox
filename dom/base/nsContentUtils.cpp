@@ -9700,6 +9700,46 @@ void nsContentUtils::GetNodeTextContent(const nsINode* aNode, bool aDeep,
   }
 }
 
+void nsContentUtils::GetHTMLAwareTextContent(const Element& aElement,
+                                             AltText aAltText,
+                                             nsAString& aResult) {
+  // https://html.spec.whatwg.org/#get-html-aware-text-content
+  // 1. Let text be the empty string.
+  nsAutoString text;
+
+  // 2. For each descendant in tree order.
+  for (nsIContent* child = aElement.GetFirstChild(); child;) {
+    // 2.1. Skip HTML and SVG script subtrees.
+    if (child->IsHTMLElement(nsGkAtoms::script) ||
+        child->IsSVGElement(nsGkAtoms::script)) {
+      child = child->GetNextNonChildNode(&aElement);
+      continue;
+    }
+    // 2.2. Append text node data.
+    if (Text* textChild = child->GetAsText()) {
+      textChild->AppendTextTo(text);
+    } else if (child->IsHTMLElement(nsGkAtoms::img)) {
+      // 2.3. Include alternative text when requested.
+      if (aAltText == AltText::Include) {
+        if (const nsAttrValue* alt =
+                child->AsElement()->GetParsedAttr(nsGkAtoms::alt)) {
+          DOMString value;
+          alt->ToString(value);
+          text.Append(value);
+        }
+      }
+      // 2.4. Skip image subtrees, even when alternative text is excluded.
+      child = child->GetNextNonChildNode(&aElement);
+      continue;
+    }
+    child = child->GetNextNode(&aElement);
+  }
+
+  // 3. Strip and collapse ASCII whitespace.
+  text.CompressWhitespace(true, true);
+  aResult = std::move(text);
+}
+
 void nsContentUtils::DestroyMatchString(void* aData) {
   if (aData) {
     nsString* matchString = static_cast<nsString*>(aData);
