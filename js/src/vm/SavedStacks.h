@@ -173,9 +173,9 @@ class SavedStacks {
       MutableHandle<SavedFrame*> adoptedStack,
       const mozilla::Maybe<size_t>& maxFrameCount);
   void traceWeak(JSTracer* trc);
-  void trace(JSTracer* trc);
   uint32_t count();
   void clear();
+  void purgePCLocationMap() { pcLocationMap.clearAndCompact(); }
   void chooseSamplingProbability(JS::Realm* realm);
 
   // Set the sampling random number generator's state to |state0| and
@@ -284,13 +284,11 @@ class SavedStacks {
     }
   };
 
-  // We eagerly Atomize the script source stored in LocationValue because
-  // wasm does not always have a JSScript and the source might not be
-  // available when we need it later. However, since the JSScript does not
-  // actually hold this atom, we have to trace it strongly to keep it alive.
-  // Thus, it takes two GC passes to fully clean up this table: the first GC
-  // removes the dead script; the second will clear out the source atom since
-  // it is no longer held by the table.
+  // Cache of source locations for bytecode pcs, keyed on script and pc
+  // pointers. The map is purged on major GCs, see Realm::purge.
+  //
+  // The script source is stored in LocationValue as an atom so that cache hits
+  // don't have to atomize it again.
   using PCLocationMap =
       GCHashMap<PCKey, LocationValue, PCLocationHasher, SystemAllocPolicy>;
   PCLocationMap pcLocationMap;

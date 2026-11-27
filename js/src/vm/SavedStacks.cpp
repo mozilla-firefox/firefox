@@ -1370,8 +1370,6 @@ void SavedStacks::traceWeak(JSTracer* trc) {
   pcLocationMap.traceWeak(trc);
 }
 
-void SavedStacks::trace(JSTracer* trc) { pcLocationMap.trace(trc); }
-
 uint32_t SavedStacks::count() { return frames.count(); }
 
 void SavedStacks::clear() { frames.clear(); }
