@@ -5,7 +5,10 @@
 package org.mozilla.fenix.components.menu.configuration
 
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 import org.junit.Test
+import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.PAGE_CONTROLS_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.READER_VIEW_GROUP_ID
@@ -161,6 +164,60 @@ class HomeMenuConfigurationTest {
         val result = HomeMenuConfiguration.sections(customizationInfo = menuInfo(shown = emptyList()))
 
         assertEquals(listOf(PROMO_BANNER_GROUP_ID), result.map { it.id })
+    }
+
+    @Test
+    fun `GIVEN a downloads notification WHEN checking highlight THEN highlight by default and stop when library is hidden`() {
+        val notifications = setOf(SupportedMenuNotifications.Downloads)
+        val libraryHidden =
+            menuInfo(
+                shown = listOf(TOOLS_GROUP_ID, BrowserMenuConfiguration.ACCOUNTS_AND_SETTINGS_GROUP_ID),
+                hidden = listOf(BrowserMenuConfiguration.LIBRARY_GROUP_ID),
+            )
+
+        assertTrue(HomeMenuConfiguration.hasNotificationToShow(notifications, customizationInfo = null))
+        assertFalse(HomeMenuConfiguration.hasNotificationToShow(notifications, customizationInfo = libraryHidden))
+    }
+
+    @Test
+    fun `GIVEN an extension update notification WHEN checking highlight THEN highlight by default and stop when tools is hidden`() {
+        val notifications = setOf(SupportedMenuNotifications.ExtensionUpdate)
+        val toolsHidden =
+            menuInfo(
+                shown =
+                    listOf(
+                        BrowserMenuConfiguration.LIBRARY_GROUP_ID,
+                        BrowserMenuConfiguration.ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                    ),
+                hidden = listOf(TOOLS_GROUP_ID),
+            )
+
+        assertTrue(HomeMenuConfiguration.hasNotificationToShow(notifications, customizationInfo = null))
+        assertFalse(HomeMenuConfiguration.hasNotificationToShow(notifications, customizationInfo = toolsHidden))
+    }
+
+    @Test
+    fun `GIVEN a default browser notification WHEN checking highlight THEN always highlight`() {
+        val notifications = setOf(SupportedMenuNotifications.NotDefaultBrowser)
+
+        assertTrue(HomeMenuConfiguration.hasNotificationToShow(notifications, customizationInfo = null))
+        assertTrue(
+            HomeMenuConfiguration.hasNotificationToShow(notifications, customizationInfo = menuInfo(emptyList()))
+        )
+    }
+
+    @Test
+    fun `GIVEN browser-only notifications WHEN checking highlight THEN never highlight`() {
+        val notifications =
+            listOf(
+                SupportedMenuNotifications.Summarize,
+                SupportedMenuNotifications.TabGroups,
+                SupportedMenuNotifications.OpenInApp,
+            )
+
+        notifications.forEach { notification ->
+            assertFalse(HomeMenuConfiguration.hasNotificationToShow(setOf(notification), customizationInfo = null))
+        }
     }
 
     private fun menuInfo(shown: List<String>, hidden: List<String> = emptyList()) =

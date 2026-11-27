@@ -15,8 +15,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.selector.getNormalOrPrivateTabs
@@ -76,6 +80,8 @@ import org.mozilla.fenix.components.appstate.AppAction.SearchAction.SearchStarte
 import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
 import org.mozilla.fenix.components.appstate.VoiceSearchAction.VoiceInputRequested
 import org.mozilla.fenix.components.menu.MenuAccessPoint
+import org.mozilla.fenix.components.menu.MenuCustomizationRepository
+import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration
 import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
 import org.mozilla.fenix.ext.nav
 import org.mozilla.fenix.home.HomeFragmentDirections
@@ -158,6 +164,7 @@ internal sealed class NavigationInteractions : BrowserToolbarEvent {
  * @param privateBrowsingController [PrivateBrowsingController] for handling private browsing interactions.
  * @param settings [Settings] for accessing application settings.
  * @param translationsFeatureSettings Web content translations availability status.
+ * @param menuCustomizationRepository [MenuCustomizationRepository] persisting the user's browser menu customization.
  * @param isWideScreen Callback for checking if the screen is wide.
  * @param isTallScreen Callback for checking if the screen is tall.
  * @param scope [CoroutineScope] used for running long running operations in background.
@@ -174,6 +181,7 @@ class BrowserToolbarMiddleware(
     private val privateBrowsingController: PrivateBrowsingController,
     private val settings: Settings,
     private val translationsFeatureSettings: TranslationsEnabledSettings,
+    private val menuCustomizationRepository: MenuCustomizationRepository? = null,
     private val isWideScreen: () -> Boolean,
     private val isTallScreen: () -> Boolean,
     private val scope: CoroutineScope,
@@ -612,8 +620,14 @@ class BrowserToolbarMiddleware(
     }
 
     private fun updateMenuHighlight(store: Store<BrowserToolbarState, BrowserToolbarAction>) {
-        appStore.observeWhileActive {
-            distinctUntilChangedBy { it.supportedMenuNotifications.shouldHighlightHomeMenuButton() }
+        scope.launch {
+            combine(
+                    appStore.flow().map { it.supportedMenuNotifications }.distinctUntilChanged(),
+                    menuCustomizationRepository?.customizedMenuInfo ?: flowOf(null),
+                ) { notifications, info ->
+                    HomeMenuConfiguration.hasNotificationToShow(notifications, info)
+                }
+                .distinctUntilChanged()
                 .collect {
                     updateEndBrowserActions(store)
                     updateNavigationActions(store)
@@ -731,15 +745,17 @@ class BrowserToolbarMiddleware(
                 )
             }
 
-            HomeToolbarAction.Menu -> {
-                val highlighted = appStore.state.supportedMenuNotifications.shouldHighlightHomeMenuButton()
+            HomeToolbarAction.Menu ->
                 ActionButtonRes(
                     drawableResId = iconsR.drawable.mozac_ic_more_vertical_round_24,
                     contentDescription = R.string.content_description_menu,
-                    highlighted = highlighted,
+                    highlighted =
+                        HomeMenuConfiguration.hasNotificationToShow(
+                            appStore.state.supportedMenuNotifications,
+                            menuCustomizationRepository?.customizedMenuInfo?.value,
+                        ),
                     onClick = MenuClicked(source),
                 )
-            }
 
             HomeToolbarAction.FakeBookmark ->
                 createFakeActionButtonRes(
@@ -846,10 +862,4 @@ class BrowserToolbarMiddleware(
             ShortcutType.SUMMARIZE -> HomeToolbarAction.FakeSummarize
             ShortcutType.NONE -> null
         }
-
-    private fun Set<SupportedMenuNotifications>.shouldHighlightHomeMenuButton() = any {
-        it !is SupportedMenuNotifications.Summarize &&
-            it !is SupportedMenuNotifications.TabGroups &&
-            it != SupportedMenuNotifications.OpenInApp
-    }
 }

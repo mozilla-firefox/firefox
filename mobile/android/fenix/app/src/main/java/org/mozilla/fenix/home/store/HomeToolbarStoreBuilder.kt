@@ -74,6 +74,12 @@ object HomeToolbarStoreBuilder {
                                 ),
                             settings = context.components.settings,
                             translationsFeatureSettings = TranslationsEnabledSettings.dataStore(context),
+                            menuCustomizationRepository =
+                                if (context.components.settings.isMenuCustomizationScreenEnabled) {
+                                    context.components.menuCustomizationRepository
+                                } else {
+                                    null
+                                },
                             isWideScreen = { fragment.isWideWindow() },
                             isTallScreen = { fragment.isTallWindow() },
                             scope = lifecycleScope,

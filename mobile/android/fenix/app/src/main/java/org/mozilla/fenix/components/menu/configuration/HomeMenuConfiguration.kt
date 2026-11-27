@@ -5,6 +5,7 @@
 package org.mozilla.fenix.components.menu.configuration
 
 import androidx.annotation.VisibleForTesting
+import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Bookmarks
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeHomepage
@@ -55,6 +56,36 @@ object HomeMenuConfiguration {
         val followingByBrowserId = following.associateBy { browserSectionIds.getValue(it.id) }
         return promoBanner + customizationInfo.visibleSectionIds.mapNotNull { followingByBrowserId[it] }
     }
+
+    /**
+     * Whether any of [notifications] needs the user's attention on an item the home menu shows, so the menu button
+     * should be highlighted.
+     *
+     * @param notifications The notifications to check.
+     * @param customizationInfo The order and visibility of the browser menu sections chosen by the user, or `null` for
+     *   the default.
+     */
+    fun hasNotificationToShow(
+        notifications: Collection<SupportedMenuNotifications>,
+        customizationInfo: CustomizedMenuInfo?,
+    ): Boolean {
+        val notificationItems = notifications.mapNotNull { it.menuItem }
+        if (notificationItems.isEmpty()) return false
+
+        val shownItems = sections(customizationInfo).flatMap { it.items }
+        return notificationItems.any { it in shownItems }
+    }
+
+    private val SupportedMenuNotifications.menuItem: FenixMenuItem?
+        get() =
+            when (this) {
+                is SupportedMenuNotifications.NotDefaultBrowser -> DefaultBrowserBanner
+                is SupportedMenuNotifications.Downloads -> Downloads
+                is SupportedMenuNotifications.ExtensionUpdate -> Extensions
+                is SupportedMenuNotifications.Summarize,
+                is SupportedMenuNotifications.TabGroups,
+                is SupportedMenuNotifications.OpenInApp -> null
+            }
 
     private fun defaultSections(): List<MenuSectionConfiguration> =
         listOf(
