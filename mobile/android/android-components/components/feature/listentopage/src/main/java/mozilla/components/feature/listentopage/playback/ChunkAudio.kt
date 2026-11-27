@@ -5,6 +5,7 @@
 package mozilla.components.feature.listentopage.playback
 
 import java.io.File
+import mozilla.components.feature.listentopage.facts.emitAudioReclaimedFact
 
 /**
  * Which chunk of the article each audio file holds, and which of them are worth keeping.
@@ -25,6 +26,7 @@ internal class ChunkAudio(private val cache: AudioFileCache) {
 
         // Remove the reference so that we ensure the file still exists next time we want it
         files.remove(chunkIndex)
+        emitAudioReclaimedFact()
 
         return null
     }

@@ -141,6 +141,25 @@ class ListenMiddlewareTest {
         assertEquals(listOf(ENGINE, ENGINE), facts.engineBoundValues())
     }
 
+    @Test
+    fun `test that a session reports how much audio it held before clearing it`() = runTest {
+        val facts = CollectionProcessor().also { Facts.registerProcessor(it) }
+        val cache = FakeAudioFileCache().apply { heldBytes = 4_096 }
+        val store =
+            storeWith(audioCache = cache) { Result.success(Content(text = "Article text.", languageTag = "en-US")) }
+        store.listenAndPlay(TAB_ID, URL)
+        advanceUntilIdle()
+
+        store.dispatch(ListenAction.User.Session.StopRequested())
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("4096"),
+            facts.facts.filter { it.item == ListenToPageFacts.Items.AUDIO_CACHE_SIZE }.map { it.value },
+        )
+        assertTrue(cache.cleared)
+    }
+
     private fun CollectionProcessor.engineBoundValues() =
         facts.filter { it.item == ListenToPageFacts.Items.ENGINE_BOUND }.map { it.value }
 

@@ -23,6 +23,9 @@ interface AudioFileCache {
 
     /** Deletes everything this cache holds. */
     suspend fun clear()
+
+    /** How much disk the audio in this cache takes, or `null` when it cannot tell. */
+    suspend fun sizeBytes(): Long? = null
 }
 
 /**
@@ -63,6 +66,9 @@ internal constructor(
     override suspend fun clear() {
         withContext(ioDispatcher) { directory.deleteRecursively() }
     }
+
+    override suspend fun sizeBytes(): Long =
+        withContext(ioDispatcher) { directory.walkTopDown().filter { it.isFile }.sumOf { it.length() } }
 
     private companion object {
         const val AUDIO_DIRECTORY = "listen-to-page"

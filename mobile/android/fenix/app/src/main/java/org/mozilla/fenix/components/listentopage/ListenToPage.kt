@@ -98,6 +98,7 @@ class ListenToPage(
                             scope = scope,
                         ),
                         ListenToPageTelemetryMiddleware().also { it.register() },
+                        ListenStorageMiddleware(readStorage = { CacheStorage.from(context) }, scope = scope),
                         thermalStatusMonitor()?.let { ListenThermalMiddleware(monitor = it) },
                     ),
             )

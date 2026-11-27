@@ -9540,10 +9540,110 @@ listen_to_page:
           The playback speed when the session ended, as a multiple of normal
           speed, for example 1.5.
         type: string
+      chunks_reclaimed:
+        description: |
+          How many times the system removed a chunk's audio from disk before
+          the session was done with it, as in chunk_audio_reclaimed. Measured
+          here for ease in analyzing session data.
+        type: quantity
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2096736
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2096737
     data_reviews:
       - https://phabricator.services.mozilla.com/D345514
+      - https://phabricator.services.mozilla.com/D345515
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  chunk_audio_reclaimed:
+    type: counter
+    description: |
+      The number of times the system removed a chunk's audio from the cache
+      directory before the feature was done with it, so that it had to be
+      made again if it was needed.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2096737
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D345515
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  cache_quota:
+    type: memory_distribution
+    memory_unit: megabyte
+    description: |
+      The cache quota the system gave the app when a listening session
+      started, in MB rounded to two significant figures.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2096737
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D345515
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  cache_free_space:
+    type: memory_distribution
+    memory_unit: megabyte
+    description: |
+      The free space on the storage that holds the app's cache directory when
+      a listening session started, in MB rounded to two significant figures.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2096737
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D345515
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  cache_allocatable_space:
+    type: memory_distribution
+    memory_unit: megabyte
+    description: |
+      The space the system could make available on the storage that holds the
+      app's cache directory when a listening session started, in MB rounded to
+      two significant figures Unlike cache_free_space, it counts cached data
+      the system could clear, the app's own included.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2096737
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D345515
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  app_cache_size:
+    type: memory_distribution
+    memory_unit: megabyte
+    description: |
+      How much the app's whole cache took up when a listening session started,
+      in MB rounded to two significant figures.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2096737
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D345515
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+  audio_cache_size:
+    type: memory_distribution
+    memory_unit: kilobyte
+    description: |
+      How much disk a listening session's audio took up when the session
+      ended, just before it was cleared.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2096737
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D345515
     data_sensitivity:
       - technical
     notification_emails:

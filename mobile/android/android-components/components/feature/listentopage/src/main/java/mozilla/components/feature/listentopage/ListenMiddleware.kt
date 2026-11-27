@@ -28,6 +28,7 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.listentopage.content.Content
 import mozilla.components.feature.listentopage.content.ContentExtractor
 import mozilla.components.feature.listentopage.content.TextChunker
+import mozilla.components.feature.listentopage.facts.emitAudioCacheSizeFact
 import mozilla.components.feature.listentopage.facts.emitEngineBoundFact
 import mozilla.components.feature.listentopage.playback.ArticleDisplayData
 import mozilla.components.feature.listentopage.playback.AudioFileCache
@@ -936,6 +937,10 @@ class ListenMiddleware(
             // The engine is an IPC binding into the text to speech app, which stays alive for the rest of this
             // app's life unless it is shut down. Closing is terminal, which is why the next session builds its own.
             withContext(ioDispatcher) { closing?.close() }
+
+            if (closing != null) {
+                audioCache.sizeBytes()?.let(::emitAudioCacheSizeFact)
+            }
 
             // Nothing else deletes the audio, so without this a session leaves its files behind for as long as the
             // system keeps the cache directory. Only safe once the playback above has given up the files.
