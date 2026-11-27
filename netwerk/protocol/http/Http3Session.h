@@ -130,9 +130,8 @@ class Http3SessionBase {
                                  uint64_t* aStreamId,
                                  Http3StreamBase* aStream) = 0;
   virtual void CloseSendingSide(uint64_t aStreamId) = 0;
-  virtual nsresult SendHTTPDatagram(uint64_t aStreamId,
-                                    nsTArray<uint8_t>& aData,
-                                    uint64_t aTrackingId) = 0;
+  virtual void SendHTTPDatagram(uint64_t aStreamId, nsTArray<uint8_t>& aData,
+                                uint64_t aTrackingId) = 0;
   virtual nsresult SendPriorityUpdateFrame(uint64_t aStreamId,
                                            uint8_t aPriorityUrgency,
                                            bool aPriorityIncremental) = 0;
@@ -228,7 +227,7 @@ class Http3Session final : public Http3SessionBase,
   nsresult Init(nsHttpConnectionInfo* aConnInfo, nsINetAddr* selfAddr,
                 nsINetAddr* peerAddr, HttpConnectionUDP* udpConn,
                 uint32_t aProviderFlags, nsIInterfaceRequestor* callbacks,
-                nsIUDPSocket* socket, bool aIsInTunnel = false);
+                nsIUDPSocket* socket, bool aIsTunnel = false);
 
   // Re-key this session's connection info after
   // nsHttpConnectionMgr::HandOffHttp3OnlyConnection has moved the owning
@@ -336,8 +335,8 @@ class Http3Session final : public Http3SessionBase,
   nsresult SendDatagram(Http3WebTransportSession* aSession,
                         nsTArray<uint8_t>& aData, uint64_t aSendGroupId,
                         int64_t aSendOrder, TimeStamp aTimestamp) override;
-  nsresult SendHTTPDatagram(uint64_t aStreamId, nsTArray<uint8_t>& aData,
-                            uint64_t aTrackingId) override;
+  void SendHTTPDatagram(uint64_t aStreamId, nsTArray<uint8_t>& aData,
+                        uint64_t aTrackingId) override;
 
   uint64_t MaxDatagramSize(uint64_t aSessionId) override;
   nsresult ExportWebTransportKeyingMaterial(
@@ -384,6 +383,7 @@ class Http3Session final : public Http3SessionBase,
   already_AddRefed<nsHttpConnection> CreateTunnelStream(
       nsAHttpTransaction* aHttpTransaction, nsIInterfaceRequestor* aCallbacks,
       PRIntervalTime aRtt, bool aIsExtendedCONNECT);
+  void SetIsInTunnel() { mIsInTunnel = true; }
 
   void SetDontExclude() { mDontExclude = true; }
 

@@ -51,8 +51,7 @@ async function create_h2_server(
 }
 
 // Also starts the HTTP/2 proxy that MASQUE falls back to, on the same port.
-// `env` holds extra environment variables for the HTTP/3 server process.
-async function create_masque_proxy_server(env = {}) {
+async function create_masque_proxy_server() {
   const server = new HeadHTTP3Server();
   const fallbackProxy = new HeadNodeHTTP2ProxyServer();
   const stop = async () => {
@@ -60,7 +59,7 @@ async function create_masque_proxy_server(env = {}) {
     await server.stop();
   };
   await headStartOnSharedPort(
-    () => server.start(SERVER_PATH, CERT_DB_PATH, env),
+    () => server.start(SERVER_PATH, CERT_DB_PATH),
     () => fallbackProxy.startWithoutProxyFilter(server.masque_proxy_port()),
     stop
   );

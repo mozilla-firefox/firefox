@@ -39,16 +39,9 @@ class Http3SessionStub final : public Http3SessionBase {
 
   void CloseSendingSide(uint64_t aStreamId) override {}
 
-  nsresult SendHTTPDatagram(uint64_t aStreamId, nsTArray<uint8_t>& aData,
-                            uint64_t aTrackingId) override {
-    if (NS_SUCCEEDED(mSendHTTPDatagramResult)) {
-      mOutputData.AppendElements(aData);
-    }
-    return mSendHTTPDatagramResult;
-  }
-
-  void SetSendHTTPDatagramResult(nsresult aResult) {
-    mSendHTTPDatagramResult = aResult;
+  void SendHTTPDatagram(uint64_t aStreamId, nsTArray<uint8_t>& aData,
+                        uint64_t aTrackingId) override {
+    mOutputData.AppendElements(aData);
   }
 
   nsresult SendRequestBody(uint64_t aStreamId, const char* buf, uint32_t count,
@@ -193,7 +186,6 @@ class Http3SessionStub final : public Http3SessionBase {
   nsCString mPathHeader;
   nsCString mAuthHeader;
   bool mFinishTunnelSetupCalled = false;
-  nsresult mSendHTTPDatagramResult = NS_OK;
 };
 
 class DummyHttpTransaction : public nsAHttpTransaction {

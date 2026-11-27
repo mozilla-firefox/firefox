@@ -1346,18 +1346,6 @@ skip-if = [
   # connection. Disable test on MacOS 10.15.
 ]
 
-["test_http3_with_proxy_capsules.js"]
-head = "head_cookies.js head_channels.js head_cache.js head_http3.js http3_common.js"
-run-sequentially = ["true"] # http3server
-skip-if = [
-  # Entries copied from `test_http3_with_proxy.js`
-  "os == 'android' && os_version == '14' && arch == 'x86_64'", # Bug 1982955
-  "os == 'mac' && os_version == '10.15' && arch == 'x86_64'", # see test_http3_with_proxy.js
-  "os == 'win' && os_version == '10.2009' && arch == 'x86_64'", # Bug 1807931
-  "os == 'win' && os_version == '11.26200' && arch == 'x86'", # Bug 1807931
-  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && msix", # Bug 1807931
-]
-
 ["test_http3_with_third_party_roots.js"]
 run-sequentially = ["true"] # node server exceptions dont replay well
 skip-if = [

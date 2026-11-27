@@ -59,9 +59,10 @@ class Http3ConnectUDPStream final : public Http3TunnelStreamBase,
   void Close(nsresult aResult) override;
 
   void OnDatagramReceived(nsTArray<uint8_t>&& aData) override;
-  void FlushIncomingDatagrams();
 
   bool OnActivated() override;
+
+  nsresult OnProcessDatagram() override;
 
   // nsASocketHandler methods:
   void OnSocketReady(PRFileDesc* fd, int16_t outFlags) override;
@@ -76,8 +77,6 @@ class Http3ConnectUDPStream final : public Http3TunnelStreamBase,
 
   already_AddRefed<HttpConnectionUDP> CreateUDPConnection(
       nsIInterfaceRequestor* aCallbacks);
-
-  void OnOutgoingDatagramSpaceAvailable();
 
   void OnSessionClosed(bool aCleanly, uint32_t aStatus,
                        const nsACString& aReason);
@@ -94,9 +93,9 @@ class Http3ConnectUDPStream final : public Http3TunnelStreamBase,
 
   nsCOMPtr<nsIEventTarget> mTarget;
   mozilla::Queue<UniquePtr<UDPPayload>> mReceivedData;
+  mozilla::Queue<UniquePtr<UDPPayload>> mOutputData;
   uint64_t mTrackingId{1};
 
-  bool mDatagramSendingPaused{false};
   bool mIsTRRServiceChannel{false};
 };
 
