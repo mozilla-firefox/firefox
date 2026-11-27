@@ -45,15 +45,15 @@ HappyEyeballsTransaction::HappyEyeballsTransaction(
 
 void HappyEyeballsTransaction::OnClientAuthCertificateRequested() {
   LOG(("HappyEyeballsTransaction::OnClientAuthCertificateRequested %p", this));
-  if (mClientAuthRequestedForwarder) {
-    mClientAuthRequestedForwarder();
+  if (ClientAuthForwarder forwarder = mClientAuthRequestedForwarder) {
+    forwarder();
   }
 }
 
 void HappyEyeballsTransaction::OnClientAuthCertificateSelected() {
   LOG(("HappyEyeballsTransaction::OnClientAuthCertificateSelected %p", this));
-  if (mClientAuthSelectedForwarder) {
-    mClientAuthSelectedForwarder();
+  if (ClientAuthForwarder forwarder = mClientAuthSelectedForwarder) {
+    forwarder();
   }
 }
 
@@ -76,8 +76,8 @@ void HappyEyeballsTransaction::OnTransportStatus(nsITransport* aTransport,
 
   // Forward to the owning HappyEyeballsConnectionAttempt for dedup +
   // propagation to the real transaction.
-  if (mStatusForwarder) {
-    mStatusForwarder(aTransport, aStatus, aProgress);
+  if (StatusForwarder forwarder = mStatusForwarder) {
+    forwarder(aTransport, aStatus, aProgress);
   }
 }
 
@@ -278,6 +278,13 @@ void HappyEyeballsTransaction::Transition(State aNext,
       MOZ_ASSERT(mState == State::Racing || mState == State::Adopted,
                  "Closed entry from Racing or Adopted only");
       mState = State::Closed;
+      // The forwarders hold the HappyEyeballsConnectionAttempt, which holds
+      // the real transaction and through it the connection. Drop them here,
+      // on the socket thread, as the establisher holding this HT may be
+      // released late on the main thread.
+      mStatusForwarder = nullptr;
+      mClientAuthRequestedForwarder = nullptr;
+      mClientAuthSelectedForwarder = nullptr;
       SpeculativeTransaction::Close(aReason);
       break;
   }
