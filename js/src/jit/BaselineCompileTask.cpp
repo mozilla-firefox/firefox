@@ -87,6 +87,9 @@ void BaselineCompileTask::runTask() {
 
 /* static */
 void BaselineCompileTask::FinishOffThreadTask(BaselineCompileTask* task) {
+  JSRuntime* rt = task->runtimeFromAnyThread();
+  task->removeFrom(rt->jitRuntime()->baselineOffThreadList(rt));
+
   for (auto* snapshot : task->snapshots_) {
     JSScript* script = snapshot->script();
     if (script->isBaselineCompilingOffThread()) {
@@ -158,9 +161,8 @@ void BaselineSnapshot::trace(JSTracer* trc) {
 }
 
 void BaselineCompileTask::trace(JSTracer* trc) {
-  if (!realm_->runtime()->runtimeMatches(trc->runtime())) {
-    return;
-  }
+  MOZ_ASSERT(realm_->runtime()->runtimeMatches(trc->runtime()));
+
   for (auto* snapshot : snapshots_) {
     snapshot->trace(trc);
   }
