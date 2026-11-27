@@ -1,0 +1,12 @@
+<!-- Like iframe.sub.html, but provides multiple CSPs in meta tags and requests
+     externalScript.js. -->
+<!DOCTYPE html>
+<html>
+  <meta http-equiv="Content-Security-Policy" content="{{GET[policy1]}}">
+  <meta http-equiv="Content-Security-Policy" content="{{GET[policy2]}}">
+<body>
+    <script nonce='forinlinescript'
+            src='/content-security-policy/url-hashes/tentative/support/frame.js'></script>
+    <script id='test-script' src='externalScript.js'></script>
+</body>
+</html>

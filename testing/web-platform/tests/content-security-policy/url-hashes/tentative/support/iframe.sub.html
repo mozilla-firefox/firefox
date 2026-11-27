@@ -1,0 +1,10 @@
+<!-- Requests the script_url parameter with a <script> element. frame.js posts
+     a violation to the test. -->
+<!DOCTYPE html>
+<html>
+<body>
+    <script nonce='forinlinescript'
+            src='/content-security-policy/url-hashes/tentative/support/frame.js'></script>
+    <script id='test-script' src='{{GET[script_url]}}'></script>
+</body>
+</html>
