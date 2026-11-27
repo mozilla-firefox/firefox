@@ -8,9 +8,10 @@ machine differences that separate tasks suffer from.
 
 Each such task is derived from a Windows Firefox native profiling task and
 takes the Chromium-as-Release side's arguments and toolchain fetches from the
-matching custom-car task. The two are only known together once every task's
-command is final, so this has to run on the whole kind after the job
-transforms. The task runs ``raptor_ab_script.py``, which runs both sides.
+matching custom-car task, which it replaces. The two are only known together
+once every task's command is final, so this has to run on the whole kind after
+the job transforms. The task runs ``raptor_ab_script.py``, which runs both
+sides.
 """
 
 import json
@@ -68,6 +69,9 @@ def make_vs_car_task(firefox_task, car_task):
     task = deepcopy(firefox_task)
     task["label"] += LABEL_SUFFIX
     task["run-on-projects"] = []
+    task["treeherder"]["tier"] = max(
+        firefox_task["treeherder"]["tier"], car_task["treeherder"]["tier"]
+    )
 
     attributes = task["attributes"]
     attributes["ab_profiles"] = True
@@ -118,12 +122,14 @@ def make_vs_car_task(firefox_task, car_task):
 def add_vs_car_tasks(config, tasks):
     tasks = list(tasks)
     by_label = {task["label"]: task for task in tasks}
-    # Derive the new tasks before yielding any task: the transforms after this
-    # one modify the yielded tasks in place, for example adding their routes.
-    vs_car_tasks = [
-        make_vs_car_task(task, by_label[car_label])
+    pairs = [
+        (task, by_label[car_label])
         for task in tasks
         if (car_label := car_label_for(task)) in by_label
     ]
-    yield from tasks
+    # Derive the new tasks before yielding any task: the transforms after this
+    # one modify the yielded tasks in place, for example adding their routes.
+    vs_car_tasks = [make_vs_car_task(task, car_task) for task, car_task in pairs]
+    replaced = {car_task["label"] for _, car_task in pairs}
+    yield from (task for task in tasks if task["label"] not in replaced)
     yield from vs_car_tasks

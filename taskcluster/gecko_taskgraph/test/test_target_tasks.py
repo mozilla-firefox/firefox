@@ -705,7 +705,7 @@ def test_general_perf_testing_selects_safari_video_playback_latency():
     assert _raptor_label(vpl_safari, _MACOS) in selected
 
 
-def test_perf_crons_skip_ab_profiles_tasks():
+def test_only_the_car_cron_selects_ab_profiles_tasks():
     platform = "windows11-64-24h2-shippable/opt"
     car = _raptor_task("browsertime-benchmark-custom-car-speedometer3", platform)
     ab = _raptor_task(
@@ -718,7 +718,10 @@ def test_perf_crons_skip_ab_profiles_tasks():
         Graph(nodes={car.label, ab.label}, edges=set()),
     )
 
-    assert set(get_method("custom-car_perf_testing")(graph, {}, {})) == {car.label}
+    assert set(get_method("custom-car_perf_testing")(graph, {}, {})) == {
+        car.label,
+        ab.label,
+    }
     assert ab.label not in _general_perf_selection(car, ab)
 
 

@@ -28,7 +28,7 @@ CAR_FETCH = {
 }
 
 
-def make_task(label, app_arguments, fetches, dependencies, attributes=None):
+def make_task(label, app_arguments, fetches, dependencies, attributes=None, tier=1):
     return {
         "label": label,
         "description": "Raptor speedometer3",
@@ -40,7 +40,7 @@ def make_task(label, app_arguments, fetches, dependencies, attributes=None):
         },
         "run-on-projects": ["autoland-only"],
         "dependencies": dependencies,
-        "treeherder": {"symbol": "Btime(sp3-p)"},
+        "treeherder": {"symbol": "Btime(sp3-p)", "tier": tier},
         "worker": {
             "max-run-time": 4200,
             "env": {"MOZ_FETCHES": {"task-reference": json.dumps(fetches)}},
@@ -63,7 +63,7 @@ def firefox_task(**kwargs):
     )
 
 
-def car_task():
+def car_task(tier=2):
     return make_task(
         CAR_LABEL,
         "--app=custom-car --browsertime-arg=chrome.args=--enable-benchmarking",
@@ -73,17 +73,18 @@ def car_task():
             "node": "toolchain-node",
             "toolchain-win64-custom-car": "toolchain-win64-custom-car",
         },
+        tier=tier,
     )
 
 
-def test_adds_vs_car_task(run_transform):
-    tasks = list(run_transform(transforms, [firefox_task(), car_task()]))
+@pytest.mark.parametrize("car_tier", [2, 3])
+def test_replaces_car_task_with_vs_car_task(run_transform, car_tier):
+    tasks = list(run_transform(transforms, [firefox_task(), car_task(car_tier)]))
     assert [t["label"] for t in tasks] == [
         FIREFOX_LABEL,
-        CAR_LABEL,
         f"{FIREFOX_LABEL}-vs-custom-car",
     ]
-    original, _, task = tasks
+    original, task = tasks
 
     assert "supports_ab_profiles" in original["attributes"]
     assert "supports_ab_profiles" not in task["attributes"]
@@ -93,6 +94,8 @@ def test_adds_vs_car_task(run_transform):
     assert task["run-on-projects"] == []
     assert task["attributes"]["ab_profiles"]
     assert task["treeherder"]["symbol"] == "Btime(sp3-car-ab)"
+    assert original["treeherder"]["tier"] == 1
+    assert task["treeherder"]["tier"] == car_tier
     assert task["worker"]["max-run-time"] == 8400
     assert task["worker"]["command"] == [
         original["worker"]["command"][0].replace(

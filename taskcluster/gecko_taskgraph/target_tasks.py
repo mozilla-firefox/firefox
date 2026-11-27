@@ -873,8 +873,6 @@ def target_tasks_custom_car_perf_testing(full_task_graph, parameters, graph_conf
         attributes = task.attributes
         if attributes.get("unittest_suite") != "raptor":
             return False
-        if attributes.get("ab_profiles"):
-            return False
 
         try_name = attributes.get("raptor_try_name")
         if "network-bench" in try_name and "linux" not in platform:
