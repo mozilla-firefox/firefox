@@ -6170,9 +6170,6 @@ int XREMain::XRE_mainStartup(bool* aExitFlag) {
       (void)WaylandDisplayGet();
     }
 #endif
-#ifdef MOZ_WIDGET_GTK
-    nsAppShell::InstallTermSignalHandler();
-#endif
   }
 
   return 0;
@@ -6658,6 +6655,12 @@ nsresult XREMain::XRE_mainRun() {
         g_unsetenv(name.get());
       }
       nsAppShell::InitSessionRestore();
+#  ifdef MOZ_BACKGROUNDTASKS
+      if (!BackgroundTasks::IsBackgroundTaskMode())
+#  endif
+      {
+        nsAppShell::InstallTermSignalHandler();
+      }
 #endif
 
 #ifdef XP_MACOSX
