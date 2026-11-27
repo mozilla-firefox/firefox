@@ -56,7 +56,7 @@
   <!-- Header text for the section containing menu items the user removed from the menu -->
   <string name="mozac_menu_customize_hidden_items">Elementos ocultos</string>
   <!-- Instruction telling the user that menu items dragged to the Hidden items area will no longer appear on the menu -->
-  <string name="mozac_menu_customize_drag_items_to_hide">Arrastrar elementos aquí para ocultar</string>
+  <string name="mozac_menu_customize_drag_items_to_hide">Arrastrar elementos acá para ocultar</string>
   <!-- Customize menu screen: Name of the action, read by screen readers, for opening the screen where the items of a menu section can be changed. -->
   <string name="mozac_menu_customize_edit_items">Editar elementos del menú</string>
 </resources>

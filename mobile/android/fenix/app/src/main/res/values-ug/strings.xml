@@ -178,6 +178,34 @@
   <string name="recently_visited_menu_item_remove">چىقىرىۋەت</string>
   <!-- Content description for the button which navigates the user to show all of their history. -->
   <string name="past_explorations_show_all_content_description_2">ئىلگىرىكى ئىزدىنىشلەرنىڭ ھەممىسىنى كۆرسەت</string>
+  <!--
+    Browser Fragment
+
+    Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
+  -->
+  <string name="customize_menu">ئىختىيارىي تىزىملىك</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">بۇ ئابزاسنى يوشۇرغىلى بولمايدۇ</string>
+  <!-- Title of the screen where the user chooses which items of a menu section are shown in the menu and in which order. -->
+  <string name="edit_menu_items">تىزىملىك تۈرى تەھرىر</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
+  <string name="browser_menu_section_page_controls">بەت تىزگىنى</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
+  <string name="browser_menu_section_tools">قورال</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">توپلام</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
+  <string name="browser_menu_section_accounts_and_settings">ھېساب ۋە تەڭشەك</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">يېڭى بەتكۈچ</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">كۆڭۈلدىكى تىزىملىككە ئەسلىگە قايتۇرامدۇ؟</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">بۇ خاسلاشتۇرۇشنى چىقىرىۋېتىدۇ ۋە يېنىۋالغىلى بولمايدۇ.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">ئەسلىگە قايتۇر</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">ۋاز كەچ</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">قايتىش</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -205,6 +233,10 @@
   <string name="browser_menu_no_extensions_installed_description">كېڭەيتىلمە قوزغىتىلمىغان</string>
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">تەۋسىيە كېڭەيتىلمىنى سىنا</string>
+  <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
+  <string name="browser_menu_extensions_review_update_description">%1$s يېڭىلانمىسىنى تەكشۈر</string>
+  <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
+  <string name="browser_menu_extension_review_update_description">يېڭىلاش تەڭشىكىنى تەكشۈرىدۇ</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">ھېسابات ئۇچۇرى</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -263,10 +295,16 @@
   <string name="browser_menu_passwords">ئىم</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">تىزىملىكنى ياپ</string>
+  <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+  <string name="browser_menu_preview_heading_content_description">تىزىملىكنى ئالدىن كۆزىتىش. بۇ جايدا تۈرنى ئاكتىپلىغىلى بولمايدۇ.</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">يولباشچى</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
   <string name="browser_custom_tab_menu_handlebar_content_description">ئىختىيارى بەتكۈچ تىزىملىك جەدۋىلىنى تاقايدۇ</string>
+  <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
+  <string name="browser_toolbar_cached_page_indicator">غەملەنگەن</string>
+  <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
+  <string name="browser_toolbar_live_page_toast">شۇئان بەت</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
   <string name="browser_menu_bookmark_this_page_2">بەتنى خەتكۈشكە قوش</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -281,8 +319,14 @@
   <string name="browser_menu_summarize_page">بەتنى خۇلاسىلە</string>
   <!-- Browser menu badge text for summarization feature -->
   <string name="browser_menu_summarize_page_badge">يېڭى</string>
+  <!-- Browser menu badge text for new, highlighted feature -->
+  <string name="browser_menu_page_badge_text">يېڭى</string>
   <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
   <string name="browser_menu_webcompat_reporter_2">بۇزۇلغان بېكەتنى دوكلات قىلىدۇ</string>
+  <!-- Browser menu label for adding a tab to a tab group -->
+  <string name="browser_menu_add_to_tab_group">گۇرۇپپىغا قوش</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">گۇرۇپپىغا يۆتكە</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">تەرجىمە قىلىندى</string>
   <!-- Browser menu label for the print feature -->
@@ -313,6 +357,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">بەت تەرجىمىسى</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">رەسىمدىكى رەسىم</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">رەسىمدىكى رەسىمنى ياپ</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">ئۈسكۈنىنى سىلكىسىڭىز بۇ بەتنىڭ قىسقىچە مەزمۇنىنى شۇ ھامان ھاسىللايدۇ. ⚡️</string>
   <!--
@@ -367,6 +415,10 @@
   <string name="ai_controls_voice_search_title">ئاۋازلىق ئىزدەش</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">ئاۋاز Google تاۋۇش مۇلازىمىتى ئارقىلىق تېكىستكە ئايلاندۇرۇلىدۇ.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">بەتنى ئاڭلا</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">ئۈسكۈنىڭىز سۈنئىي ئەقىل ئارقىلىق ئۈنلۈك ئوقۇشى مۇمكىن. تېكىست ۋە ئاۋاز شەخسىيىتى ساقلىنىدۇ.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">سۈنئىي ئەقىلنىڭ كۈچەيتىلگەن ئىقتىدارىنى توسامدۇ؟</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -566,6 +618,14 @@
   <string name="nova_onboarding_sync_subtitle">كۆزنى يۇمۇپ ئاچقۇچە خالىغان ئۈسكۈنىدە خەتكۈچ، ئىم قاتارلىق ئۇچۇرلارنى كۆرەلەيسىز. شەخسىي ئۇچۇرلىرىڭىز شىفىرلىنىپ بىخەتەر ساقلىنىدۇ.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">قەدەمداشلاشنى باشلا</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">كومپيۇتېرىڭىز بىلەن جۈپلەشتۈرۈشنى تاماملاش ئۈچۈن تاراڭ</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[QR كودى يوقمۇ؟ كومپيۇتېرىڭىزدا <b>firefox.com/pair</b> غا يۆتكىلىڭ.]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">جۈپلەش كودىنى تارا</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">ئېلخەت ئارقىلىق تىزىمغا كىر</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">تېخىمۇ ياخشى ئىنتېرنېت قۇرۇشىمىزغا ياردەم قىلىڭ</string>
   <!--
@@ -661,6 +721,14 @@
   <string name="search_widget_text_long">توردىن ئىزدەش</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">ئاۋازلىق ئىزدەش</string>
+  <!-- Content description (not visible, for screen readers etc.): Button in the search widget that starts a search in a private tab -->
+  <string name="search_widget_private_search">شەخسىي ئىزدە</string>
+  <!-- Widget description in the widget picker screen for the search bar widget that includes buttons for private search and for voice search -->
+  <string name="search_bar_widget_description">شەخسىي ۋە ئاۋازلىق ئىزدەش ئىقتىدارىغا ئىگە ئىزدەش بالدىقى</string>
+  <!-- Widget description in the widget picker screen for the search bar widget that includes buttons for image search, private search and voice search -->
+  <string name="search_bar_with_lens_widget_description">سۈرەت، شەخسىي ۋە ئاۋازلىق ئىزدەش ئىقتىدارىغا ئىگە ئىزدەش بالدىقى</string>
+  <!-- Widget description in the widget picker screen for the compact search bar widget -->
+  <string name="compact_search_bar_widget_description">ئىخچام ئىزدەش بالداق</string>
   <!--
     Preferences
 
@@ -687,6 +755,8 @@
   <string name="preferences_search">ئىزدەش</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">ئىزدەش موتورى</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">ئىزدەش ئەپچىنى باش ئېكرانغا قوشىدۇ</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">باش ئېكران ئەپچە</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -756,6 +826,8 @@
   <string name="preferences_override_sync_tokenserver">ئىختىيارى قەدەمداش مۇلازىمېتىر</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">ھېسابات</string>
+  <!-- Preference category for sync controls. Sync can be translated, it's just short for ”Synchronization” in English. -->
+  <string name="preferences_category_sync_controls">قەدەمداش</string>
   <!-- Preference for changing where the AddressBar is positioned -->
   <string name="preferences_toolbar_2">ئادرېس بالداق ئورنى</string>
   <!-- Preference for changing toolbar layout -->
@@ -774,6 +846,8 @@
   <string name="preferences_toolbar_select_shortcut">تېزلەتمە تاللىنىدۇ</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">تېزلەتمە تەھرىر</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">تىزىملىك</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">قول ئىشارىسى</string>
   <!-- Preference for settings related to visual options -->
@@ -812,6 +886,8 @@
   <string name="preferences_search_synced_tabs">قەدەمداش بەتكۈچنى ئىزدەيدۇ</string>
   <!-- Preference for account settings -->
   <string name="preferences_account_settings">ھېسابات تەڭشىكى</string>
+  <!-- Preference for account and sync settings -->
+  <string name="preferences_account_and_sync_settings">ھېساب ۋە قەدەمداش</string>
   <!-- Preference for enabling url autocomplete -->
   <string name="preferences_enable_autocomplete_urls">ئۆزلۈكىدىن تاماملانغان تور ئادرېسلىرى</string>
   <!-- Preference title for switch preference to show sponsored Firefox Suggest search suggestions -->
@@ -848,6 +924,10 @@
   <string name="preferences_open_links_in_apps_ask">ئېچىشتىن ئىلگىرى سورا</string>
   <!-- Preference for open links in third party apps never open in apps option -->
   <string name="preferences_open_links_in_apps_never">ھەرگىز</string>
+  <!-- Preference category header for media related open links in apps settings -->
+  <string name="preferences_media_category">ۋاسىتە</string>
+  <!-- Preference label for choosing whether links open in the YouTube app -->
+  <string name="preferences_open_links_in_youtube">ئۇلانمىنى YouTube ئەپتە ئاچىدۇ</string>
   <!-- Preference category for file storage. -->
   <string name="preferences_category_file_storage">ھۆججەت ساقلىغۇچ</string>
   <!-- Preference title for downloads default location. -->
@@ -928,6 +1008,18 @@
   <string name="customize_addon_collection_user_hint">توپلىغۇچى ئىگىسى (ئىشلەتكۈچى كىملىكى)</string>
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">كېڭەيتىلمە توپلىمى ئۆزگەردى. ئۆزگەرتىشنى قوللىنىش ئۈچۈن پىروگراممىدىن چېكىنىۋاتىدۇ…</string>
+  <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">%1$s نى چىقىرىۋېتەمدۇ؟</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">بۇ مەشغۇلات كېڭەيتىلمە ۋە ئۇنىڭ تەڭشىكىنى مەزكۇر ئۈسكۈنىدىن چىقىرىۋېتىدۇ.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">چىقىرىۋەت</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">ۋاز كەچ</string>
   <!--
     Customize Home
 
@@ -1091,6 +1183,20 @@
   <string name="preferences_sync_now">ھازىر قەدەمداشلا</string>
   <!-- Preference category for sync -->
   <string name="preferences_sync_category">قەدەمداش تاللىنىدۇ</string>
+  <!-- Preference category for sync controls -->
+  <string name="preferences_category_sync">قەدەمداشلانغان سانلىق مەلۇمات</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">بۇ ئۈسكۈنىنى قەدەمداشلايدۇ</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">سانلىق مەلۇماتىڭىز زاپاسلاندى ۋە قەدەمداشلانغان ئۈسكۈنىدە ئىشلەتكىلى بولىدۇ.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">ھېسابىڭىزدىكى ساقلانغان ئۇچۇرنى ئىشلىتىدۇ.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">سىزنىڭ %1$s ھېسابىڭىزدا ساقلانغان سانلىق مەلۇماتنى ئىشلىتىدۇ.</string>
+  <!-- Summary for the sync preference category. -->
+  <string name="preferences_sync_category_summary">باغلانغان بارلىق ئۈسكۈنىلەردە قەدەمداشلىنىدىغاننى باشقۇرىدۇ</string>
+  <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
+  <string name="preferences_sync_category_no_engine_selected_summary">ھېچنېمىنى قەدەمداشلىمىدىڭىز. ئۈسكۈنىلەر ئارا قەدەمداشلىنىدىغانلىرى تاللىنىدۇ.</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">تارىخ</string>
   <!-- Preference for syncing bookmarks -->
@@ -1103,6 +1209,10 @@
   <string name="preferences_sign_out">چېكىنىش</string>
   <!-- Preference displays and allows changing current FxA device name -->
   <string name="preferences_sync_device_name">ئۈسكۈنە ئىسمى</string>
+  <!-- Preference category for Device name -->
+  <string name="preferences_device_name_category">ئۈسكۈنە ئىسمى</string>
+  <!-- Label for the Preference that displays and allows changing current device name on Mozilla Account -->
+  <string name="preferences_sync_change_device_name">ئۈسكۈنە ئاتىنى ئۆزگەرت</string>
   <!-- Text shown when user enters empty device name -->
   <string name="empty_device_name_error">ئۈسكۈنە ئىسمى بوش قالمايدۇ.</string>
   <!-- Label indicating that sync is in progress -->
@@ -1205,6 +1315,14 @@
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">ھېساباتنى چىقىرىۋەت</string>
   <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">تىزىمغا كىر</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">بەتكۈچ، خەتكۈچ، ئىم ۋە باشقىلارنى قەدەمداشلاشنى باشلايدۇ.</string>
+  <!--
     Pairing Feature strings
 
     Instructions on how to access pairing
@@ -1222,6 +1340,12 @@
   <string name="preference_simple_toolbar">ئاددىي</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">يېيىلدى</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">باش بەت ئىزدەش ئورنى</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">ئوتتۇرا</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">چوققا</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">يېڭى بەتكۈچ ئاچ</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1265,6 +1389,12 @@
     Preferences for showing tab strip
   -->
   <string name="preference_tab_strip_show">بەتكۈچ بالداقنى كۆرسەت</string>
+  <!-- Preference for tab bar placement (top or bottom of the screen) -->
+  <string name="preference_tab_strip_location_header">بەتكۈچ بالداق ئورنى</string>
+  <!-- Preference for using top tab strip -->
+  <string name="preference_top_tab_strip">چوققا</string>
+  <!-- Preference for using bottom tab strip -->
+  <string name="preference_bottom_tab_strip">ئاستى</string>
   <!--
     Gestures Preferences
 
@@ -1297,6 +1427,8 @@
   <string name="library_desktop_bookmarks_unfiled">باشقا خەتكۈچ</string>
   <!-- Option in Library to open History page -->
   <string name="library_history">تارىخ</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">تاللانغان</string>
   <!-- Settings Page Title -->
   <string name="settings_title">تەڭشەك</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
@@ -1347,6 +1479,8 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">بەتكۈچ</string>
+  <!-- Title of preference that allows a user to specify the tab layout -->
+  <string name="preferences_tab_layout">بەتكۈچ جايلاشتۇرۇش</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">تىزىم</string>
   <!-- Option for a grid tab view -->
@@ -1365,6 +1499,8 @@
   <string name="preference_auto_close_tabs" tools:ignore="UnusedResources">ئوچۇق بەتكۈچلەرنى ئاپتوماتىك تاقاش</string>
   <!-- Content description (not visible, for screen readers etc.): Close tab button -->
   <string name="tab_manager_close_tabs">تاقا</string>
+  <!-- Content description for the media playback indicator in the tabs tray. -->
+  <string name="tab_indicator_media_playing">ۋاسىتە ياڭرىتىۋاتىدۇ</string>
   <!--
     Opening screen
 
@@ -1391,8 +1527,20 @@
   <string name="opening_screen_last_tab_summary">ئاخىرقى بەتكۈچتە ئاچ</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">تۆت سائەتتىن كېيىن باش بەتتە ئاچ</string>
+  <!--
+    Tab organization
+
+    Category header for the preferences that control how tabs are organized
+  -->
+  <string name="preferences_tab_organization">بەتكۈچ تەشكىللەش</string>
+  <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
+  <string name="preferences_inactive_tabs_toggle_title">پاسسىپ بەتكۈچ</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">سىز ئىككى ھەپتە كۆرمىگەن بەتكۈچلەر ئاكتىپسىز بۆلەككە يۆتكىلىدۇ.</string>
+  <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_title">بەتكۈچ گۇرۇپپىسى</string>
+  <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_description">بەتكۈچىڭىزگە ئات قويۇپ ۋە ساقلاپ، گۇرۇپپىلاپ تەشكىللەيدۇ.</string>
   <!--
     Privacy report
 
@@ -1562,6 +1710,8 @@
   <string name="add_to_new_tab_group_content_description">يېڭى بەتكۈچ گۇرۇپپىسىغا قوشىدۇ</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">يېڭى بەتكۈچ گۇرۇپپىسى</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">بەتكۈچ گۇرۇپپىسىدا ئاچ</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -1604,8 +1754,21 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">گۇرۇپپا ئۆچۈر</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">ۋاز كەچ</string>
+  <!-- Title of the confirmation dialog shown when moving the last tab out of a group will delete the group. %s is the group name, which defaults to a value such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_title">ئاخىرقى بەتكۈچنى %s دىن يۆتكەمدۇ؟</string>
+  <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">بۇ بەتكۈچ %1$s غا يۆتكىلىدۇ. %2$s ئۆچۈرۈلىدۇ چۈنكى ئۇ بوش.</string>
+  <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">بەتكۈچ يۆتكە</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">ۋاز كەچ</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">تېخىمۇ كۆپ تاللانما</string>
+  <!--
+    Content description for the Expand button on the contracted menu for a tab group:
+    when tapped, tabs are displayed in an expanded grid or list view, taking up the full screen.
+  -->
+  <string name="tab_groups_strip_expand_group_content_description">بەتكۈچنى پۈتۈن ئېكراندا كۆرسىتىش ئۈچۈن يايىدۇ</string>
   <!-- Text shown on the edit button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_edit">تەھرىر</string>
   <!-- Text shown on the ungroup button for a tab group on the three dot menu -->
@@ -1851,6 +2014,8 @@
   <string name="download_search_no_results_found">ھېچقانداق نەتىجە تېپىلمىدى</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">ھەممىنى تاللا</string>
+  <!-- Shown in the downloads list in place of a website name when a file came from a data: or blob: URL that has no website address. "data" refers to the data: URL scheme. -->
+  <string name="download_item_source_data">(سانلىق مەلۇمات)</string>
   <!--
     Downloads Content Type Filters
 
@@ -1967,10 +2132,14 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">ياپ</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">ھەرگىز قايتا كۆرسەتمە</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">ھەرگىز قايتا كۆرسەتمە</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">يوللا</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">يىمىرىلىش دوكلاتى يوللا</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">يىمىرىلىش دوكلاتى يوللا</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">يىمىرىلىش دوكلاتى توركۆرگۈگە دىياگنوز قويۇپ ۋە ئۇنى ئوڭشاشقا ياردەم بېرىدۇ. دوكلات شەخسىي ياكى سەزگۈر ئۇچۇرلارنى ئۆز ئىچىگە ئېلىشى مۇمكىن. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">تەپسىلاتى</string>
@@ -3141,6 +3310,10 @@
   <string name="credit_cards_warning_dialog_set_up_now">ھازىر تەڭشە</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">كېيىنچە</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">ھازىر تەڭشە</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">ۋاز كەچ</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">ئۈسكۈنىڭىزنىڭ قۇلۇپىنى ئېچىڭ</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -3539,6 +3712,12 @@
   <!--
     Translations options dialog
 
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">تەرجىمە مايىللىقى</string>
+  <!--
+    Translations options dialog
+
     Title of the translation options dialog that allows a user to set their translation options for the site the user is currently on.
   -->
   <string name="translation_option_bottom_sheet_title_heading">تەرجىمە تاللانمىسى</string>
@@ -3772,6 +3951,14 @@
   <string name="protection_panel_privacy_and_security_settings_2">شەخسىيەت تەڭشىكى</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">ئىجازەت</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">بىخەتەر باغلىنىش</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">گۇۋاھنامە بېرىلگۈچى:</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">دەلىللىگۈچى:</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">ياۋروپا ئىتتىپاقى ئىشەنچ ماركىسى</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -3839,6 +4026,8 @@
   <string name="clear_site_data_dialog_negative_button_text">ۋاز كەچ</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">بىخەتەر باغلىنىش</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">گۇۋاھنامە تەپسىلاتىنى كۆرسەت</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">باغلىنىش بىخەتەر ئەمەس</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4338,6 +4527,81 @@
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">بۇ جاي</string>
   <!--
+    Sports widget
+
+    Label shown on the sports widget scoreboard when a match is currently being played live.
+  -->
+  <string name="wrex_widget_match_live">شۇئان</string>
+  <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+  <string name="wrex_widget_match_delayed">كېچىكتۈرۈلدى</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">ۋاقىتلىق توختىتىلغان</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">كېچىكتۈرۈلدى</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">بىكار قىلىندى</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">يېڭىلا</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">نەتىجە</string>
+  <!-- Sports widget menu item to view the league standings table. -->
+  <string name="wrex_widget_standings">رەت تەرتىپى</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">تام قەغىزى</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">ئەپچىنى چىقىرىۋەت</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">ئاخىرقى مۇسابىقە</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">ئوتتۇرا مەيدان مۇسابىقە</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">ئۇزارتىلغان مۇسابىقە</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">جازا توپ</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="wrex_widget_more_options_content_description">تېخىمۇ كۆپ تاللانما</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s - %2$s، %3$s</string>
+  <!--
+    Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+    %s is the name of the competition the match belongs to (e.g. "FA Cup").
+  -->
+  <string name="wrex_widget_live_game_content_description">%s، نەق مەيدان مۇسابىقە</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d، %3$s %4$d، %5$s، شۇئان</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">مۇسابىقە ۋاقتى(مىنۇت): %1$s</string>
+  <!--
+    Content description (for accessibility, not displayed) for a paginated item.
+    %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
+    %2$d is the current page number, and %3$d is the total number of pages.
+  -->
+  <string name="wrex_widget_page_position_content_description">%1$s، %2$d/%3$d بەت</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">توردا ئەمەستەك قىلىسىز</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">ئىنتېرنېت باغلىنىشىڭىزنى تەكشۈرۈپ ئاندىن قايتا سىناڭ.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">ھازىر مۇسابىقە ئۇچۇرىنى كۆرسىتەلمەيدۇ</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">قايتا يېڭىلاڭ ياكى سەل تۇرۇپ تەكشۈرۈڭ.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">ھازىر نەتىجىنى كۆرسىتەلمەيدۇ</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">كوماندا بېكىتىلىدۇ</string>
+  <!--
     Privacy notice homepage banner
 
     A message we show the user on the homepage when there is a new version of the privacy notice. 'Firefox' is intentionally hardcoded.
@@ -4359,6 +4623,8 @@
   <string name="collections_migration_homepage_card_message">بەتكۈچنى رەتلىك ساقلاشنىڭ ئاددىي ئۇسۇلى بار</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">بەتكۈچ گۇرۇپپىسىنى كۆرسەت</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">ياپ</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Google Lens توپلاشتۇرۇشنى قوزغات</string>
   <!-- Lens image search button content description -->
@@ -4393,6 +4659,16 @@
   <string name="lens_camera_mode_qr">QR تارىغۇچ</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">سۈرەتتە ھېچقانداق QR كودى تېپىلمىدى</string>
+  <!-- Status shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">بۇنى ئىزدەۋاتىدۇ</string>
+  <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">ۋاز كەچ</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">بۇ سۈرەتنى يۈكلىيەلمىدى.</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">Google Lens دىن نەتىجىگە ئېرىشكىلى بولمىدى</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">قايتا سىنا</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Google Lens بىلەن ئىزدە</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
@@ -4447,6 +4723,12 @@
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">تور بېكەت ئايرىش</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">ئوخشاش بولمىغان بېكەت ئارىسىدا يەنە بىر قوشۇمچە توسۇق قوشۇپ بەتكۈچ ھالقىغان سانلىق مەلۇماتنى قوغداشقا ياردەم بېرىدۇ. بەلكىم ئۈنۈم، مۇقىملىق، تور بېكەت ماسلىشىشچانلىقى ۋە تور زىيارەت تارىخىنىڭ قانداق ساقلىنىشىغا تەسىر كۆرسىتىشى مۇمكىن.</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
+  <string name="pdf_tools_sign_content_description_2">ئىمزا قوش</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">PDF چۈشۈر</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->
@@ -4467,4 +4749,18 @@
   <string name="pdf_tools_signature_clear_button">تازىلا</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">قوش</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the loading indicator when a signature is in the process of being added to a PDF. -->
+  <string name="pdf_tools_signature_adding_content_description">ئىمزا قوشۇۋاتىدۇ</string>
+  <!--
+    Listen to page
+
+    Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
+  -->
+  <string name="reader_mode_panel_content_description_2">ئوقۇرمەن كۆرۈش تاللانمىسى</string>
+  <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
+  <string name="reader_mode_panel_listen_content_description">ئۈنلۈك ئوقۇ</string>
+  <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->
+  <string name="reader_mode_panel_media_player_content_description">ۋاسىتە ياڭراتقۇچ</string>
+  <!-- Content description for the reader view button Reader view facilitates readability and has a Listen to Page feature. Button icon is a document with headphones, and is displayed next to the page URL when the feature is available. -->
+  <string name="browser_menu_read_or_listen">ئوقۇرمەن بەتنى كۆرۈپ، ئوقۇپ ياكى تىڭشايدۇ</string>
 </resources>
