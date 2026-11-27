@@ -58,6 +58,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.collection.SimpleArrayMap;
 import androidx.core.content.res.ResourcesCompat;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.nio.ByteBuffer;
@@ -852,6 +853,33 @@ public class GeckoAppShell {
     }
 
     return lp.getDomains();
+  }
+
+  // Returns the IP addresses of the DNS servers configured on the active
+  // network. Used for RFC 9462 DDR verification.
+  @WrapForJNI(calledFrom = "gecko", exceptionMode = "nsresult")
+  private static String[] getDNSServers() {
+    ensureConnectivityManager();
+    final Network net = sConnectivityManager.getActiveNetwork();
+    if (net == null) {
+      return new String[0];
+    }
+
+    final LinkProperties lp = sConnectivityManager.getLinkProperties(net);
+    if (lp == null) {
+      return new String[0];
+    }
+
+    final List<InetAddress> servers = lp.getDnsServers();
+    final String[] result = new String[servers.size()];
+    for (int i = 0; i < servers.size(); i++) {
+      // Strip the "%scope" suffix that getHostAddress() adds to scoped IPv6
+      // addresses, which Gecko can't parse.
+      final String address = servers.get(i).getHostAddress();
+      final int scope = address.indexOf('%');
+      result[i] = scope >= 0 ? address.substring(0, scope) : address;
+    }
+    return result;
   }
 
   @SuppressLint("ResourceType")
