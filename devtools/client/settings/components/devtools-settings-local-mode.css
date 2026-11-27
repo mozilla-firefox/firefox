@@ -34,6 +34,7 @@ p {
   word-break: break-all;
 }
 
+.origin-error,
 .folder-error {
   color: var(--text-color-error);
 }

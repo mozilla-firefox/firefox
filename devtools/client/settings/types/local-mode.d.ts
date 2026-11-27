@@ -9,6 +9,11 @@ export interface Mapping {
   prefPrefix: string;
 }
 
+export interface MappingState extends Mapping {
+  folderExists: boolean;
+  draftOrigin?: string;
+}
+
 export interface LocalModeMappingsModule {
   LocalModeMappings: Omit<
     typeof import("../../framework/LocalModeMappings.sys.mjs").LocalModeMappings,
