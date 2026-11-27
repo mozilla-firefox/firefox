@@ -7,6 +7,7 @@ import StyleDictionary from "style-dictionary";
 import { COLLECTIONS } from "./helpers/figma-format/constants.mjs";
 import { createDesktopFormat } from "./helpers/desktop-format/create-desktop-format.mjs";
 import { createFigmaFormat } from "./helpers/figma-format/create-figma-format.mjs";
+import { createHighContrastFormat } from "./helpers/high-contrast-format/create-high-contrast-format.mjs";
 import { createNovaNewtabFormat } from "./helpers/nova-newtab-format/create-nova-newtab-format.mjs";
 import { createTokensTableFormat } from "./helpers/tokens-table-format/create-tokens-table-format.mjs";
 import {
@@ -43,6 +44,7 @@ export default {
       "javascript/tokens-table": args => createTokensTableFormat(args, false),
       "javascript/semantic-categories": args =>
         createTokensTableFormat(args, true),
+      "javascript/high-contrast-tokens": createHighContrastFormat,
       "json/figma/colors": createFigmaFormat(COLLECTIONS.colors),
       "json/figma/primitives": createFigmaFormat(COLLECTIONS.primitives),
       "json/figma/theme": createFigmaFormat(COLLECTIONS.theme),
@@ -93,6 +95,10 @@ export default {
         {
           destination: "dist/semantic-categories.mjs",
           format: "javascript/semantic-categories",
+        },
+        {
+          destination: "dist/high-contrast-tokens.mjs",
+          format: "javascript/high-contrast-tokens",
         },
       ],
     },
