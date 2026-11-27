@@ -52,8 +52,6 @@ class TaggedProto {
 
   bool operator==(const TaggedProto& other) const = default;
 
-  HashNumber hashCode() const;
-
   void trace(JSTracer* trc);
 
  private:
@@ -144,8 +142,6 @@ class WrappedPtrOperations<TaggedProto, Wrapper> {
   inline JSObject* toObject() const { return value().toObject(); }
   inline JSObject* toObjectOrNull() const { return value().toObjectOrNull(); }
   JSObject* raw() const { return value().raw(); }
-  HashNumber hashCode() const { return value().hashCode(); }
-  uint64_t uniqueId() const { return value().uniqueId(); }
 };
 
 // If the TaggedProto is a JSObject pointer, convert to that type and call |f|
