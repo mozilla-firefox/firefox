@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>min-content/fit-content with negative margins on inlines</title>
+<link rel="help" href="https://drafts.csswg.org/css2/box.html#margin-properties">
+<link rel="match" href="negative-margin-inline-006-ref.html">
+<style>
+.outer {
+  display: inline-block;
+  font: 16px monospace;
+  border:1px solid gray;
+  margin: 1em;
+}
+.min {
+  width: min-content;
+}
+.fit {
+  width: fit-content;
+}
+.a {
+  margin-inline-start: -2ch;
+}
+.b {
+  margin-inline-end: -2ch;
+}
+.c {
+  margin-inline: -2ch;
+}
+u {
+  color: blue;
+}
+</style>
+
+<p>The <u>blue spans</u> should project by 2ch beyond the width of the enclosing block at the start/end:</p>
+
+<p>fit-content:</p>
+
+<span class="outer fit"><span class="a"><u>supercalifragilistic</u> expialidocious</span></span>
+<br>
+<span class="outer fit"><span class="b">supercalifragilistic <u>expialidocious</u></span></span>
+<br>
+<span class="outer fit"><span class="c"><u>supercalifragilistic expialidocious</u></span></span>
+
+<p>min-content:</p>
+
+<!-- min-content should be 8ch, the width of "supercali-" minus 2ch because the first 2 chars project into the margin -->
+<span class="outer min"><span class="a"><u>supercali-</u>frag-i-lis-tic-ex-pi-a-li-do-cious</span></span>
+
+<!-- min-content should be 5ch, the width of "docious" minus 2ch because the last 2 chars project into the margin -->
+<span class="outer min"><span class="b">su-per-cal-i-frag-i-lis-tic-ex-pi-a-li-<u>docious</u></span></span>
+
+<!-- min-content should be 8ch from "supercali-" minus 2ch; "li-docious" should appear together on the last line, projecting by 2ch -->
+<span class="outer min"><span class="c"><u>supercali-</u>frag-i-lis-tic-ex-pi-a-li-<u>docious</u></span></span>

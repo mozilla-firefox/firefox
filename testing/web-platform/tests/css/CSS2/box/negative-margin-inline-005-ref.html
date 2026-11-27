@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Negative inline margins allow the ends of the inline to project</title>
+<style>
+.outer {
+  display: inline-block;
+  font: 16px monospace;
+  border:1px solid gray;
+  margin: 2em;
+  white-space: pre;
+}
+.a {
+  width: 6ch;
+}
+.b {
+  width: 50ch;
+}
+.c {
+  width: 8ch;
+}
+.d {
+  width: 21ch;
+}
+.inner {
+  margin-inline: -1ch;
+}
+u {
+  margin-inline: -1ch;
+  color: blue;
+}
+.inner u {
+  margin-inline: 0;
+}
+.inner u.start {
+  margin-inline-start: -1ch;
+}
+</style>
+
+<p>The &nbsp;&nbsp;<u>blue spans</u>&nbsp;&nbsp; have -1ch inline-margin, so their ends may project at line-breaks,
+as does the text as a whole:</p>
+
+<span class="outer a"><span class="inner">The<u>very<br>quick<br>brown<br>fox</u><br>jumps<br>over<br>the<br><u class="start">lazy dog</u><br>slowly.</span></span>
+
+<span class="outer b"><span class="inner">The<u>very quick brown fox</u>jumps over the<u>lazy dog</u>slowly.</span></span>
+
+<span class="outer c"><span class="inner">The<u>very<br>quick<br>brown fox</u><br>jumps<br>over the<br><u class="start">lazy dog</u><br>slowly.</span></span>
+
+<span class="outer d"><span class="inner">The<u>very quick brown fox</u><br>jumps over the<u>lazy dog</u><br>slowly.</span></span>

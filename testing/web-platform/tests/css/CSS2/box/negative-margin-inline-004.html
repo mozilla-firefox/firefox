@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Negative inline margins allow the ends of the inline to project</title>
+<link rel="help" href="https://drafts.csswg.org/css2/box.html#margin-properties">
+<link rel="match" href="negative-margin-inline-004-ref.html">
+<style>
+.outer {
+  display: inline-block;
+  font: 16px monospace;
+  width: 10ch;
+  border:1px solid gray;
+  margin: 2em;
+}
+.inner {
+  margin-inline-end: -4ch;
+}
+</style>
+<span class="outer"><span class="inner">the <u>quick brown fox</u> jumps over the <u>lazy dog</u>.</span></span>

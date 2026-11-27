@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Negative inline margins allow the ends of the inline to project</title>
+<style>
+.outer {
+  display: inline-block;
+  font: 16px monospace;
+  width: 10ch;
+  border:1px solid gray;
+  margin: 2em;
+}
+.end {
+  display: inline-block;
+  margin-right: -4ch;
+}
+</style>
+<span class="outer">the <u>quick</u><br><u>brown fox</u><br>jumps over<br>the <u>lazy </u><span class="end"><u>dog</u>.</span></span>
