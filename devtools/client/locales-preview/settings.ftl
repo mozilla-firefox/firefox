@@ -247,6 +247,9 @@ devtools-settings-local-mode-choose-folder =
     .label = Browse…
     .title = Choose a local folder to serve this mapping
 
+devtools-settings-local-mode-navigate =
+    .title = Navigate to this mapping URL
+
 devtools-settings-local-mode-add =
     .label = Add a new local mapping
 
