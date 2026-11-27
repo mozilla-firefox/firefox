@@ -48,6 +48,9 @@ class ConditionVariableImpl {
  private:
 #if defined(XP_WIN)
   Futex mFutex;
+  // Number of threads in wait_for(), used to skip the wake-up syscall when
+  // nobody is waiting.
+  std::atomic<uint32_t> mWaiters{0};
 #elif !defined(__wasi__)
   pthread_cond_t mCond;
 #endif
