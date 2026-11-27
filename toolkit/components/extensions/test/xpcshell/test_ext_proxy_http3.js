@@ -1,5 +1,9 @@
 "use strict";
 
+const { HTTP3Server } = ChromeUtils.importESModule(
+  "resource://testing-common/NodeServer.sys.mjs"
+);
+
 AddonTestUtils.init(this);
 AddonTestUtils.overrideCertDB();
 AddonTestUtils.createAppInfo(
@@ -32,6 +36,7 @@ function addCertFromFile(certdb, filename, trustString) {
 
 let proxyHost;
 let proxyPort;
+let h3Port;
 
 /**
  * Sets up HTTP3 proxy configuration for extension tests
@@ -56,8 +61,15 @@ add_setup(async function setup() {
     "CTu,u,u"
   );
 
+  const proxyServer = new HTTP3Server();
+  registerCleanupFunction(() => proxyServer.stop());
+  h3Port = await proxyServer.start(
+    Services.env.get("MOZ_HTTP3_SERVER_PATH"),
+    Services.env.get("MOZ_HTTP3_CERT_DB_PATH")
+  );
+
   proxyHost = "foo.example.com";
-  proxyPort = Services.env.get("MOZHTTP3_PORT_MASQUE");
+  proxyPort = proxyServer.masque_proxy_port();
 
   // A dummy request to make sure AltSvcCache::mStorage is ready.
   // It doesn't really matter if it succeeds or fails.
@@ -78,9 +90,6 @@ add_setup(async function setup() {
 
 add_task(async function test_connect_udp() {
   await promiseStartupManager();
-
-  let h3Port = Services.env.get("MOZHTTP3_PORT");
-  ok(h3Port, `MOZHTTP3_PORT should be set: ${h3Port}`);
 
   function background(proxyInfo) {
     browser.proxy.onRequest.addListener(
