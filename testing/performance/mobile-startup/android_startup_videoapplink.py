@@ -1,9 +1,11 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+import hashlib
 import os
 import pathlib
 import re
+import ssl
 import subprocess
 import sys
 import time
@@ -54,12 +56,9 @@ MAX_STARTUP_TIME = 25000  # 25000ms = 25 seconds
 PROD_CHRM = "chrome-m"
 PROD_FENIX = "fenix"
 
-# SHA-256 fingerprint of testing/raptor/browsertime/utils/http2-cert.pem,
-# used for cert_override.txt so Fenix trusts the local HTTPS server.
-SERVER_CERT_FINGERPRINT = (
-    "55:31:7E:DD:E2:BA:47:5B:E4:FF:93:19:F6:5B:EA:74:"
-    "97:BF:46:21:D0:2D:A5:64:8C:C8:3E:C3:3B:64:EC:E6"
-)
+# The certificate served by newssite-setup.sh. Its fingerprint goes into
+# cert_override.txt so Fenix trusts the local HTTPS server.
+SERVER_CERT = "testing/raptor/browsertime/utils/http2-cert.pem"
 
 
 class InvalidLastFrame(Exception):
@@ -171,11 +170,11 @@ class ImageAnalzer:
             return
 
         profile_dir = f"{data_dir}/{profiles[0]}"
+        der = ssl.PEM_cert_to_DER_cert(pathlib.Path(SERVER_CERT).read_text())
+        fingerprint = hashlib.sha256(der).digest().hex(":").upper()
         # cert_override.txt format: host:port, hash algorithm OID, fingerprint.
         # OID.2.16.840.1.101.3.4.2.1 is SHA-256.
-        override_line = (
-            f"localhost:8000\tOID.2.16.840.1.101.3.4.2.1\t{SERVER_CERT_FINGERPRINT}\t"
-        )
+        override_line = f"localhost:8000\tOID.2.16.840.1.101.3.4.2.1\t{fingerprint}\t"
         self.device.shell_output(
             f"echo '{override_line}' > {profile_dir}/cert_override.txt"
         )
