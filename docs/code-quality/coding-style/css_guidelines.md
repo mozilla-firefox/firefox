@@ -529,8 +529,12 @@ Forced colors has three states rather than two
 
 A bare `@media (forced-colors)` therefore matches in both the `active` and the
 `requested` state, so the query matching does not mean the adjustment is
-running. Ask for `(forced-colors: active)` where that difference matters;
-`forced-colors: requested` only parses in a chrome stylesheet.
+running. Write the bare query all the same: in content it is equivalent to
+`(forced-colors: active)`, and in chrome only the bare query honors Windows
+high contrast mode. The
+[use-boolean-forced-colors-query](/code-quality/lint/linters/stylelint-plugin-mozilla/rules/use-boolean-forced-colors-query.md)
+stylelint rule enforces it. `forced-colors: requested` only parses in a chrome
+stylesheet.
 
 `prefers-contrast` has no such split. It tracks
 `LookAndFeel::IntID::UseAccessibilityTheme` in both realms, which is Windows high
@@ -685,7 +689,7 @@ The filter therefore fails in both directions, and both shapes exist in the tree
   `border: Npx solid transparent` idiom with `background-clip: padding-box`,
   which insets a background while keeping the full-height hit area, paints an
   `Npx` `CanvasText` box around every element that uses it. Give it a system
-  color matching the surface behind it under `@media (forced-colors: active)`,
+  color matching the surface behind it under `@media (forced-colors)`,
   and check what that surface actually computes to rather than assuming it is
   `Canvas`.
 
