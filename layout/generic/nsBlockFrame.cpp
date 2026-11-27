@@ -5728,7 +5728,10 @@ bool nsBlockFrame::ReflowInlineFrames(BlockReflowState& aState,
       aState.GetFloatAvailableSpace(GetWritingMode());
 
   LineReflowStatus lineReflowStatus;
+  AutoTArray<const nsIFrame*, 2> disabledNegativeMargins;
   do {
+    // A different band may have a different available size.
+    disabledNegativeMargins.Clear();
     nscoord availableSpaceBSize = 0;
     aState.mLineBSize.reset();
     do {
@@ -5749,7 +5752,8 @@ bool nsBlockFrame::ReflowInlineFrames(BlockReflowState& aState,
         // no longer makes sense.  Now we always allocate on the stack.
         nsLineLayout lineLayout(aState.mPresContext, aState.FloatManager(),
                                 aState.mReflowInput, &aLine, nullptr);
-        lineLayout.Init(&aState, aState.mMinLineHeight, aState.mLineNumber);
+        lineLayout.Init(&aState, aState.mMinLineHeight, aState.mLineNumber,
+                        &disabledNegativeMargins);
         if (forceBreakInFrame) {
           lineLayout.ForceBreakAtPosition(forceBreakInFrame, forceBreakOffset);
         }
@@ -5761,7 +5765,8 @@ bool nsBlockFrame::ReflowInlineFrames(BlockReflowState& aState,
         if (LineReflowStatus::RedoNoPull == lineReflowStatus ||
             LineReflowStatus::RedoMoreFloats == lineReflowStatus ||
             LineReflowStatus::RedoNextBand == lineReflowStatus) {
-          if (lineLayout.NeedsBackup()) {
+          if (lineLayout.NeedsBackup() &&
+              !lineLayout.NeedsRedoForNegativeMargin()) {
             NS_ASSERTION(!forceBreakInFrame,
                          "Backing up twice; this should never be necessary");
             // If there is no saved break position, then this will set
@@ -5959,7 +5964,11 @@ void nsBlockFrame::DoReflowInlineFrames(
         "even though there were better break opportunities before it");
     needsBackup = false;
   }
-  if (needsBackup) {
+  if (aLineLayout.NeedsRedoForNegativeMargin() &&
+      (lineReflowStatus == LineReflowStatus::Stop ||
+       lineReflowStatus == LineReflowStatus::OK)) {
+    lineReflowStatus = LineReflowStatus::RedoNoPull;
+  } else if (needsBackup) {
     // We need to try backing up to before a text run
     // XXX It's possible, in fact not unusual, for the break opportunity to
     // already be the end of the line. We should detect that and optimize to not

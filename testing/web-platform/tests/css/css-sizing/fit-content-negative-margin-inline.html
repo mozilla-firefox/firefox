@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>fit-content size of an inline with negative margins shouldn't wrap</title>
+<link rel="author" title="Emilio Cobos Álvarez" href="mailto:emilio@crisal.io">
+<link rel="author" title="Mozilla" href="https://mozilla.com">
+<link rel="help" href="https://bugzilla.mozilla.org/show_bug.cgi?id=1999587">
+<link rel="help" href="https://bugzilla.mozilla.org/show_bug.cgi?id=1502610">
+<link rel="help" href="https://drafts.csswg.org/css-sizing/#fit-content-size">
+<link rel="match" href="fit-content-negative-margin-inline-ref.html">
+<style>
+  body {
+    word-wrap: break-word;
+    margin: 0;
+  }
+
+  span {
+    padding: 4px;
+    margin: -4px;
+  }
+
+  div {
+    display: inline-block;
+    border: 1px solid;
+  }
+</style>
+<div><span>[[ECMAScriptCode]]</span></div>

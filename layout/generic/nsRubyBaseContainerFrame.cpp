@@ -332,7 +332,7 @@ void nsRubyBaseContainerFrame::Reflow(nsPresContext* aPresContext,
     // Line number is useless for ruby text
     // XXX nullptr here may cause problem, see comments for
     //     nsLineLayout::mBlockRI and nsLineLayout::AddFloat
-    lineLayout->Init(nullptr, reflowInput->GetLineHeight(), -1);
+    lineLayout->Init(nullptr, reflowInput->GetLineHeight(), -1, nullptr);
     reflowInput->mLineLayout = lineLayout;
 
     // Border and padding are suppressed on ruby text containers.

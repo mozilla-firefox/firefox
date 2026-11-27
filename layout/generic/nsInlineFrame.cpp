@@ -13,6 +13,7 @@
 #include "mozilla/RestyleManager.h"
 #include "mozilla/SVGTextFrame.h"
 #include "mozilla/ServoStyleSet.h"
+#include "mozilla/StaticPrefs_layout.h"
 #include "nsBlockFrame.h"
 #include "nsDisplayList.h"
 #include "nsGkAtoms.h"
@@ -510,6 +511,19 @@ void nsInlineFrame::ReflowFrames(nsPresContext* aPresContext,
   // Subtract off inline axis border+padding from availableISize
   availableISize -= startEdge;
   availableISize -= framePadding.IEnd(frameWM);
+
+  // A negative end margin lets the content extend past the available size. We
+  // apply it optimistically, and lay the line out again without it if it turns
+  // out that this inline doesn't end on this line.
+  const nscoord negativeMargin =
+      StaticPrefs::layout_inline_improved_negative_margins_enabled() &&
+              !FrameIsNonLastInIBSplit() &&
+              lineLayout->CanApplyNegativeMargin(this)
+          ? std::min(0,
+                     aReflowInput.ComputedLogicalMargin(frameWM).IEnd(frameWM))
+          : 0;
+  const nscoord availableISizeWithoutNegativeMargin = availableISize;
+  availableISize -= negativeMargin;
   lineLayout->BeginSpan(this, &aReflowInput, startEdge,
                         startEdge + availableISize, &mBaseline);
 
@@ -625,6 +639,12 @@ void nsInlineFrame::ReflowFrames(nsPresContext* aPresContext,
 
   NS_ASSERTION(!aStatus.IsComplete() || !GetOverflowFrames(),
                "We can't be complete AND have overflow frames!");
+
+  if (negativeMargin && aStatus.IsIncomplete() && !boxDecorationBreakClone &&
+      lineLayout->CurrentSpanCanWrap() &&
+      lineLayout->GetCurrentSpanISize() > availableISizeWithoutNegativeMargin) {
+    lineLayout->DisableNegativeMargin(this);
+  }
 
   // If after reflowing our children they take up no area then make
   // sure that we don't either.

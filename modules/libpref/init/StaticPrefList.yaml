@@ -12036,6 +12036,13 @@
   value: false
   mirror: always
 
+# Whether inlines try to handle negative margins more correctly.
+# Remove me after shipping for a release or two.
+- name: layout.inline.improved-negative-margins.enabled
+  type: bool
+  value: true
+  mirror: always
+
 # Enable/disable interruptible reflow, which allows reflows to stop
 # before completion (and display the partial results) when user events
 # are pending.

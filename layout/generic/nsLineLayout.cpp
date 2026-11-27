@@ -70,7 +70,8 @@ nsLineLayout::nsLineLayout(nsPresContext* aPresContext,
       mLineAtStart(false),
       mHasRuby(false),
       mSuppressLineWrap(LineContainerFrame()->IsInSVGTextSubtree()),
-      mUsedOverflowWrap(false) {
+      mUsedOverflowWrap(false),
+      mNeedsRedoForNegativeMargin(false) {
   NS_ASSERTION(aFloatManager || LineContainerFrame()->IsLetterFrame(),
                "float manager should be present");
   MOZ_ASSERT(
