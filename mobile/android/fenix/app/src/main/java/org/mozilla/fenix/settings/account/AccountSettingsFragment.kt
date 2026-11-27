@@ -197,6 +197,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
         super.onViewCreated(view, savedInstanceState)
 
         if (isNewUiEnabled) {
+            listView.itemAnimator = null
             accountPreferenceUpdater?.update(
                 requireContext(),
                 accountManager.accountProfile(),
@@ -403,10 +404,10 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
     private fun setupDeviceSyncPreferenceListener() {
         if (isNewUiEnabled && isSyncDecouplingEnabled) {
             requirePreference<TwoStatePreference>(R.string.pref_key_sync_enable_sync).apply {
-                setDeviceSyncSummary(isChecked)
+                updateDeviceSyncState(isChecked)
 
                 setOnPreferenceChangeListener { _, checked ->
-                    setDeviceSyncSummary(checked as Boolean)
+                    updateDeviceSyncState(checked as Boolean)
                     true
                 }
             }
@@ -421,8 +422,18 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
             isChecked = !needsReauth && syncEnabled
             isPersistent = wasPersistent
             isEnabled = !needsReauth
-            setDeviceSyncSummary(isChecked)
+            if (isSyncDecouplingEnabled) {
+                updateDeviceSyncState(isChecked)
+            } else {
+                setDeviceSyncSummary(isChecked)
+            }
         }
+    }
+
+    private fun updateDeviceSyncState(isChecked: Boolean) {
+        setDeviceSyncSummary(isChecked)
+        requirePreference<Preference>(R.string.pref_key_sync_now).isVisible = isChecked
+        requirePreference<Preference>(R.string.preferences_sync_category).isVisible = isChecked
     }
 
     private fun setDeviceSyncSummary(checked: Boolean) {
