@@ -58,6 +58,7 @@ class MacroAssemblerWasm32 : public Assembler {
   static bool SupportsFastUnalignedFPAccesses() { return false; }
   static bool SupportsFloat64To16() { return false; }
   static bool SupportsFloat32To16() { return false; }
+  static bool SupportsAndNot() { return false; }
 
   void executableCopy(void* buffer);
 

@@ -145,6 +145,7 @@ class MacroAssemblerRiscv64 : public Assembler {
   static bool SupportsFastUnalignedFPAccesses() { return true; }
   static bool SupportsFloat64To16() { return HasZfhminExtension(); }
   static bool SupportsFloat32To16() { return HasZfhminExtension(); }
+  static bool SupportsAndNot() { return HasZbbExtension(); }
 
   void haltingAlign(int alignment) {
     // TODO(loong64): Implement a proper halting align.

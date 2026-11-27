@@ -2212,6 +2212,7 @@ class AssemblerLOONG64 : public AssemblerShared {
   static bool SupportsWasmSimd() { return LOONG64Flags::HasLsxExtension(); }
   static bool SupportsFloat64To16() { return false; }
   static bool SupportsFloat32To16() { return false; }
+  static bool SupportsAndNot() { return true; }
 
   static bool HasRoundInstruction(RoundingMode mode) {
     switch (mode) {

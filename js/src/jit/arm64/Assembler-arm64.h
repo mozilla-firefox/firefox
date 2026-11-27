@@ -548,6 +548,7 @@ class Assembler : public vixl::Assembler {
   static bool SupportsWasmSimd() { return true; }
   static bool SupportsFloat64To16() { return true; }
   static bool SupportsFloat32To16() { return true; }
+  static bool SupportsAndNot() { return true; }
 
   static bool HasRoundInstruction(RoundingMode mode) {
     switch (mode) {
