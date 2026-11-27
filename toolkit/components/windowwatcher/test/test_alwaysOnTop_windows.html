@@ -16,7 +16,7 @@ Tests the alwaysOnTop window feature for the Windows OS.
     "resource://testing-common/BrowserTestUtils.sys.mjs"
   );
   const {ctypes} = ChromeUtils.importESModule(
-    "resource://gre/modules/ctypes.sys.mjs"
+    "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
   );
 
   function assertAlwaysOnTop(win, expected) {

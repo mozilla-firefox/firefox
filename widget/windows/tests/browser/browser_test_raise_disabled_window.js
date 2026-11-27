@@ -12,7 +12,7 @@
 // Proper testing requires a widget testing framework.  This test is instead a
 // dense collection of jsctypes calls.
 const { ctypes } = ChromeUtils.importESModule(
-  "resource://gre/modules/ctypes.sys.mjs"
+  "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
 );
 
 const BOOL = ctypes.int32_t;

@@ -6,7 +6,7 @@
 
 ChromeUtils.defineESModuleGetters(this, {
   NativeManifests: "resource://gre/modules/NativeManifests.sys.mjs",
-  ctypes: "resource://gre/modules/ctypes.sys.mjs",
+  ctypes: "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs",
 });
 
 XPCOMUtils.defineLazyServiceGetter(

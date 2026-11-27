@@ -8,7 +8,7 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   WindowsRegistry: "resource://gre/modules/WindowsRegistry.sys.mjs",
-  ctypes: "resource://gre/modules/ctypes.sys.mjs",
+  ctypes: "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs",
 });
 
 const PER_INSTALLATION_PREFS_PLATFORMS = ["win"];

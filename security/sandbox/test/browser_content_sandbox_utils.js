@@ -105,7 +105,7 @@ function createFile(path) {
 // Report errno in .code if syscall returns -1.
 function createSymlink(path) {
   const { ctypes } = ChromeUtils.importESModule(
-    "resource://gre/modules/ctypes.sys.mjs"
+    "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
   );
 
   try {
@@ -163,7 +163,7 @@ function deleteFile(path) {
 // be safely serialized and run remotely by SpecialPowers.spawn.
 function unlinkNullPath() {
   const { ctypes } = ChromeUtils.importESModule(
-    "resource://gre/modules/ctypes.sys.mjs"
+    "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
   );
 
   // AT_FDCWD on Linux.

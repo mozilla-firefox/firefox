@@ -2244,6 +2244,8 @@ interface GPUTextureViewDescriptor extends GPUObjectDescriptorBase {
     format?: GPUTextureFormat;
     /** <!-- binding_to(idl, attribute, WEBIDL_GPUTextureViewDescriptor_mipLevelCount) --> */
     mipLevelCount?: GPUIntegerCoordinate;
+    /** <!-- binding_to(idl, attribute, WEBIDL_GPUTextureViewDescriptor_swizzle) --> */
+    swizzle?: string;
     /** <!-- binding_to(idl, attribute, WEBIDL_GPUTextureViewDescriptor_usage) --> */
     usage?: GPUTextureUsageFlags;
 }
@@ -2824,6 +2826,8 @@ interface InteractionData {
 }
 
 interface IntersectionObserverInit {
+    /** <!-- binding_to(idl, attribute, WEBIDL_IntersectionObserverInit_delay) --> */
+    delay?: number;
     /** <!-- binding_to(idl, attribute, WEBIDL_IntersectionObserverInit_root) --> */
     root?: Element | Document | null;
     /** <!-- binding_to(idl, attribute, WEBIDL_IntersectionObserverInit_rootMargin) --> */
@@ -3014,16 +3018,12 @@ interface LlamaContextOptions {
     kCacheDtype?: LlamaKVCacheDtype;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_nBatch) --> */
     nBatch?: number;
-    /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_nCtx) --> */
-    nCtx?: number;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_nSeqMax) --> */
     nSeqMax?: number;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_nThreads) --> */
     nThreads: number;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_nThreadsBatch) --> */
     nThreadsBatch: number;
-    /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_nUbatch) --> */
-    nUbatch?: number;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_noPerf) --> */
     noPerf?: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_LlamaContextOptions_swaFull) --> */
@@ -7004,8 +7004,6 @@ interface TextGenerationUsage {
 interface TextGeneratorCreateOptions {
     /** <!-- binding_to(idl, attribute, WEBIDL_TextGeneratorCreateOptions_batchSize) --> */
     batchSize?: number;
-    /** <!-- binding_to(idl, attribute, WEBIDL_TextGeneratorCreateOptions_contextSize) --> */
-    contextSize?: number;
     /** <!-- binding_to(idl, attribute, WEBIDL_TextGeneratorCreateOptions_featureId) --> */
     featureId?: string;
     /** <!-- binding_to(idl, attribute, WEBIDL_TextGeneratorCreateOptions_flashAttn) --> */
@@ -7018,8 +7016,6 @@ interface TextGeneratorCreateOptions {
     numThreadsDecoding?: number;
     /** <!-- binding_to(idl, attribute, WEBIDL_TextGeneratorCreateOptions_placement) --> */
     placement?: HWInferencePlacement;
-    /** <!-- binding_to(idl, attribute, WEBIDL_TextGeneratorCreateOptions_ubatchSize) --> */
-    ubatchSize?: number;
 }
 
 interface TextUpdateEventInit extends EventInit {
@@ -9524,6 +9520,8 @@ interface BrowsingContext extends LoadContextMixin {
     readonly isDocumentPiP: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_BrowsingContext_isInBFCache) --> */
     readonly isInBFCache: boolean;
+    /** <!-- binding_to(idl, attribute, WEBIDL_BrowsingContext_isMiniWindow) --> */
+    isMiniWindow: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_BrowsingContext_languageOverride) --> */
     languageOverride: string;
     /** <!-- binding_to(idl, attribute, WEBIDL_BrowsingContext_mediumOverride) --> */
@@ -17824,26 +17822,18 @@ declare var GamepadPose: {
 
 /** <!-- binding_to(idl, class, WEBIDL_GamepadServiceTest) --> */
 interface GamepadServiceTest {
-    /** <!-- binding_to(idl, attribute, WEBIDL_GamepadServiceTest_leftHand) --> */
-    readonly leftHand: GamepadHand;
-    /** <!-- binding_to(idl, attribute, WEBIDL_GamepadServiceTest_noHand) --> */
-    readonly noHand: GamepadHand;
     /** <!-- binding_to(idl, attribute, WEBIDL_GamepadServiceTest_noMapping) --> */
     readonly noMapping: GamepadMappingType;
-    /** <!-- binding_to(idl, attribute, WEBIDL_GamepadServiceTest_rightHand) --> */
-    readonly rightHand: GamepadHand;
     /** <!-- binding_to(idl, attribute, WEBIDL_GamepadServiceTest_standardMapping) --> */
     readonly standardMapping: GamepadMappingType;
     /** <!-- binding_to(idl, method, WEBIDL_GamepadServiceTest_addGamepad) --> */
-    addGamepad(id: string, mapping: GamepadMappingType, hand: GamepadHand, numButtons: number, numAxes: number, numHaptics: number, numLightIndicator: number, numTouchEvents: number): Promise<number>;
+    addGamepad(id: string, mapping: GamepadMappingType, numButtons: number, numAxes: number, numHaptics: number, numLightIndicator: number, numTouchEvents: number): Promise<number>;
     /** <!-- binding_to(idl, method, WEBIDL_GamepadServiceTest_newAxisMoveEvent) --> */
     newAxisMoveEvent(index: number, axis: number, value: number): Promise<number>;
     /** <!-- binding_to(idl, method, WEBIDL_GamepadServiceTest_newButtonEvent) --> */
     newButtonEvent(index: number, button: number, pressed: boolean, touched: boolean): Promise<number>;
     /** <!-- binding_to(idl, method, WEBIDL_GamepadServiceTest_newButtonValueEvent) --> */
     newButtonValueEvent(index: number, button: number, pressed: boolean, touched: boolean, value: number): Promise<number>;
-    /** <!-- binding_to(idl, method, WEBIDL_GamepadServiceTest_newPoseMove) --> */
-    newPoseMove(index: number, orient: Float32Array | null, pos: Float32Array | null, angVelocity: Float32Array | null, angAcceleration: Float32Array | null, linVelocity: Float32Array | null, linAcceleration: Float32Array | null): Promise<number>;
     /** <!-- binding_to(idl, method, WEBIDL_GamepadServiceTest_newTouch) --> */
     newTouch(index: number, aTouchArrayIndex: number, touchId: number, surfaceId: number, position: Float32Array, surfaceDimension: Float32Array | null): Promise<number>;
     /** <!-- binding_to(idl, method, WEBIDL_GamepadServiceTest_removeGamepad) --> */
@@ -19820,6 +19810,8 @@ interface HTMLInputElement extends HTMLElement, MozEditableElement, MozImageLoad
     dirName: string;
     /** <!-- binding_to(idl, attribute, WEBIDL_HTMLInputElement_disabled) --> */
     disabled: boolean;
+    /** <!-- binding_to(idl, attribute, WEBIDL_HTMLInputElement_eyeDropper) --> */
+    eyeDropper: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_HTMLInputElement_files) --> */
     files: FileList | null;
     /** <!-- binding_to(idl, attribute, WEBIDL_HTMLInputElement_form) --> */
@@ -22543,6 +22535,8 @@ declare var IntegrityViolationReportBody: {
 
 /** <!-- binding_to(idl, class, WEBIDL_IntersectionObserver) --> */
 interface IntersectionObserver {
+    /** <!-- binding_to(idl, attribute, WEBIDL_IntersectionObserver_delay) --> */
+    readonly delay: number;
     /** <!-- binding_to(idl, attribute, WEBIDL_IntersectionObserver_root) --> */
     readonly root: Node | null;
     /** <!-- binding_to(idl, attribute, WEBIDL_IntersectionObserver_rootMargin) --> */
@@ -43451,7 +43445,7 @@ declare namespace InspectorUtils {
     /** <!-- binding_to(idl, method, WEBIDL_InspectorUtils_getSubpropertiesForCSSProperty) --> */
     function getSubpropertiesForCSSProperty(property: string): string[];
     /** <!-- binding_to(idl, method, WEBIDL_InspectorUtils_getSubstitutedValue) --> */
-    function getSubstitutedValue(expression: string, element: Element, pseudo?: string): string | null;
+    function getSubstitutedValue(property: string, expression: string, element: Element, pseudo?: string): string | null;
     /** <!-- binding_to(idl, method, WEBIDL_InspectorUtils_getUsedFontFaces) --> */
     function getUsedFontFaces(range: Range, maxRanges?: number, skipCollapsedWhitespace?: boolean): InspectorFontFace[];
     /** <!-- binding_to(idl, method, WEBIDL_InspectorUtils_hasPseudoClassLock) --> */
@@ -45273,7 +45267,7 @@ type GPUCompilationMessageType = "error" | "info" | "warning";
 type GPUCullMode = "back" | "front" | "none";
 type GPUDeviceLostReason = "destroyed" | "unknown";
 type GPUErrorFilter = "internal" | "out-of-memory" | "validation";
-type GPUFeatureName = "bgra8unorm-storage" | "clip-distances" | "core-features-and-limits" | "depth-clip-control" | "depth32float-stencil8" | "dual-source-blending" | "float32-blendable" | "float32-filterable" | "indirect-first-instance" | "primitive-index" | "rg11b10ufloat-renderable" | "shader-f16" | "subgroups" | "texture-compression-astc" | "texture-compression-astc-sliced-3d" | "texture-compression-bc" | "texture-compression-bc-sliced-3d" | "texture-compression-etc2" | "timestamp-query";
+type GPUFeatureName = "bgra8unorm-storage" | "clip-distances" | "core-features-and-limits" | "depth-clip-control" | "depth32float-stencil8" | "dual-source-blending" | "float32-blendable" | "float32-filterable" | "indirect-first-instance" | "primitive-index" | "rg11b10ufloat-renderable" | "shader-f16" | "subgroups" | "texture-component-swizzle" | "texture-compression-astc" | "texture-compression-astc-sliced-3d" | "texture-compression-bc" | "texture-compression-bc-sliced-3d" | "texture-compression-etc2" | "timestamp-query";
 type GPUFilterMode = "linear" | "nearest";
 type GPUFrontFace = "ccw" | "cw";
 type GPUIndexFormat = "uint16" | "uint32";

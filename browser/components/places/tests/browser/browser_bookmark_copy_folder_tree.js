@@ -64,7 +64,7 @@ add_setup(async function () {
       // from the standard library, since it sometimes holds the clipboard for
       // long periods, thereby breaking the test (bug 1921759).
       const { ctypes } = ChromeUtils.importESModule(
-        "resource://gre/modules/ctypes.sys.mjs"
+        "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
       );
       let libc = ctypes.open("ucrtbase.dll");
       let exec = libc.declare(

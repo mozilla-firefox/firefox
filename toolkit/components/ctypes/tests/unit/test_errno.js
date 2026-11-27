@@ -7,7 +7,7 @@ function run_test() {
 
   // Relaunch the test with exotic loading of ctypes.sys.mjs
   let scope = ChromeUtils.importESModule(
-    "resource://gre/modules/ctypes.sys.mjs"
+    "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
   );
   ctypes = scope.ctypes;
   main_test();

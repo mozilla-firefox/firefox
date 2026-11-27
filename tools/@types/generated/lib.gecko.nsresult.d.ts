@@ -372,6 +372,9 @@ interface nsIXPCComponents_Results {
   /** User attempted basic HTTP authentication when it is disabled */
   NS_ERROR_BASIC_HTTP_AUTH_DISABLED: 0x804b005c;
 
+  /** Every auth scheme offered by the server is administratively disabled */
+  NS_ERROR_HTTP_AUTH_SCHEME_DISABLED: 0x804b0066;
+
   /** The access to local network is denied */
   NS_ERROR_LOCAL_NETWORK_ACCESS_DENIED: 0x804b005d;
 

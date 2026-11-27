@@ -20,7 +20,7 @@
  * logged to the system logger, if they do not already have a "Gecko" prefix.
  */
 
-import { ctypes } from "resource://gre/modules/ctypes.sys.mjs";
+import { ctypes } from "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs";
 import { Log } from "resource://gre/modules/Log.sys.mjs";
 
 // From <https://android.googlesource.com/platform/system/core/+/master/include/android/log.h>.

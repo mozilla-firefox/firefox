@@ -9,7 +9,7 @@ const { getAppInfo, updateAppInfo } = ChromeUtils.importESModule(
   "resource://testing-common/AppInfo.sys.mjs"
 );
 const { ctypes } = ChromeUtils.importESModule(
-  "resource://gre/modules/ctypes.sys.mjs"
+  "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
 );
 
 ChromeUtils.defineESModuleGetters(this, {

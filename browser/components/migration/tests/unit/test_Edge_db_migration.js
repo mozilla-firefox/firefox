@@ -1,7 +1,7 @@
 "use strict";
 
 const { ctypes } = ChromeUtils.importESModule(
-  "resource://gre/modules/ctypes.sys.mjs"
+  "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
 );
 const { ESE, KERNEL, gLibs, COLUMN_TYPES, declareESEFunction, loadLibraries } =
   ChromeUtils.importESModule(

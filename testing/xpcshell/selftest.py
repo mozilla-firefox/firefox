@@ -314,7 +314,7 @@ no_such_var = "foo"; // assignment to undeclared variable
 TEST_CRASHING = """
 function run_test () {
   const { ctypes } = ChromeUtils.importESModule(
-    "resource://gre/modules/ctypes.sys.mjs"
+    "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
   );
   let zero = new ctypes.intptr_t(8);
   let badptr = ctypes.cast(zero, ctypes.PointerType(ctypes.int32_t));
@@ -334,7 +334,7 @@ function run_test () {
   if (!marker.exists()) {
     marker.create(Ci.nsIFile.NORMAL_FILE_TYPE, 0o644);
     const { ctypes } = ChromeUtils.importESModule(
-      "resource://gre/modules/ctypes.sys.mjs"
+      "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
     );
     let zero = new ctypes.intptr_t(8);
     let badptr = ctypes.cast(zero, ctypes.PointerType(ctypes.int32_t));

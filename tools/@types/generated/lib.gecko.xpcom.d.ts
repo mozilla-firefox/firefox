@@ -774,6 +774,10 @@ interface nsIAccessibleRole extends nsISupports {
   readonly ROLE_ROWGROUP?: 139;
   /** <!-- binding_to(idl, const, XPIDL_nsIAccessibleRole_ROLE_SEARCHBOX) --> */
   readonly ROLE_SEARCHBOX?: 140;
+  /** <!-- binding_to(idl, const, XPIDL_nsIAccessibleRole_ROLE_SECTION_FOOTER) --> */
+  readonly ROLE_SECTION_FOOTER?: 141;
+  /** <!-- binding_to(idl, const, XPIDL_nsIAccessibleRole_ROLE_SECTION_HEADER) --> */
+  readonly ROLE_SECTION_HEADER?: 142;
 }
 
 // https://searchfox.org/firefox-main/source/accessible/interfaces/nsIAccessibleScrollingEvent.idl
@@ -4219,6 +4223,8 @@ interface nsIFocusManager extends nsISupports {
   readonly focusedContentBrowsingContext: BrowsingContext;
   /** <!-- binding_to(idl, attribute, XPIDL_nsIFocusManager_focusedElement) --> */
   readonly focusedElement: Element;
+  /** <!-- binding_to(idl, attribute, XPIDL_nsIFocusManager_reservedFocusActionIdCount) --> */
+  readonly reservedFocusActionIdCount: u64;
   /** <!-- binding_to(idl, method, XPIDL_nsIFocusManager_getLastFocusMethod) --> */
   getLastFocusMethod(window: mozIDOMWindowProxy): u32;
   /** <!-- binding_to(idl, method, XPIDL_nsIFocusManager_setFocus) --> */
@@ -6153,6 +6159,10 @@ declare enum nsIQuotaArtificialFailure_Category {
   CATEGORY_REMOVE_DATABASE_FILES = 8,
   /** <!-- binding_to(idl, const, XPIDL_nsIQuotaArtificialFailure_Category_CATEGORY_LOCAL_STORAGE_FLUSH) --> */
   CATEGORY_LOCAL_STORAGE_FLUSH = 16,
+  /** <!-- binding_to(idl, const, XPIDL_nsIQuotaArtificialFailure_Category_CATEGORY_START_CACHE_TRANSACTION) --> */
+  CATEGORY_START_CACHE_TRANSACTION = 32,
+  /** <!-- binding_to(idl, const, XPIDL_nsIQuotaArtificialFailure_Category_CATEGORY_COMMIT_CACHE_TRANSACTION) --> */
+  CATEGORY_COMMIT_CACHE_TRANSACTION = 64,
 }
 
 declare global {
@@ -6915,6 +6925,8 @@ interface nsIWorkerDebugger extends nsISupports {
   readonly isChrome: boolean;
   /** <!-- binding_to(idl, attribute, XPIDL_nsIWorkerDebugger_isRemote) --> */
   readonly isRemote: boolean;
+  /** <!-- binding_to(idl, attribute, XPIDL_nsIWorkerDebugger_isOutOfProcess) --> */
+  readonly isOutOfProcess: boolean;
   /** <!-- binding_to(idl, attribute, XPIDL_nsIWorkerDebugger_isInitialized) --> */
   readonly isInitialized: boolean;
   /** <!-- binding_to(idl, attribute, XPIDL_nsIWorkerDebugger_parent) --> */
@@ -10761,6 +10773,8 @@ interface nsILoadInfo extends nsISupports, Enums<typeof nsILoadInfo_StoragePermi
   isMetaRefresh: boolean;
   /** <!-- binding_to(idl, attribute, XPIDL_nsILoadInfo_activatedFromNavigationalPrefetch) --> */
   activatedFromNavigationalPrefetch: boolean;
+  /** <!-- binding_to(idl, attribute, XPIDL_nsILoadInfo_navigationalPrefetchHadNetworkTransfer) --> */
+  navigationalPrefetchHadNetworkTransfer: boolean;
   /** <!-- binding_to(idl, attribute, XPIDL_nsILoadInfo_prefetchCandidateMatched) --> */
   prefetchCandidateMatched: boolean;
   /** <!-- binding_to(idl, attribute, XPIDL_nsILoadInfo_forceInheritPrincipal) --> */
@@ -11900,6 +11914,12 @@ interface nsISSLTokensCacheTest extends nsISupports {
   countSSLTokens(): u32;
   /** <!-- binding_to(idl, method, XPIDL_nsISSLTokensCacheTest_putSSLTokenForTest) --> */
   putSSLTokenForTest(aKey: string): void;
+  /** <!-- binding_to(idl, method, XPIDL_nsISSLTokensCacheTest_holdLoadForTest) --> */
+  holdLoadForTest(aHold: boolean): void;
+  /** <!-- binding_to(idl, method, XPIDL_nsISSLTokensCacheTest_pauseLoadAfterRowsForTest) --> */
+  pauseLoadAfterRowsForTest(aRows: u32): void;
+  /** <!-- binding_to(idl, method, XPIDL_nsISSLTokensCacheTest_failDBOpensForTest) --> */
+  failDBOpensForTest(aCount: u32): void;
 }
 
 // https://searchfox.org/firefox-main/source/netwerk/base/nsISecCheckWrapChannel.idl
@@ -14891,7 +14911,7 @@ interface nsIWebTransport extends nsISupports, Enums<typeof nsIWebTransport_WebT
   /** <!-- binding_to(idl, method, XPIDL_nsIWebTransport_createOutgoingUnidirectionalStream) --> */
   createOutgoingUnidirectionalStream(aListener: nsIWebTransportStreamCallback): void;
   /** <!-- binding_to(idl, method, XPIDL_nsIWebTransport_sendDatagram) --> */
-  sendDatagram(aData: u8[], aTrackingId: u64, aSendGroupId: u64, aSendOrder: i64): void;
+  sendDatagram(aData: u8[], aSendGroupId: u64, aSendOrder: i64): void;
   /** <!-- binding_to(idl, method, XPIDL_nsIWebTransport_getMaxDatagramSize) --> */
   getMaxDatagramSize(): void;
   /** <!-- binding_to(idl, method, XPIDL_nsIWebTransport_getHttpChannelID) --> */
@@ -14914,30 +14934,8 @@ interface nsIWebTransport extends nsISupports, Enums<typeof nsIWebTransport_WebT
 interface nsIWebTransportSessionStats extends nsISupports {
 }
 
-}  // global
-
-/** <!-- binding_to(idl, class, XPIDL_WebTransportSessionEventListener_DatagramOutcome) --> */
-declare enum WebTransportSessionEventListener_DatagramOutcome {
-  /** <!-- binding_to(idl, const, XPIDL_WebTransportSessionEventListener_DatagramOutcome_UNKNOWN) --> */
-  UNKNOWN = 0,
-  /** <!-- binding_to(idl, const, XPIDL_WebTransportSessionEventListener_DatagramOutcome_DROPPED_TOO_MUCH_DATA) --> */
-  DROPPED_TOO_MUCH_DATA = 1,
-  /** <!-- binding_to(idl, const, XPIDL_WebTransportSessionEventListener_DatagramOutcome_SENT) --> */
-  SENT = 2,
-  /** <!-- binding_to(idl, const, XPIDL_WebTransportSessionEventListener_DatagramOutcome_DROPPED_TOO_OLD) --> */
-  DROPPED_TOO_OLD = 3,
-  /** <!-- binding_to(idl, const, XPIDL_WebTransportSessionEventListener_DatagramOutcome_DROPPED_QUEUE_FULL) --> */
-  DROPPED_QUEUE_FULL = 4,
-}
-
-declare global {
-
-namespace WebTransportSessionEventListener {
-  type DatagramOutcome = WebTransportSessionEventListener_DatagramOutcome;
-}
-
 /** <!-- binding_to(idl, interface_name, XPIDL_WebTransportSessionEventListener) --> */
-interface WebTransportSessionEventListener extends nsISupports, Enums<typeof WebTransportSessionEventListener_DatagramOutcome> {
+interface WebTransportSessionEventListener extends nsISupports {
   /** <!-- binding_to(idl, method, XPIDL_WebTransportSessionEventListener_onSessionReady) --> */
   onSessionReady(aSessionId: u64): void;
   /** <!-- binding_to(idl, method, XPIDL_WebTransportSessionEventListener_onSessionClosed) --> */
@@ -14954,10 +14952,12 @@ interface WebTransportSessionEventListener extends nsISupports, Enums<typeof Web
   onResetReceived(aStreamId: u64, aErrorCode: u64): void;
   /** <!-- binding_to(idl, method, XPIDL_WebTransportSessionEventListener_onDatagramReceived) --> */
   onDatagramReceived(aData: u8[]): void;
+  /** <!-- binding_to(idl, method, XPIDL_WebTransportSessionEventListener_onDatagramsFlush) --> */
+  onDatagramsFlush(): void;
+  /** <!-- binding_to(idl, method, XPIDL_WebTransportSessionEventListener_onOutgoingDatagramSpaceAvailable) --> */
+  onOutgoingDatagramSpaceAvailable(): void;
   /** <!-- binding_to(idl, method, XPIDL_WebTransportSessionEventListener_onMaxDatagramSize) --> */
   onMaxDatagramSize(aSize: u64): void;
-  /** <!-- binding_to(idl, method, XPIDL_WebTransportSessionEventListener_onOutgoingDatagramOutCome) --> */
-  onOutgoingDatagramOutCome(aId: u64, aOutCome: WebTransportSessionEventListener.DatagramOutcome): void;
   /** <!-- binding_to(idl, method, XPIDL_WebTransportSessionEventListener_onStatsAvailable) --> */
   onStatsAvailable(aStats: nsIWebTransportSessionStats): void;
 }
@@ -17452,16 +17452,6 @@ interface nsIAlertsDoNotDisturb extends nsISupports {
   suppressForScreenSharing: boolean;
 }
 
-// https://searchfox.org/firefox-main/source/toolkit/components/antitracking/bouncetrackingprotection/nsIBTPRemoteExceptionList.idl
-
-/** <!-- binding_to(idl, interface_name, XPIDL_nsIBTPRemoteExceptionList) --> */
-interface nsIBTPRemoteExceptionList extends nsISupports {
-  /** <!-- binding_to(idl, method, XPIDL_nsIBTPRemoteExceptionList_init) --> */
-  init(aProtection: nsIBounceTrackingProtection): Promise<any>;
-  /** <!-- binding_to(idl, method, XPIDL_nsIBTPRemoteExceptionList_shutdown) --> */
-  shutdown(): void;
-}
-
 // https://searchfox.org/firefox-main/source/toolkit/components/antitracking/bouncetrackingprotection/nsIBounceTrackingMapEntry.idl
 
 /** <!-- binding_to(idl, interface_name, XPIDL_nsIBounceTrackingMapEntry) --> */
@@ -17516,16 +17506,10 @@ interface nsIBounceTrackingProtection extends nsISupports, Enums<typeof nsIBounc
   clearByTimeRange(aFrom: PRTime, aTo: PRTime): void;
   /** <!-- binding_to(idl, method, XPIDL_nsIBounceTrackingProtection_clearByOriginAttributesPattern) --> */
   clearByOriginAttributesPattern(aPattern: string): void;
-  /** <!-- binding_to(idl, method, XPIDL_nsIBounceTrackingProtection_addSiteHostExceptions) --> */
-  addSiteHostExceptions(aSiteHosts: string[]): void;
-  /** <!-- binding_to(idl, method, XPIDL_nsIBounceTrackingProtection_removeSiteHostExceptions) --> */
-  removeSiteHostExceptions(aSiteHosts: string[]): void;
   /** <!-- binding_to(idl, method, XPIDL_nsIBounceTrackingProtection_hasRecentlyPurgedSite) --> */
   hasRecentlyPurgedSite(aSiteHost: string): boolean;
   /** <!-- binding_to(idl, method, XPIDL_nsIBounceTrackingProtection_getRecentPurgedChainEntriesForSite) --> */
   getRecentPurgedChainEntriesForSite(aSiteHost: string): nsIBounceTrackingPurgeEntry[];
-  /** <!-- binding_to(idl, method, XPIDL_nsIBounceTrackingProtection_testGetSiteHostExceptions) --> */
-  testGetSiteHostExceptions(): string[];
   /** <!-- binding_to(idl, method, XPIDL_nsIBounceTrackingProtection_testRunPurgeBounceTrackers) --> */
   testRunPurgeBounceTrackers(): Promise<any>;
   /** <!-- binding_to(idl, method, XPIDL_nsIBounceTrackingProtection_testFlushStorage) --> */
@@ -19093,6 +19077,10 @@ interface nsISiteContainerService extends nsISupports {
   lookup(aHost: string): u32;
   /** <!-- binding_to(idl, method, XPIDL_nsISiteContainerService_containerForNavigation) --> */
   containerForNavigation(aURI: nsIURI, aBaselineUserContextId: u32): u32;
+  /** <!-- binding_to(idl, method, XPIDL_nsISiteContainerService_getPublicUserContextIds) --> */
+  getPublicUserContextIds(): u32[];
+  /** <!-- binding_to(idl, method, XPIDL_nsISiteContainerService_getPrivateUserContextIds) --> */
+  getPrivateUserContextIds(): u32[];
 }
 
 // https://searchfox.org/firefox-main/source/toolkit/components/crashes/nsICrashService.idl
@@ -20818,7 +20806,7 @@ namespace nsINavHistoryService {
 /** <!-- binding_to(idl, interface_name, XPIDL_nsINavHistoryService) --> */
 interface nsINavHistoryService extends nsISupports, Enums<typeof nsINavHistoryService_TransitionType> {
   /** <!-- binding_to(idl, const, XPIDL_nsINavHistoryService_DATABASE_SCHEMA_VERSION) --> */
-  readonly DATABASE_SCHEMA_VERSION?: 88;
+  readonly DATABASE_SCHEMA_VERSION?: 89;
   /** <!-- binding_to(idl, const, XPIDL_nsINavHistoryService_DATABASE_STATUS_OK) --> */
   readonly DATABASE_STATUS_OK?: 0;
   /** <!-- binding_to(idl, const, XPIDL_nsINavHistoryService_DATABASE_STATUS_CREATE) --> */
@@ -21559,7 +21547,7 @@ interface nsIUrlClassifierHashCompleterCallback extends nsISupports {
 /** <!-- binding_to(idl, interface_name, XPIDL_nsIUrlClassifierHashCompleter) --> */
 interface nsIUrlClassifierHashCompleter extends nsISupports {
   /** <!-- binding_to(idl, method, XPIDL_nsIUrlClassifierHashCompleter_complete) --> */
-  complete(partialHash: string, gethashUrl: string, tableName: string, callback: nsIUrlClassifierHashCompleterCallback): void;
+  complete(partialHash: string, gethashUrl: string, tableName: string, useOHTTP: boolean, callback: nsIUrlClassifierHashCompleterCallback): void;
 }
 
 // https://searchfox.org/firefox-main/source/toolkit/components/url-classifier/nsIUrlClassifierInfo.idl
@@ -26145,8 +26133,6 @@ interface nsIXULRuntime extends nsISupports, Enums<typeof nsIXULRuntime_Experime
   readonly PROCESS_TYPE_FORKSERVER?: 10;
   /** <!-- binding_to(idl, const, XPIDL_nsIXULRuntime_PROCESS_TYPE_UTILITY) --> */
   readonly PROCESS_TYPE_UTILITY?: 11;
-  /** <!-- binding_to(idl, const, XPIDL_nsIXULRuntime_E10S_MULTI_EXPERIMENT) --> */
-  readonly E10S_MULTI_EXPERIMENT?: 1;
 
   /** <!-- binding_to(idl, attribute, XPIDL_nsIXULRuntime_inSafeMode) --> */
   readonly inSafeMode: boolean;
@@ -26222,6 +26208,8 @@ interface nsIXULRuntime extends nsISupports, Enums<typeof nsIXULRuntime_Experime
   readonly caretBlinkTime: i32;
   /** <!-- binding_to(idl, attribute, XPIDL_nsIXULRuntime_desktopEnvironment) --> */
   readonly desktopEnvironment: string;
+  /** <!-- binding_to(idl, attribute, XPIDL_nsIXULRuntime_isGnomeDesktopEnvironment) --> */
+  readonly isGnomeDesktopEnvironment: boolean;
   /** <!-- binding_to(idl, attribute, XPIDL_nsIXULRuntime_isWayland) --> */
   readonly isWayland: boolean;
   /** <!-- binding_to(idl, attribute, XPIDL_nsIXULRuntime_processStartupShortcut) --> */
@@ -27288,7 +27276,7 @@ interface nsIXPCComponents_Interfaces {
   nsIWebSocketProtocolHandler: nsJSIID<nsIWebSocketProtocolHandler>;
   nsIWebTransport: nsJSIID<nsIWebTransport, typeof nsIWebTransport_WebTransportError & typeof nsIWebTransport_HTTPVersion>;
   nsIWebTransportSessionStats: nsJSIID<nsIWebTransportSessionStats>;
-  WebTransportSessionEventListener: nsJSIID<WebTransportSessionEventListener, typeof WebTransportSessionEventListener_DatagramOutcome>;
+  WebTransportSessionEventListener: nsJSIID<WebTransportSessionEventListener>;
   nsIWebTransportStreamCallback: nsJSIID<nsIWebTransportStreamCallback>;
   nsIWebTransportHash: nsJSIID<nsIWebTransportHash>;
   nsIWebTransportEventListener: nsJSIID<nsIWebTransportEventListener>;
@@ -27410,7 +27398,6 @@ interface nsIXPCComponents_Interfaces {
   nsIAlertCallbacks: nsJSIID<nsIAlertCallbacks, typeof nsIAlertCallbacks_ApplicationState>;
   nsIAlertsService: nsJSIID<nsIAlertsService>;
   nsIAlertsDoNotDisturb: nsJSIID<nsIAlertsDoNotDisturb>;
-  nsIBTPRemoteExceptionList: nsJSIID<nsIBTPRemoteExceptionList>;
   nsIBounceTrackingMapEntry: nsJSIID<nsIBounceTrackingMapEntry>;
   nsIBounceTrackingPurgeEntry: nsJSIID<nsIBounceTrackingPurgeEntry>;
   nsIBounceTrackingProtection: nsJSIID<nsIBounceTrackingProtection, typeof nsIBounceTrackingProtection_Modes>;

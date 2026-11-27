@@ -4,7 +4,7 @@ try {
   // We might be running without privileges, in which case it's up to the
   // harness to give us the 'ctypes' object.
   var { ctypes } = ChromeUtils.importESModule(
-    "resource://gre/modules/ctypes.sys.mjs"
+    "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
   );
 } catch (e) {}
 

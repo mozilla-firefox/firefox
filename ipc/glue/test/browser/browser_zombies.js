@@ -14,7 +14,7 @@
 // process management failure.
 
 const { ctypes } = ChromeUtils.importESModule(
-  "resource://gre/modules/ctypes.sys.mjs"
+  "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
 );
 
 const libc = ctypes.open("libc.so.6");

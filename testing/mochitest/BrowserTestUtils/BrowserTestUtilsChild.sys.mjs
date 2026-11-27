@@ -243,7 +243,7 @@ export class BrowserTestUtilsChild extends JSWindowActorChild {
         // upon loading this frame script.
 
         const { ctypes } = ChromeUtils.importESModule(
-          "resource://gre/modules/ctypes.sys.mjs"
+          "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
         );
 
         let dies = function () {

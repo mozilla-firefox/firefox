@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { ctypes } from "resource://gre/modules/ctypes.sys.mjs";
+import { ctypes } from "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs";
 import { MigrationUtils } from "moz-src:///browser/components/migration/MigrationUtils.sys.mjs";
 
 const lazy = {};

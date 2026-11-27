@@ -5,7 +5,7 @@
 /*
  * This is the js module for ctypes. Import it like so:
  *   const { ctypes } =
- *     ChromeUtils.importESModule("resource://gre/modules/ctypes.sys.mjs");
+ *     ChromeUtils.importESModule("moz-src:///toolkit/components/ctypes/ctypes.sys.mjs");
  *
  * This will create a 'ctypes' object, which provides an interface to describe
  * and instantiate C types and call C functions from a dynamic library.

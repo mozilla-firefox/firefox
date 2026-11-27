@@ -683,11 +683,6 @@ export const FeatureManifest: {
                 type: string;
                 description: string;
             };
-            weatherUiTreatment: {
-                type: string;
-                fallbackPref: string;
-                description: string;
-            };
             wikipediaFeatureGate: {
                 type: string;
                 fallbackPref: string;
@@ -1129,6 +1124,14 @@ export const FeatureManifest: {
                 description: string;
             };
             reportAdsNewReasonsEnabled: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+                description: string;
+            };
+            reportTileAdsEnabled: {
                 type: string;
                 setPref: {
                     branch: string;
@@ -2366,6 +2369,29 @@ export const FeatureManifest: {
             };
         };
     };
+    "autofill-credit-cards-drop-undecryptable": {
+        description: string;
+        owner: string;
+        hasExposure: boolean;
+        variables: {
+            enabled: {
+                description: string;
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+            };
+            afterAttempts: {
+                description: string;
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+            };
+        };
+    };
     shellService: {
         description: string;
         owner: string;
@@ -3134,6 +3160,14 @@ export const FeatureManifest: {
                 };
             };
             enableFOGTransport: {
+                type: string;
+                description: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
+            };
+            applyStoredClientID: {
                 type: string;
                 description: string;
                 setPref: {
@@ -6428,6 +6462,21 @@ export const FeatureManifest: {
                 type: string;
                 enum: string[];
                 fallbackPref: string;
+                description: string;
+            };
+        };
+    };
+    windowLock: {
+        description: string;
+        owner: string;
+        hasExposure: boolean;
+        variables: {
+            enabled: {
+                type: string;
+                setPref: {
+                    branch: string;
+                    pref: string;
+                };
                 description: string;
             };
         };

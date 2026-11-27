@@ -46,7 +46,7 @@ export var CrashTestUtils = {
 };
 
 // Grab APIs from the testcrasher shared library
-import { ctypes } from "resource://gre/modules/ctypes.sys.mjs";
+import { ctypes } from "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs";
 
 var dir = Services.dirsvc.get("CurWorkD", Ci.nsIFile);
 var file = dir.clone();

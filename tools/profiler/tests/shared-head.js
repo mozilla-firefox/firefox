@@ -84,7 +84,7 @@ const SIGUSR2 = Services.appinfo.OS === "Darwin" ? 31 : 12;
 // https://searchfox.org/mozilla-central/rev/1aaacaeb4fa3aca6837ecc157e43e947229ba8ce/security/sandbox/test/browser_content_sandbox_utils.js#89
 function raiseSignal(pid, sig) {
   const { ctypes } = ChromeUtils.importESModule(
-    "resource://gre/modules/ctypes.sys.mjs"
+    "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
   );
 
   // Derived from functionality in js/src/devtools/rootAnalysis/utility.js

@@ -17,7 +17,7 @@ const { XPCOMUtils } = ChromeUtils.importESModule(
 
 ChromeUtils.defineESModuleGetters(this, {
   UpdateUtils: "resource://gre/modules/UpdateUtils.sys.mjs",
-  ctypes: "resource://gre/modules/ctypes.sys.mjs",
+  ctypes: "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs",
 });
 
 const PREF_APP_UPDATE_AUTO = "app.update.auto";

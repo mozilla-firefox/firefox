@@ -52,7 +52,9 @@ add_task(async function test_key_memoization() {
 
 // Just verify that it gets populated with the correct bytes.
 add_task(async function test_makeUint8Array() {
-  ChromeUtils.importESModule("resource://gre/modules/ctypes.sys.mjs");
+  ChromeUtils.importESModule(
+    "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
+  );
 
   let item1 = cryptoSvc.makeUint8Array("abcdefghi", false);
   Assert.ok(item1);

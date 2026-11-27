@@ -12,7 +12,7 @@ LOCAL_INCLUDES += [
     "/js/xpconnect/loader",
 ]
 
-EXTRA_JS_MODULES += [
+MOZ_SRC_FILES += [
     "ctypes.sys.mjs",
 ]
 

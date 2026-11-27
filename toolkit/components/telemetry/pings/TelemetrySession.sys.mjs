@@ -114,7 +114,7 @@ var processInfo = {
   getCounters_Windows() {
     if (!this._initialized) {
       var { ctypes } = ChromeUtils.importESModule(
-        "resource://gre/modules/ctypes.sys.mjs"
+        "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
       );
       this._IO_COUNTERS = new ctypes.StructType("IO_COUNTERS", [
         { readOps: ctypes.unsigned_long_long },

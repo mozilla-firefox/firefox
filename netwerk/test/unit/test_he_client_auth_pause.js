@@ -35,7 +35,7 @@ const { setTimeout } = ChromeUtils.importESModule(
   "resource://gre/modules/Timer.sys.mjs"
 );
 const ctypes = ChromeUtils.importESModule(
-  "resource://gre/modules/ctypes.sys.mjs"
+  "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
 ).ctypes;
 
 // Minimal inlined copy of head_psm.js's loadPKCS11Module — the full file

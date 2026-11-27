@@ -268,10 +268,10 @@ interface GleanImpl {
     agenticActionNotificationDisplay: GleanEventWithExtras<{ action_id?: string, active_age?: string|number, age?: string|number, agent?: string, check_time?: string, check_weekday?: string|number, enabled?: string|boolean, execution_seq?: string|number, length?: string|number, monitors?: string|number, notification_type?: string, outcome?: string|boolean, prompt_version?: string, schedule_type?: string, urls?: string|number }>;
     agenticActionPause: GleanEventWithExtras<{ action_id?: string, active_age?: string|number, age?: string|number, agent?: string, chat_id?: string, check_time?: string, check_weekday?: string|number, enabled?: string|boolean, length?: string|number, message_seq?: string|number, monitors?: string|number, prompt_version?: string, reason?: string, schedule_type?: string, source?: string, urls?: string|number }>;
     agenticActionResume: GleanEventWithExtras<{ action_id?: string, active_age?: string|number, age?: string|number, agent?: string, chat_id?: string, check_time?: string, check_weekday?: string|number, enabled?: string|boolean, length?: string|number, message_seq?: string|number, monitors?: string|number, prompt_version?: string, schedule_type?: string, source?: string, urls?: string|number }>;
-    aitabCreateComplete: GleanEventWithExtras<{ components_used?: string, error?: string, is_success?: string|boolean, num_chars_out?: string|number, num_chars_read?: string|number, seconds_elapsed?: string|number }>;
+    aitabCreateComplete: GleanEventWithExtras<{ components_converted?: string, components_used?: string, error?: string, is_success?: string|boolean, num_chars_out?: string|number, num_chars_read?: string|number, seconds_elapsed?: string|number }>;
     aitabCreateInitiate: GleanEventWithExtras<{ how_initiated?: string, num_tabs?: string|number, num_tabs_total_attempted?: string|number, raw_content_len?: string|number }>;
     aitabDelete: GleanEventNoExtras;
-    aitabEditComplete: GleanEventWithExtras<{ components_used?: string, error?: string, is_success?: string|boolean, num_chars_out?: string|number, num_chars_read?: string|number, seconds_elapsed?: string|number }>;
+    aitabEditComplete: GleanEventWithExtras<{ components_converted?: string, components_used?: string, error?: string, is_success?: string|boolean, num_chars_out?: string|number, num_chars_read?: string|number, seconds_elapsed?: string|number }>;
     aitabEditInitiate: GleanEventWithExtras<{ how_initiated?: string, num_tabs?: string|number, raw_content_len?: string|number }>;
     aitabLinkClick: GleanEventWithExtras<{ component_type?: string, result?: string }>;
     aitabOpen: GleanEventWithExtras<{ card_state?: string, chat_id?: string, open_target?: string }>;
@@ -290,8 +290,8 @@ interface GleanImpl {
     autoTabUngroupRequested: GleanEventWithExtras<{ grouped_id?: string|number, grouped_tabs?: string|number, source?: string }>;
     bookmarkbar: Record<"opened", GleanCounter>;
     browserActionComplete: GleanEventWithExtras<{ action?: string, chat_id?: string, error?: string, location?: string, message_seq?: string|number, model?: string, prompt_version?: string, result?: string, tabs_affected?: string|number, trigger?: string, undo_available?: string|boolean }>;
-    browserActionPrompt: GleanEventWithExtras<{ action?: string, candidates?: string|number, chat_id?: string, location?: string, message_seq?: string|number, preselected?: string|number, prompt_type?: string, reason?: string }>;
-    browserActionPromptResponse: GleanEventWithExtras<{ action?: string, chat_id?: string, location?: string, message_seq?: string|number, prompt_type?: string, reason?: string, response?: string, selected?: string|number }>;
+    browserActionPrompt: GleanEventWithExtras<{ action?: string, candidates?: string|number, chat_id?: string, entrypoint?: string, location?: string, message_seq?: string|number, preselected?: string|number, prompt_type?: string, reason?: string }>;
+    browserActionPromptResponse: GleanEventWithExtras<{ action?: string, chat_id?: string, entrypoint?: string, location?: string, message_seq?: string|number, prompt_type?: string, reason?: string, response?: string, selected?: string|number }>;
     browserActionPromptToggleAll: GleanEventWithExtras<{ action?: string, candidates?: string|number, chat_id?: string, entrypoint?: string, location?: string, message_seq?: string|number, prompt_type?: string, toggle?: string }>;
     browserActionSubmit: GleanEventWithExtras<{ action?: string, chat_id?: string, location?: string, mentions?: string|number, message_seq?: string|number, model?: string, prompt_version?: string, submit_type?: string, tabs_open?: string|number, trigger?: string }>;
     browserActionUndo: GleanEventWithExtras<{ action?: string, chat_id?: string, error?: string, location?: string, message_seq?: string|number, result?: string, tabs_restored?: string|number, time_delta?: string|number }>;
@@ -358,11 +358,12 @@ interface GleanImpl {
     quickPromptDismissed: GleanEventWithExtras<{ chat_id?: string }>;
     quickPromptDisplayed: GleanEventWithExtras<{ chat_id?: string, location?: string, message_seq?: string|number, prompts?: string|number, resume_prompts?: string|number }>;
     removeTab: GleanEventWithExtras<{ chat_id?: string, location?: string, message_seq?: string|number, tabs_selected?: string|number }>;
-    resumeCardAction: GleanEventWithExtras<{ action?: string, chat_id?: string, location?: string, message_seq?: string|number, position?: string|number }>;
+    resumeCardAction: GleanEventWithExtras<{ action?: string, chat_id?: string, component_summaries?: string|number, last_visit_age?: string|number, location?: string, memory_age?: string|number, memory_strength?: string, message_seq?: string|number, position?: string|number, rank?: string|number }>;
+    resumeCardImpression: GleanEventWithExtras<{ chat_id?: string, component_summaries?: string|number, last_visit_age?: string|number, location?: string, memory_age?: string|number, memory_strength?: string, message_seq?: string|number, position?: string|number, rank?: string|number }>;
     resumeCardsDisplayed: GleanEventWithExtras<{ cards?: string|number, chat_id?: string, location?: string, message_seq?: string|number, state?: string, total_cards?: string|number }>;
     resumeSectionAction: GleanEventWithExtras<{ action?: string, chat_id?: string, location?: string, message_seq?: string|number }>;
     retryNoMemories: GleanEventWithExtras<{ chat_id?: string, location?: string, message_seq?: string|number }>;
-    searchHandoff: GleanEventWithExtras<{ chat_id?: string, location?: string, message_seq?: string|number, model?: string, provider?: string }>;
+    searchHandoff: GleanEventWithExtras<{ chat_id?: string, location?: string, message_seq?: string|number, model?: string, provider?: string, reason?: string }>;
     searchSubmit: GleanEventWithExtras<{ chat_id?: string, detected_intent?: string, length?: string|number, location?: string, message_seq?: string|number, model?: string, provider?: string, submit_type?: string }>;
     searchTheWeb: GleanEventWithExtras<{ chat_id?: string, error?: string, http_status?: string|number, location?: string, message_seq?: string|number, processing_duration?: string|number, results_retrieved?: string|number, results_returned?: string|number, retrieval_duration?: string|number, snippet_chars_returned?: string|number, snippet_chars_truncated?: string|number, total_duration?: string|number }>;
     setDefaultOptin: GleanBoolean;
@@ -564,6 +565,7 @@ interface GleanImpl {
     securityInfoHttpsOnlyChanged: GleanEventWithExtras<{ setting?: string }>;
     securityInfoOpened: GleanEventWithExtras<{ connection?: string }>;
     securityInfoPageInfoOpened: GleanEventNoExtras;
+    siteIssueOpened: GleanEventNoExtras;
     smartblockToggled: GleanEventWithExtras<{ is_block?: string|boolean, opening_reason?: string, shim_id?: string }>;
     trackerCountShown: GleanEventWithExtras<{ first_site_load_in_tab?: string|boolean, first_visit?: string|boolean }>;
     trackerCountToggled: GleanEventWithExtras<{ enabled?: string|boolean }>;
@@ -702,7 +704,8 @@ interface GleanImpl {
     getStarted: GleanEventNoExtras;
     locationChanged: GleanEventWithExtras<{ location?: string }>;
     locationSelectorButtonClicked: GleanEventNoExtras;
-    locationUpgradePromoClicked: GleanEventNoExtras;
+    promoClicked: GleanEventWithExtras<{ entrypoint?: string, promo?: string }>;
+    promoSeen: GleanEventWithExtras<{ entrypoint?: string, promo?: string }>;
     removedFromToolbar: GleanEventNoExtras;
     rulesPageOpened: GleanEventWithExtras<{ entrypoint?: string }>;
     breakageMessageDismissed: GleanEventNoExtras;
@@ -870,6 +873,7 @@ interface GleanImpl {
     errors: Record<string, GleanCustomDistribution>;
     extensionsImportDuration: Record<string, GleanTimingDistribution>;
     extensionsQuantity: Record<string, GleanCustomDistribution>;
+    getPermissionsWizard: GleanEventWithExtras<{ attempts?: string|number, granted?: string|boolean, migrator_key?: string }>;
     historyImportDuration: Record<string, GleanTimingDistribution>;
     historyQuantity: Record<string, GleanCustomDistribution>;
     linuxPermsWizard: GleanEventWithExtras<{ migrator_key?: string }>;
@@ -899,7 +903,7 @@ interface GleanImpl {
   miniWindow: {
     closed: GleanEventWithExtras<{ duration_ms?: string|number, method?: string, type?: string }>;
     created: GleanEventWithExtras<{ concurrent_open?: string|number, entry_point?: string, type?: string, was_last_tab?: string|boolean }>;
-    openDuration: Record<"fragment"|"full_tab", GleanTimingDistribution>;
+    openDuration: Record<"fragment"|"full_tab"|"url", GleanTimingDistribution>;
   }
 
   adsClient: {
@@ -1111,6 +1115,10 @@ interface GleanImpl {
     proxyTypePreference: GleanEventWithExtras<{ value?: string }>;
   }
 
+  privacyUiEtp: {
+    trackerCountToggled: GleanEventWithExtras<{ enabled?: string|boolean }>;
+  }
+
   privacyUiFppClick: {
     checkbox: GleanEventWithExtras<{ checked?: string|boolean }>;
     menu: GleanEventWithExtras<{ value?: string }>;
@@ -1129,8 +1137,8 @@ interface GleanImpl {
 
   windowLock: {
     toggled: GleanEventWithExtras<{ checked?: string|boolean }>;
-    locked: GleanEventWithExtras<{ mode?: string, trigger?: string }>;
-    authenticate: GleanEventWithExtras<{ mode?: string, result?: string }>;
+    authenticate: GleanEventWithExtras<{ result?: string }>;
+    locked: GleanEventWithExtras<{ trigger?: string }>;
   }
 
   aboutprivatebrowsing: {
@@ -5096,7 +5104,6 @@ interface GleanImpl {
     fullscreenTransitionBlack: GleanTimingDistribution;
     gcInProgress: Record<string, GleanTimingDistribution>;
     gcSliceDuringIdle: GleanCustomDistribution;
-    registerProtocolHandlerCalls: GleanDualLabeledCounter;
     scriptLoadingSource: Record<"AltData"|"Inline"|"Source"|"SourceFallback", GleanCounter>;
     scriptMemoryCacheEverHit: GleanCustomDistribution;
     scriptMemoryCacheRefCount: GleanCustomDistribution;
@@ -5507,6 +5514,7 @@ interface GleanImpl {
     bufferAllocHeapDensity: GleanCustomDistribution;
     compactTime: Record<string, GleanTimingDistribution>;
     effectiveness: GleanCustomDistribution;
+    grayBitsValid: Record<"false"|"true", GleanCounter>;
     isZoneGc: Record<"false"|"true", GleanCounter>;
     markGray: Record<string, GleanTimingDistribution>;
     markRate: GleanCustomDistribution;
@@ -5627,14 +5635,15 @@ interface GleanImpl {
     idOnline: Record<"absent"|"present", GleanCounter>;
     ipv4AndIpv6AddressConnectivity: GleanCustomDistribution;
     relPreloadMissRatio: Record<"TYPE_FETCH_UNUSED"|"TYPE_FETCH_USED"|"TYPE_FONT_UNUSED"|"TYPE_FONT_USED"|"TYPE_IMAGE_UNUSED"|"TYPE_IMAGE_USED"|"TYPE_SCRIPT_UNUSED"|"TYPE_SCRIPT_USED"|"TYPE_STYLE_UNUSED"|"TYPE_STYLE_USED", GleanCounter>;
-    sslTokenCacheDbErrors: Record<"open"|"read"|"schema"|"write", GleanCounter>;
+    sslTokenCacheDbErrors: Record<"delete"|"open"|"read"|"schema"|"write", GleanCounter>;
     sslTokenCacheEarlyConnections: GleanCounter;
     sslTokenCacheEvictions: GleanCounter;
     sslTokenCacheExpired: GleanCounter;
     sslTokenCacheHits: Record<"hit"|"miss", GleanCounter>;
     sslTokenCacheLoadTime: GleanTimingDistribution;
     sslTokenCachePersistenceRecordsLoaded: GleanCounter;
-    sslTokenResumptionOutcome: Record<"not_resumed"|"rejected"|"resumed", GleanCounter>;
+    sslTokenCacheWrappedNotPersisted: GleanCounter;
+    sslTokenResumption: GleanDualLabeledCounter;
     urlclassifierHarmfulAddonBlock: GleanEventWithExtras<{ addon_id?: string, addon_version?: string, etld?: string, table?: string }>;
     alpnMismatchCount: Record<string, GleanCounter>;
     backPressureSuspensionCpType: GleanCustomDistribution;
@@ -5776,7 +5785,6 @@ interface GleanImpl {
     requestPerConn: GleanCustomDistribution;
     requestPerPage: GleanCustomDistribution;
     requestPerPageFromCache: GleanCustomDistribution;
-    responseVersion: GleanCustomDistribution;
     scriptBlockIncorrectMime: Record<"CORS_origin"|"app_json"|"app_octet_stream"|"app_xml"|"audio"|"cross_origin"|"empty"|"image"|"importScript_load"|"javaScript"|"same_origin"|"script_load"|"serviceworker_load"|"text_csv"|"text_html"|"text_json"|"text_plain"|"text_xml"|"unknown"|"video"|"worker_load"|"worklet_load", GleanCounter>;
     subitemFirstByteLatencyTime: GleanTimingDistribution;
     subitemOpenLatencyTime: GleanTimingDistribution;
@@ -6503,7 +6511,7 @@ interface GleanImpl {
     cvvSavingEnabled: GleanBoolean;
     cvvSavingToggled: GleanEventWithExtras<{ enabled?: string|boolean, had_saved_cvv?: string|boolean, source?: string }>;
     migrateRecordDivergence: GleanEventWithExtras<{ added?: string, changed?: string, dropped?: string, run_id?: string }>;
-    migrateToRust: GleanEventWithExtras<{ attempt?: string|number, direction?: string, diverged?: string|number, duration_ms?: string|number, error_code?: string, error_message?: string, failed?: string|number, failed_deletions?: string|number, migrated?: string|number, result?: string, run_id?: string, source_total?: string|number, target_total?: string|number }>;
+    migrateToRust: GleanEventWithExtras<{ attempt?: string|number, direction?: string, diverged?: string|number, drop_reason?: string, duration_ms?: string|number, error_code?: string, error_message?: string, failed?: string|number, failed_deletions?: string|number, migrated?: string|number, result?: string, run_id?: string, source_total?: string|number, target_total?: string|number }>;
     migrateToRustBlocked: GleanEventWithExtras<{ dry_run?: string|boolean, reason?: string }>;
     savedCount: GleanQuantity;
     savedCvvCount: GleanQuantity;
@@ -6538,6 +6546,7 @@ interface GleanImpl {
     initializations: GleanTimingDistribution;
     initsDuringShutdown: GleanCounter;
     maxPingsPerMinute: GleanQuantity;
+    unknownBackupKey: GleanCounter;
   }
 
   fogIpc: {
@@ -6690,13 +6699,13 @@ interface GleanImpl {
 
   firefoxAiRuntime: {
     engineCreationFailure: GleanEventWithExtras<{ engineId?: string, error?: string, featureId?: string, flow_id?: string, host_process?: string, modelId?: string, taskName?: string }>;
-    engineCreationSuccess: Record<"about-inference"|"autofill-ml"|"default-engine"|"link-preview"|"ml-suggest-intent"|"ml-suggest-ner"|"pdfjs"|"smart-intent"|"smart-openai"|"smart-openai-memories-generation"|"smart-openai-memories-usage"|"smart-tab-embedding-engine"|"smart-tab-topic-engine"|"title-generation-engine"|"webextension", GleanTimingDistribution>;
+    engineCreationSuccess: Record<"about-inference"|"about-inference-memories"|"autofill-ml"|"default-engine"|"link-preview"|"ml-suggest-intent"|"ml-suggest-ner"|"pdfjs"|"smart-intent"|"smart-openai"|"smart-openai-memories-generation"|"smart-openai-memories-usage"|"smart-tab-embedding-engine"|"smart-tab-topic-engine"|"title-generation-engine"|"webextension", GleanTimingDistribution>;
     engineCreationSuccessFlow: GleanEventWithExtras<{ device_kind?: string, duration?: string|number, engineId?: string, flow_id?: string, host_process?: string }>;
     engineRun: GleanEventWithExtras<{ average_chunk_time?: string|number, backend?: string, backend_source_revision?: string, character_count?: string|number, cores?: string|number, cpu_milliseconds?: string|number, cpu_utilization?: string|number, device_kind?: string, engine_id?: string, feature_id?: string, flow_id?: string, host_process?: string, memory_bytes?: string|number, model_id?: string, system_memory_mb?: string|number, time_to_first_chunk?: string|number, token_count?: string|number, wall_milliseconds?: string|number }>;
     modelDeletion: GleanEventWithExtras<{ deletedBy?: string, error?: string, modelId?: string, modelRevision?: string }>;
     modelDownload: GleanEventWithExtras<{ duration?: string|number, engineId?: string, error?: string, featureId?: string, modelDownloadId?: string, modelId?: string, modelRevision?: string, step?: string, when?: string|number }>;
     runInferenceFailure: GleanEventWithExtras<{ engineId?: string, error?: string, featureId?: string, flow_id?: string, host_process?: string, modelId?: string }>;
-    runInferenceSuccess: Record<"about-inference"|"autofill-ml"|"default-engine"|"link-preview"|"ml-suggest-intent"|"ml-suggest-ner"|"pdfjs"|"smart-intent"|"smart-openai"|"smart-openai-memories-generation"|"smart-openai-memories-usage"|"smart-tab-embedding-engine"|"smart-tab-topic-engine"|"title-generation-engine"|"webextension", GleanTimingDistribution>;
+    runInferenceSuccess: Record<"about-inference"|"about-inference-memories"|"autofill-ml"|"default-engine"|"link-preview"|"ml-suggest-intent"|"ml-suggest-ner"|"pdfjs"|"smart-intent"|"smart-openai"|"smart-openai-memories-generation"|"smart-openai-memories-usage"|"smart-tab-embedding-engine"|"smart-tab-topic-engine"|"title-generation-engine"|"webextension", GleanTimingDistribution>;
     runInferenceSuccessFlow: GleanEventWithExtras<{ decoding_time?: string|number, flow_id?: string, host_process?: string, inference_time?: string|number, input_tokens?: string|number, output_tokens?: string|number, time_per_output_token?: string|number, time_to_first_token?: string|number, tokenizing_time?: string|number, tokens_per_second?: string|number }>;
     sessionEnd: GleanEventWithExtras<{ duration?: string|number, feature_id?: string, flow_id?: string, status?: string }>;
     sessionStart: GleanEventWithExtras<{ feature_id?: string, flow_id?: string, interaction?: string }>;
@@ -6795,34 +6804,11 @@ interface GleanImpl {
   }
 
   normandy: {
-    exposeNimbusExperiment: GleanEventWithExtras<{ branchSlug?: string, featureId?: string, value?: string }>;
-    enrollAddonRollout: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, experimentType?: string, value?: string }>;
-    enrollAddonStudy: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, experimentType?: string, value?: string }>;
-    enrollFailedAddonRollout: GleanEventWithExtras<{ addonId?: string, branch?: string, conflictingSlug?: string, detail?: string, enrollmentId?: string, prefBranch?: string, preference?: string, reason?: string, value?: string }>;
-    enrollFailedAddonStudy: GleanEventWithExtras<{ addonId?: string, branch?: string, conflictingSlug?: string, detail?: string, enrollmentId?: string, prefBranch?: string, preference?: string, reason?: string, value?: string }>;
     enrollFailedNimbusExperiment: GleanEventWithExtras<{ addonId?: string, branch?: string, conflictingSlug?: string, detail?: string, enrollmentId?: string, prefBranch?: string, preference?: string, reason?: string, value?: string }>;
-    enrollFailedPreferenceRollout: GleanEventWithExtras<{ addonId?: string, branch?: string, conflictingSlug?: string, detail?: string, enrollmentId?: string, prefBranch?: string, preference?: string, reason?: string, value?: string }>;
-    enrollFailedPreferenceStudy: GleanEventWithExtras<{ addonId?: string, branch?: string, conflictingSlug?: string, detail?: string, enrollmentId?: string, prefBranch?: string, preference?: string, reason?: string, value?: string }>;
     enrollNimbusExperiment: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, experimentType?: string, value?: string }>;
-    enrollPreferenceRollout: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, experimentType?: string, value?: string }>;
-    enrollPreferenceStudy: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, experimentType?: string, value?: string }>;
-    expPrefChangedPreferenceStudy: GleanEventWithExtras<{ enrollmentId?: string, preferenceName?: string, reason?: string, value?: string }>;
-    graduatePreferenceRollout: GleanEventWithExtras<{ enrollmentId?: string, reason?: string, value?: string }>;
-    unenrollAddonRollback: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, changedPref?: string, conflictingSlug?: string, didResetValue?: string, enrollmentId?: string, prefName?: string, prefType?: string, reason?: string, value?: string }>;
-    unenrollAddonStudy: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, changedPref?: string, conflictingSlug?: string, didResetValue?: string, enrollmentId?: string, prefName?: string, prefType?: string, reason?: string, value?: string }>;
-    unenrollFailedAddonRollback: GleanEventWithExtras<{ caller?: string, changedPref?: string, enrollmentId?: string, originalReason?: string, reason?: string, value?: string }>;
+    exposeNimbusExperiment: GleanEventWithExtras<{ branchSlug?: string, featureId?: string, value?: string }>;
     unenrollFailedNimbusExperiment: GleanEventWithExtras<{ caller?: string, changedPref?: string, enrollmentId?: string, originalReason?: string, reason?: string, value?: string }>;
-    unenrollFailedPreferenceRollback: GleanEventWithExtras<{ caller?: string, changedPref?: string, enrollmentId?: string, originalReason?: string, reason?: string, value?: string }>;
-    unenrollFailedPreferenceStudy: GleanEventWithExtras<{ caller?: string, changedPref?: string, enrollmentId?: string, originalReason?: string, reason?: string, value?: string }>;
     unenrollNimbusExperiment: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, changedPref?: string, conflictingSlug?: string, didResetValue?: string, enrollmentId?: string, prefName?: string, prefType?: string, reason?: string, value?: string }>;
-    unenrollPreferenceRollback: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, changedPref?: string, conflictingSlug?: string, didResetValue?: string, enrollmentId?: string, prefName?: string, prefType?: string, reason?: string, value?: string }>;
-    unenrollPreferenceStudy: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, changedPref?: string, conflictingSlug?: string, didResetValue?: string, enrollmentId?: string, prefName?: string, prefType?: string, reason?: string, value?: string }>;
-    updateAddonRollout: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, enrollmentId?: string, previousState?: string, value?: string }>;
-    updateAddonStudy: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, enrollmentId?: string, previousState?: string, value?: string }>;
-    updateFailedAddonRollout: GleanEventWithExtras<{ branch?: string, detail?: string, enrollmentId?: string, reason?: string, value?: string }>;
-    updateFailedAddonStudy: GleanEventWithExtras<{ branch?: string, detail?: string, enrollmentId?: string, reason?: string, value?: string }>;
-    updateNimbusExperiment: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, enrollmentId?: string, previousState?: string, value?: string }>;
-    updatePreferenceRollout: GleanEventWithExtras<{ addonId?: string, addonVersion?: string, branch?: string, enrollmentId?: string, previousState?: string, value?: string }>;
     validationFailedNimbusExperiment: GleanEventWithExtras<{ branch?: string, l10n_ids?: string, locale?: string, reason?: string, value?: string }>;
   }
 
@@ -6887,6 +6873,7 @@ interface GleanImpl {
     rustMigrationStatus: GleanEventWithExtras<{ attempt?: string|number, deferral_reason?: string, duration_ms?: string|number, end_state?: string, error_message?: string, metric_version?: string, number_of_logins_migrated?: string|number, number_of_logins_quarantined?: string|number, number_of_logins_to_migrate?: string|number, number_of_vulnerable_passwords?: string|number, primary_password_deferrals?: string|number, primary_password_set?: string|boolean, run_id?: string }>;
     rustRestoreLoginError: GleanEventWithExtras<{ error_message?: string, metric_version?: string, run_id?: string }>;
     rustRestoreStatus: GleanEventWithExtras<{ attempt?: string|number, duration_ms?: string|number, end_state?: string, error_message?: string, metric_version?: string, number_of_logins_added?: string|number, number_of_logins_failed?: string|number, number_of_logins_skipped?: string|number, number_of_logins_to_delete?: string|number, number_of_logins_to_restore?: string|number, number_of_logins_updated?: string|number, primary_password_set?: string|boolean, restore_version?: string|number, run_id?: string, state?: string }>;
+    rustStorageCryptoError: GleanEventWithExtras<{ direction?: string, error_kind?: string, operation?: string }>;
     saveExistingLogin: GleanEventWithExtras<{ breached?: string|boolean, vulnerable?: string|boolean }>;
     saveNewLogin: GleanEventWithExtras<{ breached?: string|boolean, vulnerable?: string|boolean }>;
     savedLoginUsedAuthLogin: GleanEventWithExtras<{ filled?: string|boolean }>;
@@ -7801,10 +7788,11 @@ interface GleanImpl {
 
   translationsAboutTranslationsPage: {
     clearSourceTextButton: GleanEventWithExtras<{ flow_id?: string }>;
+    closeCompanionButton: GleanEventWithExtras<{ flow_id?: string }>;
     copyButton: GleanEventWithExtras<{ flow_id?: string }>;
     featureBlockedInfoMessage: GleanEventWithExtras<{ flow_id?: string }>;
     languageLoadErrorMessage: GleanEventWithExtras<{ flow_id?: string }>;
-    open: GleanEventWithExtras<{ flow_id?: string }>;
+    open: GleanEventWithExtras<{ flow_id?: string, open_location?: string }>;
     policyDisabledInfoMessage: GleanEventWithExtras<{ flow_id?: string }>;
     swapButton: GleanEventWithExtras<{ flow_id?: string }>;
     tryAgainButton: GleanEventWithExtras<{ flow_id?: string }>;
@@ -7831,6 +7819,7 @@ interface GleanImpl {
     closeFromLanguageMenu: GleanEventWithExtras<{ flow_id?: string }>;
     closeSettingsMenu: GleanEventWithExtras<{ flow_id?: string }>;
     closeToLanguageMenu: GleanEventWithExtras<{ flow_id?: string }>;
+    companionButton: GleanEventWithExtras<{ flow_id?: string }>;
     dismissErrorButton: GleanEventWithExtras<{ flow_id?: string }>;
     learnMore: GleanEventWithExtras<{ flow_id?: string }>;
     manageLanguages: GleanEventWithExtras<{ flow_id?: string }>;
@@ -7975,7 +7964,6 @@ interface GleanImpl {
     nimbusLoaderInitTime: GleanQuantity;
     nimbusManagerInitTime: GleanQuantity;
     nimbusStoreInitTime: GleanQuantity;
-    normandyInitTime: GleanQuantity;
     statusCode: GleanQuantity;
   }
 
@@ -8374,6 +8362,7 @@ interface GleanPingsImpl {
   useCounters: GleanPingWithReason<"app_shutdown_confirmed"|"idle_startup">;
   contentDecodingError: GleanPingWithReason<"error">;
   localNetworkAccess: GleanPingNoReason;
+  networkHealth: GleanPingWithReason<"active"|"dirty_startup"|"inactive">;
   urlClassifierHarmfulAddon: GleanPingNoReason;
   fxAccounts: GleanPingWithReason<"active"|"dirty_startup"|"inactive">;
   fxAccountsClientInfo: GleanPingNoReason;

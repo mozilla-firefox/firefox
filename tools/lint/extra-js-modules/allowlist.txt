@@ -241,7 +241,6 @@ toolkit/components/crashmonitor/CrashMonitor.sys.mjs
 toolkit/components/crashmonitor/nsCrashMonitor.sys.mjs
 toolkit/components/credentialmanagement/CredentialChooserService.sys.mjs
 toolkit/components/credentialmanagement/IdentityCredentialPromptService.sys.mjs
-toolkit/components/ctypes/ctypes.sys.mjs
 toolkit/components/dap/DAPIncrementality.sys.mjs
 toolkit/components/dap/DAPReportController.sys.mjs
 toolkit/components/dap/DAPSender.sys.mjs

@@ -7,7 +7,7 @@ import {
   PromiseWorker,
 } from "resource://gre/modules/subprocess/subprocess_common.sys.mjs";
 
-import { ctypes } from "resource://gre/modules/ctypes.sys.mjs";
+import { ctypes } from "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs";
 
 var obj = { ctypes };
 Services.scriptloader.loadSubScript(

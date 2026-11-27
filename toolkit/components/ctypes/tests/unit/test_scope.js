@@ -2,7 +2,7 @@ add_task(async function test_global_prop() {
   // Import the ctypes module, in order to test the effect on the shared system
   // global.
   const { ctypes } = ChromeUtils.importESModule(
-    "resource://gre/modules/ctypes.sys.mjs"
+    "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
   );
   void ctypes;
 

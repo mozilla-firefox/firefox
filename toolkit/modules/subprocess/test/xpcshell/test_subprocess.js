@@ -475,7 +475,7 @@ if (AppConstants.platform == "win") {
       "resource://gre/modules/subprocess/subprocess_win.sys.mjs"
     );
     const { ctypes } = ChromeUtils.importESModule(
-      "resource://gre/modules/ctypes.sys.mjs"
+      "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
     );
 
     let secAttr = new win32.SECURITY_ATTRIBUTES();

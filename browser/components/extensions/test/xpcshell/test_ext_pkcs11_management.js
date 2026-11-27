@@ -2,7 +2,7 @@
 
 ChromeUtils.defineESModuleGetters(this, {
   MockRegistry: "resource://testing-common/MockRegistry.sys.mjs",
-  ctypes: "resource://gre/modules/ctypes.sys.mjs",
+  ctypes: "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs",
 });
 
 do_get_profile();

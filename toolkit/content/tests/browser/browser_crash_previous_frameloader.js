@@ -85,7 +85,7 @@ add_task(async function test_crash_in_previous_frameloader() {
       // and then immediately swap out the browser for a non-remote one.
       await SpecialPowers.spawn(browser, [], function () {
         const { ctypes } = ChromeUtils.importESModule(
-          "resource://gre/modules/ctypes.sys.mjs"
+          "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
         );
 
         let dies = function () {

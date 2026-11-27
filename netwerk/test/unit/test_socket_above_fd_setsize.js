@@ -15,7 +15,7 @@ const { NetUtil: NetUtilModule } = ChromeUtils.importESModule(
   "resource://gre/modules/NetUtil.sys.mjs"
 );
 const { ctypes } = ChromeUtils.importESModule(
-  "resource://gre/modules/ctypes.sys.mjs"
+  "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs"
 );
 
 // Above the 4096 that used to be the ceiling, below the 65536 it is now.

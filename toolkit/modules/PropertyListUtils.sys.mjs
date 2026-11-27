@@ -56,7 +56,7 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  ctypes: "resource://gre/modules/ctypes.sys.mjs",
+  ctypes: "moz-src:///toolkit/components/ctypes/ctypes.sys.mjs",
 });
 
 export var PropertyListUtils = Object.freeze({

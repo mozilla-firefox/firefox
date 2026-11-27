@@ -110,6 +110,8 @@ interface nsICocoaAppShellTestUtils extends nsISupports {
   postNativeTestEvent(): void;
   /** <!-- binding_to(idl, attribute, XPIDL_nsICocoaAppShellTestUtils_lostNativeWakeups) --> */
   readonly lostNativeWakeups: u32;
+  /** <!-- binding_to(idl, method, XPIDL_nsICocoaAppShellTestUtils_getMainMenuItemTitles) --> */
+  getMainMenuItemTitles(): string[];
 }
 
 // https://searchfox.org/firefox-main/source/widget/nsIMacDockSupport.idl
