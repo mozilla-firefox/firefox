@@ -1023,6 +1023,9 @@ void Connection::RecordOpenStatus(nsresult rv) {
       mozilla::glean::sqlite_store::open.Get(histogramKey, "diskspace"_ns)
           .Add();
       break;
+    case NS_ERROR_STORAGE_BUSY:
+      mozilla::glean::sqlite_store::open.Get(histogramKey, "busy"_ns).Add();
+      break;
     default:
       mozilla::glean::sqlite_store::open.Get(histogramKey, "failure"_ns).Add();
   }
@@ -1245,6 +1248,7 @@ nsresult Connection::initialize(nsIFile* aDatabaseFile) {
     } else {
       ::sqlite3_close(mDBConn);
       mDBConn = nullptr;
+      rv = convertResultCode(srv);
     }
   }
 
@@ -1403,6 +1407,16 @@ nsresult Connection::initializeInternal() {
   // Properly wrap the database handle's mutex.
   sharedDBMutex.initWithMutex(sqlite3_db_mutex(mDBConn));
 
+  // Asynchronous connections, and clones while they initialize, run
+  // statements on an async thread, so waiting for locks held by other
+  // connections, rather than failing with SQLITE_BUSY, doesn't block any
+  // thread that must stay responsive. Set this before any statement, as the
+  // first ones open the database file. Consumers can still change this
+  // through PRAGMA busy_timeout.
+  if (mSupportedOperations == ASYNCHRONOUS) {
+    (void)::sqlite3_busy_timeout(mDBConn, DEFAULT_ASYNC_BUSY_TIMEOUT_MS);
+  }
+
   // SQLite tracing can slow down queries (especially long queries)
   // significantly. Don't trace unless the user is actively monitoring SQLite.
   if (MOZ_LOG_TEST(gStorageLog, LogLevel::Debug)) {
@@ -1480,14 +1494,6 @@ nsresult Connection::initializeInternal() {
   // Normal is the suggested value for WAL journals.
   (void)ExecuteSimpleSQL("PRAGMA synchronous = NORMAL;"_ns);
 #endif
-
-  // Asynchronous connections never execute statements on the main thread, so
-  // they can wait for locks held by other connections, rather than failing
-  // with SQLITE_BUSY. Consumers can still change this through
-  // PRAGMA busy_timeout.
-  if (mSupportedOperations == ASYNCHRONOUS) {
-    (void)::sqlite3_busy_timeout(mDBConn, DEFAULT_ASYNC_BUSY_TIMEOUT_MS);
-  }
 
   // Initialization succeeded, we can stop guarding for failures.
   guard.release();

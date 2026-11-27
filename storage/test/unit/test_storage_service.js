@@ -195,6 +195,30 @@ function test_busy_telemetry() {
   conn1.rollbackTransaction();
 }
 
+function test_busy_open_telemetry() {
+  let profileDir = do_get_profile();
+  do_get_file("goodDB.sqlite").copyTo(profileDir, "busyOpen.sqlite");
+  let file = profileDir.clone();
+  file.append("busyOpen.sqlite");
+  let conn1 = Services.storage.openUnsharedDatabase(file);
+  conn1.executeSimpleSQL("BEGIN EXCLUSIVE");
+
+  try {
+    Assert.throws(
+      () => Services.storage.openUnsharedDatabase(file),
+      /NS_ERROR_STORAGE_BUSY/,
+      "Opening a database locked by another connection should fail"
+    );
+    Assert.equal(
+      Glean.sqliteStore.open.get(file.leafName, "busy").testGetValue(),
+      1
+    );
+  } finally {
+    conn1.executeSimpleSQL("ROLLBACK");
+    conn1.close();
+  }
+}
+
 var tests = [
   test_openDatabase_null_file,
   test_openDatabase_file_DNE,
@@ -205,6 +229,7 @@ var tests = [
   test_read_gooddb,
   test_read_baddb,
   test_busy_telemetry,
+  test_busy_open_telemetry,
 ];
 
 function run_test() {

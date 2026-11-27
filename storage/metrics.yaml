@@ -36,6 +36,7 @@ sqlite_store:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1635489
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1977614
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2046474
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2096617
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1635489
     notification_emails:
