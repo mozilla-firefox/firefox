@@ -69,6 +69,18 @@ inline nsresult NS_DomainToDisplayAndASCII(const nsACString& aDomain,
                                                       &aASCII);
 }
 
+// Mirrors the ASCII fallback in mozilla_net_domain_to_display_and_ascii_impl.
+// https://url.spec.whatwg.org/#forbidden-domain-code-point
+static bool IsAsciiDomainWithoutForbiddenCodePoints(const nsACString& aHost) {
+  for (char c : aHost.View()) {
+    uint8_t b = static_cast<uint8_t>(c);
+    if (b <= 0x20 || b >= 0x7F || strchr("%#/:<>?@[\\]^|", c)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 namespace mozilla {
 namespace net {
 
@@ -1242,6 +1254,11 @@ nsresult nsStandardURL::CheckIfHostIsAscii() {
   nsAutoCString displayHost;
   // IPC deseriazation can have IPv6 without square brackets here.
   rv = NS_DomainToDisplayAllowAnyGlyphfulASCII(Host(), displayHost);
+  if (NS_FAILED(rv) && IsAsciiDomainWithoutForbiddenCodePoints(Host())) {
+    // NormalizeIDN accepts ASCII hosts even when they fail UTS46 validation.
+    mDisplayHost.Truncate();
+    return NS_OK;
+  }
   if (NS_FAILED(rv)) {
     mDisplayHost.Truncate();
     mCheckedIfHostA = false;

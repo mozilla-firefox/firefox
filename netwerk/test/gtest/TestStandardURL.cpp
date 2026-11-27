@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include "mozilla/Base64.h"
 #include "mozilla/Encoding.h"
+#include "mozilla/Preferences.h"
 #include "mozilla/ipc/URIUtils.h"
 #include "nsCOMPtr.h"
 #include "nsComponentManagerUtils.h"
@@ -11,6 +12,7 @@
 #include "nsIURIMutator.h"
 #include "nsIURL.h"
 #include "nsNetCID.h"
+#include "nsNetUtil.h"
 #include "nsPrintfCString.h"
 #include "nsSerializationHelper.h"
 #include "nsString.h"
@@ -417,6 +419,112 @@ TEST(TestStandardURL, Deserialize_Bug2027976)
   ASSERT_EQ(rv, NS_OK);
   nsAutoCString spec;
   uri->Resolve("foo"_ns, spec);
+}
+
+// Content processes don't reparse deserialized URIs.
+class MOZ_RAII AutoDisableReparseDeserializedURI {
+ public:
+  AutoDisableReparseDeserializedURI()
+      : mOld(mozilla::Preferences::GetBool(kPref)) {
+    mozilla::Preferences::SetBool(kPref, false);
+  }
+  ~AutoDisableReparseDeserializedURI() {
+    mozilla::Preferences::SetBool(kPref, mOld);
+  }
+
+ private:
+  static constexpr const char* kPref = "network.ipc.reparse_deserialized_uri";
+  bool mOld;
+};
+
+TEST(TestStandardURL, Deserialize_InvalidPunycodeASCIIHost)
+{
+  AutoDisableReparseDeserializedURI disableReparse;
+
+  for (const auto& spec :
+       {"http://xn--ab-j1t/x"_ns, "http://a.b.c.XN--pokxncvks/"_ns,
+        "https://xn--ls8h=/"_ns, "https://xn--/"_ns}) {
+    nsCOMPtr<nsIURI> uri;
+    ASSERT_EQ(NS_OK, NS_NewURI(getter_AddRefs(uri), spec)) << spec.get();
+    nsAutoCString expectedSpec;
+    ASSERT_EQ(NS_OK, uri->GetSpec(expectedSpec));
+
+    mozilla::ipc::URIParams params;
+    mozilla::ipc::SerializeURI(uri, params);
+    nsCOMPtr<nsIURI> ipcURI = mozilla::ipc::DeserializeURI(params);
+    ASSERT_NE(nullptr, ipcURI.get()) << spec.get();
+    nsAutoCString ipcSpec;
+    ASSERT_EQ(NS_OK, ipcURI->GetSpec(ipcSpec));
+    ASSERT_EQ(expectedSpec, ipcSpec);
+    nsAutoCString displayHost;
+    ASSERT_EQ(NS_OK, ipcURI->GetDisplayHost(displayHost));
+    nsAutoCString host;
+    ASSERT_EQ(NS_OK, uri->GetHost(host));
+    ASSERT_EQ(host, displayHost);
+
+    nsCOMPtr<nsISerializable> serializable = do_QueryInterface(uri);
+    ASSERT_TRUE(serializable);
+    nsAutoCString serialization;
+    ASSERT_EQ(NS_OK, NS_SerializeToString(serializable, serialization));
+    nsCOMPtr<nsISupports> deserialized;
+    ASSERT_EQ(NS_OK,
+              NS_DeserializeObject(serialization, getter_AddRefs(deserialized)))
+        << spec.get();
+    nsCOMPtr<nsIURI> readURI = do_QueryInterface(deserialized);
+    ASSERT_TRUE(readURI);
+    nsAutoCString readSpec;
+    ASSERT_EQ(NS_OK, readURI->GetSpec(readSpec));
+    ASSERT_EQ(expectedSpec, readSpec);
+  }
+}
+
+TEST(TestStandardURL, Deserialize_IPv6Host)
+{
+  AutoDisableReparseDeserializedURI disableReparse;
+
+  for (const auto& spec :
+       {"http://[::1]/"_ns, "https://[2001:db8::1]:8080/x"_ns}) {
+    nsCOMPtr<nsIURI> uri;
+    ASSERT_EQ(NS_OK, NS_NewURI(getter_AddRefs(uri), spec)) << spec.get();
+    mozilla::ipc::URIParams params;
+    mozilla::ipc::SerializeURI(uri, params);
+    nsCOMPtr<nsIURI> ipcURI = mozilla::ipc::DeserializeURI(params);
+    ASSERT_NE(nullptr, ipcURI.get()) << spec.get();
+    nsAutoCString ipcSpec;
+    ASSERT_EQ(NS_OK, ipcURI->GetSpec(ipcSpec));
+    ASSERT_EQ(spec, ipcSpec);
+  }
+}
+
+TEST(TestStandardURL, Deserialize_PercentEncodedPunycodeHost)
+{
+  AutoDisableReparseDeserializedURI disableReparse;
+
+  nsCOMPtr<nsIURI> uri;
+  ASSERT_EQ(NS_OK, NS_NewURI(getter_AddRefs(uri), "http://xn--mnchen-3ya/"_ns));
+  mozilla::ipc::URIParams params;
+  mozilla::ipc::SerializeURI(uri, params);
+  mozilla::ipc::StandardURLParams& standard = params.get_StandardURLParams();
+  ASSERT_EQ(standard.spec(), "http://xn--mnchen-3ya/"_ns);
+
+  // Craft a host that only becomes valid punycode once percent-decoded.
+  standard.spec() = "http://xn--mnchen-3y%61/"_ns;
+  const uint32_t hostEnd =
+      standard.host().position() + standard.host().length();
+  standard.host().length() += 2;
+  standard.authority().length() += 2;
+  for (auto* segment :
+       {&standard.path(), &standard.filePath(), &standard.directory(),
+        &standard.baseName(), &standard.extension(), &standard.query(),
+        &standard.ref()}) {
+    if (segment->length() >= 0 && segment->position() >= hostEnd) {
+      segment->position() += 2;
+    }
+  }
+
+  nsCOMPtr<nsIURIMutator> mutator =
+      do_CreateInstance(NS_STANDARDURLMUTATOR_CID);
+  ASSERT_EQ(mutator->Deserialize(params), NS_ERROR_FAILURE);
 }
 
 TEST(TestStandardURL, CorruptSerialization)
