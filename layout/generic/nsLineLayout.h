@@ -38,11 +38,19 @@ class nsLineLayout {
     MOZ_ASSERT(!mRootSpan, "bad line-layout user");
   }
 
+  /**
+   * aDisabledNegativeMarginsTracker records the inlines whose negative end
+   * margin must not be used to enlarge their available size, so that this
+   * survives the line being laid out again. It is owned by the block doing line
+   * layout, and null for line layouts that don't track it.
+   */
   void Init(BlockReflowState* aState, nscoord aMinLineBSize,
-            int32_t aLineNumber) {
+            int32_t aLineNumber,
+            nsTArray<const nsIFrame*>* aDisabledNegativeMarginsTracker) {
     mBlockRS = aState;
     mMinLineBSize = aMinLineBSize;
     mLineNumber = aLineNumber;
+    mDisabledNegativeMargins = aDisabledNegativeMarginsTracker;
   }
 
   int32_t GetLineNumber() const { return mLineNumber; }
@@ -334,6 +342,38 @@ class nsLineLayout {
    */
   nscoord GetCurrentICoord() { return mCurrentSpan->mICoord; }
 
+  bool CurrentSpanCanWrap() const { return !mCurrentSpan->mNoWrap; }
+
+  nscoord GetCurrentSpanISize() const {
+    return mCurrentSpan->mLastFrame
+               ? (mCurrentSpan->mICoord - mCurrentSpan->mIStart)
+               : 0;
+  }
+
+  /**
+   * Whether aFrame's negative end margin may be used to enlarge its available
+   * size. This is false for line layouts that don't track disabled margins.
+   */
+  bool CanApplyNegativeMargin(const nsIFrame* aFrame) {
+    nsTArray<const nsIFrame*>* disabled =
+        GetOutermostLineLayout()->mDisabledNegativeMargins;
+    return disabled && !disabled->Contains(aFrame);
+  }
+  /**
+   * Called when aFrame, an inline that had its negative end margin applied,
+   * does not end on this line. Requests that the line is laid out again
+   * without the margin.
+   */
+  void DisableNegativeMargin(const nsIFrame* aFrame) {
+    nsLineLayout* outermost = GetOutermostLineLayout();
+    MOZ_ASSERT(outermost->mDisabledNegativeMargins);
+    outermost->mDisabledNegativeMargins->AppendElement(aFrame);
+    outermost->mNeedsRedoForNegativeMargin = true;
+  }
+  bool NeedsRedoForNegativeMargin() const {
+    return mNeedsRedoForNegativeMargin;
+  }
+
   void SetSuppressLineWrap(bool aEnabled) { mSuppressLineWrap = aEnabled; }
 
   /**
@@ -604,6 +644,10 @@ class nsLineLayout {
   bool mHasRuby : 1;
   bool mSuppressLineWrap : 1;
   bool mUsedOverflowWrap : 1;
+  bool mNeedsRedoForNegativeMargin : 1;
+
+  // See the Init() parameter. Not set if Init() isn't called.
+  nsTArray<const nsIFrame*>* mDisabledNegativeMargins = nullptr;
 
   int32_t mSpanDepth = 0;
 #ifdef DEBUG
