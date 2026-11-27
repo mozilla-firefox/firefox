@@ -2033,7 +2033,8 @@ void IonIC::attachCacheIRStub(JSContext* cx, const CacheIRWriter& writer,
 
   // Try to reuse a previously-allocated CacheIRStubInfo.
   CacheIRStubKey::Lookup lookup(kind, ICStubEngine::IonIC, writer.codeStart(),
-                                writer.codeLength());
+                                writer.codeLength(),
+                                /* recordsProfilerCallSites = */ false);
   CacheIRStubInfo* stubInfo = jitRealm.getIonCacheIRStubInfo(lookup);
   if (!stubInfo) {
     // Allocate the shared CacheIRStubInfo. Note that the
@@ -2044,7 +2045,8 @@ void IonIC::attachCacheIRStub(JSContext* cx, const CacheIRWriter& writer,
     // For Ion ICs, we don't track/use the makesGCCalls flag, so just pass true.
     bool makesGCCalls = true;
     stubInfo = CacheIRStubInfo::New(kind, ICStubEngine::IonIC, makesGCCalls,
-                                    stubDataOffset, writer);
+                                    stubDataOffset, writer,
+                                    /* recordsProfilerCallSites = */ false);
     if (!stubInfo) {
       return;
     }

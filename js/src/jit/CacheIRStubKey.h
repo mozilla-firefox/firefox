@@ -35,15 +35,18 @@ struct CacheIRStubKey : public DefaultHasher<CacheIRStubKey> {
     HashNumber hash;
     CacheKind kind;
     ICStubEngine engine;
+    bool recordsProfilerCallSites;
 
     Lookup(CacheKind kind, ICStubEngine engine, const uint8_t* code,
-           uint32_t length)
+           uint32_t length, bool recordsProfilerCallSites)
         : code(code),
           length(length),
           hash(mozilla::AddToHash(mozilla::HashBytes(code, length),
-                                  uint32_t(kind), uint32_t(engine))),
+                                  uint32_t(kind), uint32_t(engine),
+                                  recordsProfilerCallSites)),
           kind(kind),
-          engine(engine) {}
+          engine(engine),
+          recordsProfilerCallSites(recordsProfilerCallSites) {}
   };
 
   static HashNumber hash(const Lookup& l) { return l.hash; }

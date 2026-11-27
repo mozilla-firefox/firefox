@@ -117,6 +117,14 @@ void AutoStubFrame::enter(MacroAssembler& masm, Register scratch) {
   }
   EmitBaselineEnterStubFrame(masm, scratch);
 
+  // Record the IC's return address so that samples taken in this stub or in
+  // C++ code it calls are attributed to the correct op in the Baseline frame.
+  if (compiler.recordProfilerCallSites_) {
+    masm.storeProfilerCallSite(
+        Address(FramePointer, CommonFrameLayout::offsetOfReturnAddress()),
+        scratch);
+  }
+
 #ifdef DEBUG
   framePushedAtEnterStubFrame_ = masm.framePushed();
 #endif
@@ -2066,8 +2074,13 @@ static bool LookupOrCompileStub(JSContext* cx, CacheKind kind,
                                 CacheIRStubInfo*& stubInfo, JitCode*& code,
                                 const char* name, bool isAOTFill,
                                 JitZone* jitZone) {
+  // Stub code is shared and outlives profiler toggles, so whether it records
+  // profiler call sites is part of the cache key.
+  bool recordProfilerCallSites = cx->runtime()->geckoProfiler().enabled() &&
+                                 !IsPortableBaselineInterpreterEnabled();
   CacheIRStubKey::Lookup lookup(kind, ICStubEngine::Baseline,
-                                writer.codeStart(), writer.codeLength());
+                                writer.codeStart(), writer.codeLength(),
+                                recordProfilerCallSites);
 
   code = jitZone->getBaselineCacheIRStubCode(lookup, &stubInfo);
 
@@ -2086,6 +2099,9 @@ static bool LookupOrCompileStub(JSContext* cx, CacheKind kind,
     if (!comp.init(kind)) {
       return false;
     }
+    if (recordProfilerCallSites) {
+      comp.setRecordProfilerCallSites();
+    }
 
     code = comp.compile();
     if (!code) {
@@ -2101,7 +2117,7 @@ static bool LookupOrCompileStub(JSContext* cx, CacheKind kind,
     MOZ_ASSERT(!stubInfo);
     stubInfo =
         CacheIRStubInfo::New(kind, ICStubEngine::Baseline, comp.makesGCCalls(),
-                             StubDataOffset, writer);
+                             StubDataOffset, writer, recordProfilerCallSites);
     if (!stubInfo) {
       return false;
     }
@@ -2122,7 +2138,7 @@ static bool LookupOrCompileStub(JSContext* cx, CacheKind kind,
     // don't know for sure.
     stubInfo = CacheIRStubInfo::New(kind, ICStubEngine::Baseline,
                                     /* makes GC calls = */ true, StubDataOffset,
-                                    writer);
+                                    writer, recordProfilerCallSites);
     if (!stubInfo) {
       return false;
     }

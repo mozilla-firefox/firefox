@@ -2120,15 +2120,6 @@ void BaselineCodeGen<Handler>::emitProfilerExitFrame() {
 }
 
 template <typename Handler>
-void BaselineCodeGen<Handler>::emitProfilerCallSiteInstrumentation() {
-  if (!handler.needsProfilerCallSiteInstrumentation()) {
-    return;
-  }
-
-  masm.instrumentProfilerCallSite();
-}
-
-template <typename Handler>
 bool BaselineCodeGen<Handler>::emit_Nop() {
   return true;
 }
@@ -4878,10 +4869,6 @@ template <>
 bool BaselineCompilerCodeGen::emitCall(JSOp op) {
   MOZ_ASSERT(IsInvokeOp(op));
 
-  // Record call site for profiler sampling. IC stub calls use raw masm.call()
-  // which doesn't automatically instrument, unlike callJit/callWithABI.
-  emitProfilerCallSiteInstrumentation();
-
   frame.syncStack(0);
 
   uint32_t argc = GET_ARGC(handler.pc());
@@ -4924,10 +4911,6 @@ bool BaselineInterpreterCodeGen::emitCall(JSOp op) {
 template <typename Handler>
 bool BaselineCodeGen<Handler>::emitSpreadCall(JSOp op) {
   MOZ_ASSERT(IsInvokeOp(op));
-
-  // Record call site for profiler sampling. IC stub calls use raw masm.call()
-  // which doesn't automatically instrument, unlike callJit/callWithABI.
-  emitProfilerCallSiteInstrumentation();
 
   frame.syncStack(0);
   masm.move32(Imm32(1), R0.scratchReg());

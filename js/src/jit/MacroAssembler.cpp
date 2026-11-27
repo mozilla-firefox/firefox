@@ -4779,8 +4779,44 @@ void MacroAssembler::link(JitCode* code) {
   linkProfilerCallSites(code);
 }
 
-void MacroAssembler::instrumentProfilerCallSite() {
-  AutoProfilerCallInstrumentation profiler(*this);
+static void BranchIfGeckoProfilerDisabled(MacroAssembler& masm, Label* label) {
+  masm.branch32(
+      Assembler::Equal,
+      AbsoluteAddress(
+          GetJitContext()->runtime->geckoProfiler().addressOfEnabled()),
+      Imm32(0), label);
+}
+
+static void StoreProfilerCallSite(MacroAssembler& masm, Register callSite) {
+  Register temp = callSite == CallTempReg0 ? CallTempReg1 : CallTempReg0;
+  masm.push(temp);
+  masm.loadJSContext(temp);
+  masm.loadPtr(Address(temp, JSContext::offsetOfProfilingActivation()), temp);
+
+  masm.storePtr(callSite,
+                Address(temp, JitActivation::offsetOfLastProfilingCallSite()));
+  masm.pop(temp);
+}
+
+void MacroAssembler::storeProfilerCallSiteIfEnabled(Register callSite) {
+  Label done;
+  BranchIfGeckoProfilerDisabled(*this, &done);
+  StoreProfilerCallSite(*this, callSite);
+  bind(&done);
+}
+
+void MacroAssembler::storeProfilerCallSiteIfEnabled(const Address& callSiteAddr,
+                                                    Register scratch) {
+  Label done;
+  BranchIfGeckoProfilerDisabled(*this, &done);
+  storeProfilerCallSite(callSiteAddr, scratch);
+  bind(&done);
+}
+
+void MacroAssembler::storeProfilerCallSite(const Address& callSiteAddr,
+                                           Register scratch) {
+  loadPtr(callSiteAddr, scratch);
+  StoreProfilerCallSite(*this, scratch);
 }
 
 MacroAssembler::AutoProfilerCallInstrumentation::

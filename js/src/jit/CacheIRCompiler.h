@@ -1334,14 +1334,17 @@ class CacheIRStubInfo {
   ICStubEngine engine_;
   uint8_t stubDataOffset_;
   bool makesGCCalls_;
+  bool recordsProfilerCallSites_;
 
   CacheIRStubInfo(CacheKind kind, ICStubEngine engine, bool makesGCCalls,
-                  uint32_t stubDataOffset, uint32_t codeLength)
+                  uint32_t stubDataOffset, uint32_t codeLength,
+                  bool recordsProfilerCallSites)
       : codeLength_(codeLength),
         kind_(kind),
         engine_(engine),
         stubDataOffset_(stubDataOffset),
-        makesGCCalls_(makesGCCalls) {
+        makesGCCalls_(makesGCCalls),
+        recordsProfilerCallSites_(recordsProfilerCallSites) {
     MOZ_ASSERT(kind_ == kind, "Kind must fit in bitfield");
     MOZ_ASSERT(engine_ == engine, "Engine must fit in bitfield");
     MOZ_ASSERT(stubDataOffset_ == stubDataOffset,
@@ -1352,6 +1355,7 @@ class CacheIRStubInfo {
   CacheKind kind() const { return kind_; }
   ICStubEngine engine() const { return engine_; }
   bool makesGCCalls() const { return makesGCCalls_; }
+  bool recordsProfilerCallSites() const { return recordsProfilerCallSites_; }
 
   CacheIRStubInfo(const CacheIRStubInfo&) = delete;
   CacheIRStubInfo& operator=(const CacheIRStubInfo&) = delete;
@@ -1372,7 +1376,8 @@ class CacheIRStubInfo {
 
   static CacheIRStubInfo* New(CacheKind kind, ICStubEngine engine,
                               bool canMakeCalls, uint32_t stubDataOffset,
-                              const CacheIRWriter& writer);
+                              const CacheIRWriter& writer,
+                              bool recordsProfilerCallSites);
 
   template <class Stub, StubField::Type type>
   typename MapStubFieldToType<type>::WrappedType& getStubField(

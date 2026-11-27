@@ -606,6 +606,7 @@ bool FallbackICCodeCompiler::tailCallVMInternal(MacroAssembler& masm,
   TrampolinePtr code = cx->runtime()->jitRuntime()->getVMWrapper(id);
   const VMFunctionData& fun = GetVMFunction(id);
   uint32_t argSize = fun.explicitStackSlots() * sizeof(void*);
+  masm.storeProfilerCallSiteIfEnabled(ICTailCallReg);
   EmitBaselineTailCallVM(code, masm, argSize);
   return true;
 }
@@ -635,6 +636,9 @@ bool FallbackICCodeCompiler::tailCallVM(MacroAssembler& masm) {
 void FallbackICCodeCompiler::enterStubFrame(MacroAssembler& masm,
                                             Register scratch) {
   EmitBaselineEnterStubFrame(masm, scratch);
+  masm.storeProfilerCallSiteIfEnabled(
+      Address(FramePointer, CommonFrameLayout::offsetOfReturnAddress()),
+      scratch);
 #ifdef DEBUG
   framePushedAtEnterStubFrame_ = masm.framePushed();
 #endif

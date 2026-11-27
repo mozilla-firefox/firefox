@@ -66,6 +66,7 @@ class MOZ_RAII BaselineCacheIRCompiler : public CacheIRCompiler {
   };
 
   bool makesGCCalls_;
+  bool recordProfilerCallSites_ = false;
   uint8_t localTracingSlots_ = 0;
   Register baselineFrameReg_ = FramePointer;
 
@@ -174,6 +175,10 @@ class MOZ_RAII BaselineCacheIRCompiler : public CacheIRCompiler {
                           const CacheIRWriter& writer, uint32_t stubDataOffset);
 
   [[nodiscard]] bool init(CacheKind kind);
+
+  // Record the IC's return address as the profiler call site when entering a
+  // stub frame. Only set while the Gecko profiler is enabled.
+  void setRecordProfilerCallSites() { recordProfilerCallSites_ = true; }
 
   template <typename Fn, Fn fn>
   void callVM(MacroAssembler& masm);

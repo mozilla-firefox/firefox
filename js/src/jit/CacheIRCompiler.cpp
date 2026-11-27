@@ -1590,6 +1590,11 @@ bool CacheIRStubKey::match(const CacheIRStubKey& entry,
     return false;
   }
 
+  if (entry.stubInfo->recordsProfilerCallSites() !=
+      l.recordsProfilerCallSites) {
+    return false;
+  }
+
   if (entry.stubInfo->codeLength() != l.length) {
     return false;
   }
@@ -1608,7 +1613,8 @@ CacheIRReader::CacheIRReader(const CacheIRStubInfo* stubInfo)
 CacheIRStubInfo* CacheIRStubInfo::New(CacheKind kind, ICStubEngine engine,
                                       bool makesGCCalls,
                                       uint32_t stubDataOffset,
-                                      const CacheIRWriter& writer) {
+                                      const CacheIRWriter& writer,
+                                      bool recordsProfilerCallSites) {
   size_t numStubFields = writer.numStubFields();
   size_t bytesNeeded =
       sizeof(CacheIRStubInfo) + writer.codeLength() +
@@ -1633,7 +1639,7 @@ CacheIRStubInfo* CacheIRStubInfo::New(CacheKind kind, ICStubEngine engine,
   fieldTypes[numStubFields] = uint8_t(StubField::Type::Limit);
 
   return new (p) CacheIRStubInfo(kind, engine, makesGCCalls, stubDataOffset,
-                                 writer.codeLength());
+                                 writer.codeLength(), recordsProfilerCallSites);
 }
 
 bool OperandLocation::operator==(const OperandLocation& other) const {

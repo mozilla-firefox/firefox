@@ -6272,7 +6272,12 @@ class MacroAssembler : public MacroAssemblerSpecific {
     emitProfilingInstrumentation_ = true;
   }
 
-  void instrumentProfilerCallSite();
+  // Update cx->profilingActivation()->lastProfilingCallSite.
+  // The `IfEnabled` versions skip the update if the profiler isn't enabled.
+  void storeProfilerCallSiteIfEnabled(Register callSite);
+  void storeProfilerCallSiteIfEnabled(const Address& callSiteAddr,
+                                      Register scratch);
+  void storeProfilerCallSite(const Address& callSiteAddr, Register scratch);
 
  private:
   // This class is used to surround call sites throughout the assembler. This
