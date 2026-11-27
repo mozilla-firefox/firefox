@@ -148,6 +148,62 @@ codegenTestLOONG64_adhoc(
     "f",
     `andn           \\$a0, \\$a0, \\$a1`);
 
+codegenTestLOONG64_adhoc(
+    `(module
+       (func (export "f") (param i32 i32) (result i32)
+         (if (result i32)
+           (i32.and (local.get 0)
+                    (i32.xor (local.get 1) (i32.const -1)))
+           (then (i32.const 1))
+           (else (i32.const 0)))))`,
+    "f",
+    `andn           \\$a0, \\$a0, \\$a1
+     beqz           \\$a0, \\d+ -> ${HEX}+
+     bge            \\$zero, \\$zero, \\d+ -> ${HEX}+
+     ${NopIns}
+     addi.w         \\$a0, \\$zero, 1
+     beq            \\$zero, \\$zero, \\d+ -> ${HEX}+
+     ${NopIns}
+     addi.w         \\$a0, \\$zero, 0`);
+
+codegenTestLOONG64_adhoc(
+    `(module
+       (func (export "f") (param i32 i32) (result i32)
+         (if (result i32)
+           (i32.eq (i32.and (local.get 0)
+                            (i32.xor (local.get 1) (i32.const -1)))
+                   (i32.const 0))
+           (then (i32.const 1))
+           (else (i32.const 0)))))`,
+    "f",
+    `andn           \\$a0, \\$a0, \\$a1
+     bnez           \\$a0, \\d+ -> ${HEX}+
+     bge            \\$zero, \\$zero, \\d+ -> ${HEX}+
+     ${NopIns}
+     addi.w         \\$a0, \\$zero, 1
+     beq            \\$zero, \\$zero, \\d+ -> ${HEX}+
+     ${NopIns}
+     addi.w         \\$a0, \\$zero, 0`);
+
+codegenTestLOONG64_adhoc(
+    `(module
+       (func (export "f") (param i64 i64) (result i64)
+         (if (result i64)
+           (i64.eq (i64.and (local.get 0)
+                            (i64.xor (local.get 1) (i64.const -1)))
+                   (i64.const 0))
+           (then (i64.const 1))
+           (else (i64.const 0)))))`,
+    "f",
+    `andn           \\$a0, \\$a0, \\$a1
+     bnez           \\$a0, \\d+ -> ${HEX}+
+     bge            \\$zero, \\$zero, \\d+ -> ${HEX}+
+     ${NopIns}
+     addi.w         \\$a0, \\$zero, 1
+     beq            \\$zero, \\$zero, \\d+ -> ${HEX}+
+     ${NopIns}
+     addi.w         \\$a0, \\$zero, 0`);
+
 // Test that signed comparisons against negative constants use SLTI directly.
 
 codegenTestLOONG64_adhoc(

@@ -1860,9 +1860,23 @@ static bool CanEmitBitAndAtUses(MInstruction* ins) {
     return false;
   }
 
-  MIRType tyL = ins->getOperand(0)->type();
-  MIRType tyR = ins->getOperand(1)->type();
+  MDefinition* lhs = ins->getOperand(0);
+  MDefinition* rhs = ins->getOperand(1);
+
+  MIRType tyL = lhs->type();
+  MIRType tyR = rhs->type();
   if (tyL != tyR || (tyL != MIRType::Int32 && tyL != MIRType::Int64)) {
+    return false;
+  }
+
+  const auto isBitNotEmittedAtUse = [](MDefinition* def) {
+    return def->isBitNot() && def->isEmittedAtUses();
+  };
+  // For cases like (and C (not .)) and (and (not .) C), we may be able to skip
+  // materializing the constant |C| into a register via LBitAndAndBranch. So
+  // only reject deferring when it's not the case.
+  if ((isBitNotEmittedAtUse(lhs) && !rhs->isConstant()) ||
+      (isBitNotEmittedAtUse(rhs) && !lhs->isConstant())) {
     return false;
   }
 

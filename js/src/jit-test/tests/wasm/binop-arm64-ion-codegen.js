@@ -350,6 +350,53 @@ codegenTestARM64_adhoc(
     "f",
     `bic     w0, w0, w1`);
 
+codegenTestARM64_adhoc(
+    `(module
+       (func (export "f") (param i32 i32) (result i32)
+         (if (result i32)
+           (i32.and (local.get 0)
+                    (i32.xor (local.get 1) (i32.const -1)))
+           (then (i32.const 1))
+           (else (i32.const 0)))))`,
+    "f",
+    `bic     w0, w0, w1
+     cbz     w0, #\\+0xc \\(addr .*\\)
+     mov     w0, #0x1
+     b       #\\+0x8 \\(addr .*\\)
+     mov     w0, #0x0`);
+
+codegenTestARM64_adhoc(
+    `(module
+       (func (export "f") (param i32 i32) (result i32)
+         (if (result i32)
+           (i32.eq (i32.and (local.get 0)
+                            (i32.xor (local.get 1) (i32.const -1)))
+                   (i32.const 0))
+           (then (i32.const 1))
+           (else (i32.const 0)))))`,
+    "f",
+    `bic     w0, w0, w1
+     cbnz    w0, #\\+0xc \\(addr .*\\)
+     mov     w0, #0x1
+     b       #\\+0x8 \\(addr .*\\)
+     mov     w0, #0x0`);
+
+codegenTestARM64_adhoc(
+    `(module
+       (func (export "f") (param i64 i64) (result i64)
+         (if (result i64)
+           (i64.eq (i64.and (local.get 0)
+                            (i64.xor (local.get 1) (i64.const -1)))
+                   (i64.const 0))
+           (then (i64.const 1))
+           (else (i64.const 0)))))`,
+    "f",
+    `bic     x0, x0, x1
+     cbnz    x0, #\\+0xc \\(addr .*\\)
+     mov     x0, #0x1
+     b       #\\+0x8 \\(addr .*\\)
+     mov     x0, #0x0`);
+
 // Test that select does something reasonable and does not tie its output to one
 // of its inputs.
 
