@@ -18,8 +18,6 @@ import { jsesc } from "resource://gre/modules/third_party/jsesc/jsesc.mjs";
 const IDB_RECORDS_STORE = "records";
 const IDB_TIMESTAMPS_STORE = "timestamps";
 
-let gShutdown = false;
-
 const Agent = {
   /**
    * Return the canonical JSON serialization of the specified records.
@@ -73,9 +71,6 @@ const Agent = {
       // Return -1 if file is missing.
       return -1;
     }
-    if (gShutdown) {
-      throw new Error("Can't import when we've started shutting down.");
-    }
     await importDumpIDB(bucket, collection, records, timestamp);
     return records.length;
   },
@@ -100,21 +95,6 @@ const Agent = {
     return SharedUtils.checkContentHash(buffer, size, hash);
   },
 
-  async prepareShutdown() {
-    gShutdown = true;
-    // Ensure we can iterate and abort (which may delete items) by cloning
-    // the list.
-    let transactions = Array.from(gPendingTransactions);
-    for (let transaction of transactions) {
-      try {
-        transaction.abort();
-      } catch (ex) {
-        // We can hit this case if the transaction has finished but
-        // we haven't heard about it yet.
-      }
-    }
-  },
-
   _test_only_import(bucket, collection, records, timestamp) {
     return importDumpIDB(bucket, collection, records, timestamp);
   },
@@ -137,8 +117,6 @@ self.onmessage = event => {
     });
 };
 
-let gPendingTransactions = new Set();
-
 /**
  * Import the records into the Remote Settings Chrome IndexedDB.
  *
@@ -156,10 +134,6 @@ async function importDumpIDB(bucket, collection, records, timestamp) {
 
   // try...finally to ensure we always close the db.
   try {
-    if (gShutdown) {
-      throw new Error("Can't import when we've started shutting down.");
-    }
-
     // Each entry of the dump will be stored in the records store.
     // They are indexed by `_cid`.
     const cid = bucket + "/" + collection;
@@ -168,7 +142,7 @@ async function importDumpIDB(bucket, collection, records, timestamp) {
       item._cid = cid;
     });
     // Store the collection timestamp.
-    let { transaction, promise } = IDBHelpers.executeIDB(
+    const { promise } = IDBHelpers.executeIDB(
       db,
       [IDB_RECORDS_STORE, IDB_TIMESTAMPS_STORE],
       "readwrite",
@@ -188,8 +162,6 @@ async function importDumpIDB(bucket, collection, records, timestamp) {
         );
       }
     );
-    gPendingTransactions.add(transaction);
-    promise = promise.finally(() => gPendingTransactions.delete(transaction));
     await promise;
   } finally {
     // Close now that we're done.
