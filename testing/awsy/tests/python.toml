@@ -1,0 +1,10 @@
+[DEFAULT]
+subsuite = "awsy"
+
+["test_awsy_test_case.py"]
+
+["test_mach_commands.py"]
+
+["test_parse_about_memory.py"]
+
+["test_process_perf_data.py"]

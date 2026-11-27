@@ -5,3 +5,6 @@
 with Files("awsy/**"):
     BUG_COMPONENT = ("Testing", "AWSY")
     SCHEDULES.exclusive = ["awsy"]
+
+with Files("tests/**"):
+    BUG_COMPONENT = ("Testing", "AWSY")

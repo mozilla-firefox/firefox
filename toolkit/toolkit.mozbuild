@@ -8,6 +8,7 @@ PYTHON_UNITTEST_MANIFESTS += [
     "/browser/components/newtab/test/python/python.toml",
     "/js/src/tests/test/python.toml",
     "/layout/tools/reftest/selftest/python.toml",
+    "/testing/awsy/tests/python.toml",
     "/testing/condprofile/condprof/tests/python.toml",
     "/testing/marionette/harness/marionette_harness/tests/harness_unit/python.toml",
     "/testing/mochitest/tests/python/python.toml",

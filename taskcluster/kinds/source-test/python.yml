@@ -660,6 +660,21 @@ fxms-schemas:
             - 'browser/components/asrouter/modules/OnboardingMessageProvider.sys.mjs'
             - 'browser/components/asrouter/modules/PanelTestProvider.sys.mjs'
 
+awsy:
+    description: testing/awsy unit tests
+    platform:
+        - linux2404-64/opt
+        - macosx1470-64/opt
+        - windows11-64/opt
+    treeherder:
+        symbol: awsy
+    run:
+        using: python-test
+        subsuite: awsy
+    when:
+        files-changed:
+            - 'testing/awsy/**'
+
 condprof:
     description: testing/condprofile unit tests
     platform:
