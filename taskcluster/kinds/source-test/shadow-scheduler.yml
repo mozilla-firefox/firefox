@@ -131,6 +131,17 @@ bugbug_reduced_manifests_config_selection_medium:
         env:
             TASKGRAPH_OPTIMIZE_STRATEGIES: gecko_taskgraph.optimize:experimental.bugbug_reduced_manifests_config_selection_medium
 
+bugbug_reduced_manifests_config_selection_very_high_max_10:
+    description: Runs the bugbug_reduced_manifests_config_selection_very_high_max_10 optimization strategy instead of the default.
+    treeherder:
+        symbol: SS(bugbug_r_c_s_vh_max10)
+    index:
+        product: source
+        job-name: shadow-scheduler-bugbug_reduced_manifests_config_selection_very_high_max_10
+    worker:
+        env:
+            TASKGRAPH_OPTIMIZE_STRATEGIES: gecko_taskgraph.optimize:experimental.bugbug_reduced_manifests_config_selection_very_high_max_10
+
 bugbug_disperse_medium_no_unseen:
     description: Runs the bugbug_disperse_medium_no_unseen optimization strategy instead of the default.
     treeherder:

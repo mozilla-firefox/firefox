@@ -39,6 +39,7 @@ from gecko_taskgraph.util.bugbug import (
     BUGBUG_BASE_URL,
     CT_LOW,
     CT_MEDIUM,
+    CT_VERY_HIGH,
     CT_VERY_LOW,
     BugbugTimeoutException,
     push_schedules,
@@ -323,6 +324,40 @@ def test_optimization_strategy_remove(params, opt, tasks, arg, expected):
             },
             ["task-0-label"],
         ),
+        # the very high groups threshold returned by bugbug replaces the preset one,
+        # and only the configs it selected for the groups exceeding it are kept
+        pytest.param(
+            (CT_VERY_HIGH, False, True, None, 1, True),
+            {
+                "groups": {"foo/test.ini": 0.65, "bar/test.ini": 0.55},
+                "config_groups": {
+                    "foo/test.ini": ["task-0-label"],
+                    "bar/test.ini": ["task-1-label"],
+                },
+                "confidence_thresholds": {"groups": {"high": 0.5, "very_high": 0.6}},
+            },
+            ["task-0-label"],
+        ),
+        # the very high tasks threshold returned by bugbug replaces the preset one
+        pytest.param(
+            (CT_VERY_HIGH, False, True, None, 1, True),
+            {
+                "tasks": {"task-2-label": 0.45, "task-4-label": 0.45},
+                "reduced_tasks": {"task-2-label": 0.45, "task-4-label": 0.35},
+                "confidence_thresholds": {"tasks": {"high": 0.3, "very_high": 0.4}},
+            },
+            ["task-2-label"],
+        ),
+        # without a very high tasks threshold from bugbug, the preset one is used
+        pytest.param(
+            (CT_VERY_HIGH, False, True, None, 1, True),
+            {
+                "tasks": {"task-2-label": 0.96, "task-4-label": 0.9},
+                "reduced_tasks": {"task-2-label": 0.96, "task-4-label": 0.9},
+                "confidence_thresholds": {"tasks": {"high": 0.6}},
+            },
+            ["task-2-label"],
+        ),
         # the thresholds returned by bugbug are only used for the preset ones
         pytest.param(
             (0.5,),
@@ -351,6 +386,53 @@ def test_bugbug_push_schedules(responses, params, args, data, expected):
         t.label for t in default_tasks if not opt.should_remove_task(t, params, {})
     ]
     assert sorted(labels) == sorted(expected)
+
+
+def test_bugbug_max_groups_and_tasks(responses, params):
+    responses.add(
+        responses.GET,
+        BUGBUG_BASE_URL + "/push/{branch}/{head_rev}/schedules".format(**params),
+        json={
+            "tasks": {
+                "build-linux64/opt": 0.6,
+                "task-2-label": 0.7,
+                "task-3-label": 0.9,
+                "task-4-label": 0.8,
+                "task-6-label": 1.0,
+            },
+            "groups": {
+                "foo/test.ini": 0.8,
+                "bar/test.ini": 0.9,
+                "baz/test.ini": 0.2,
+                "qux/test.ini": 1.0,
+            },
+        },
+        status=200,
+    )
+
+    tasks = list(
+        generate_tasks(
+            {"attributes": {"test_manifests": ["foo/test.ini"]}},
+            {"attributes": {"test_manifests": ["bar/test.ini"]}},
+            {},
+            {},
+            {},
+            {"label": "build-linux64/opt", "kind": "build"},
+            {},
+            {"attributes": {"test_manifests": ["qux/test.ini"]}},
+        )
+    )
+
+    opt = BugBugPushSchedules(0.5, max_groups=1, max_tasks=2)
+    labels = [t.label for t in tasks if not opt.should_remove_task(t, params, {})]
+    assert sorted(labels) == [
+        "build-linux64/opt",
+        "task-1-label",
+        "task-3-label",
+        "task-4-label",
+        "task-6-label",
+        "task-7-label",
+    ]
 
 
 def test_bugbug_multiple_pushes(responses, params):

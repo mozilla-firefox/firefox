@@ -13,6 +13,7 @@ from gecko_taskgraph.util.bugbug import (
     CT_HIGH,
     CT_LOW,
     CT_MEDIUM,
+    CT_VERY_HIGH,
     CT_VERY_LOW,
     SUPPORTED_PROJECTS,
     BugbugTimeoutException,
@@ -61,6 +62,18 @@ def merge_bugbug_replies(data, new_data):
             data[key].update(value)
 
 
+def cap_by_confidence(confidences, n):
+    """Return the keys of `confidences` that bugbug forced to a confidence of 1 (e.g.
+    for modified tests or backouts), and the `n` others with the highest values,
+    breaking ties by key so that the selection is the same for every task."""
+    forced = {k for k, c in confidences.items() if c >= 1.0}
+    others = sorted(
+        (k for k in confidences if k not in forced),
+        key=lambda k: (-confidences[k], k),
+    )
+    return forced | set(others[:n])
+
+
 @register_strategy("bugbug-low", args=(CT_LOW,))
 @register_strategy("bugbug-medium", args=(CT_MEDIUM,))
 @register_strategy("bugbug-high", args=(CT_HIGH,))
@@ -81,6 +94,11 @@ def merge_bugbug_replies(data, new_data):
 @register_strategy(
     "bugbug-reduced-manifests-config-selection-high",
     args=(CT_HIGH, False, True, None, 1, True),
+)
+@register_strategy(
+    "bugbug-reduced-manifests-config-selection-very-high-max-10",
+    args=(CT_VERY_HIGH, False, True, None, 1, True),
+    kwargs={"max_groups": 10, "max_tasks": 10},
 )
 @register_strategy(
     "bugbug-reduced-manifests-fallback-low", args=(CT_LOW, False, True, FALLBACK)
@@ -108,6 +126,12 @@ class BugBugPushSchedules(OptimizationStrategy):
             (default: 1).
         select_configs (bool): Whether to select configurations for manifests
             too (default: False).
+        max_groups (int): The maximum number of groups to select, keeping the
+            ones with the highest confidence, besides the ones bugbug forced to
+            a confidence of 1 (default: None, no limit).
+        max_tasks (int): The maximum number of tasks other than builds to
+            select, keeping the ones with the highest confidence, besides the
+            ones bugbug forced to a confidence of 1 (default: None, no limit).
     """
 
     def __init__(
@@ -118,6 +142,8 @@ class BugBugPushSchedules(OptimizationStrategy):
         fallback=None,
         num_pushes=1,
         select_configs=False,
+        max_groups=None,
+        max_tasks=None,
     ):
         self.confidence_threshold = confidence_threshold
         self.use_reduced_tasks = use_reduced_tasks
@@ -125,6 +151,8 @@ class BugBugPushSchedules(OptimizationStrategy):
         self.tasks_only = tasks_only
         self.num_pushes = num_pushes
         self.select_configs = select_configs
+        self.max_groups = max_groups
+        self.max_tasks = max_tasks
         self.timedout = False
 
     def should_remove_task(self, task, params, importance):
@@ -169,10 +197,15 @@ class BugBugPushSchedules(OptimizationStrategy):
             data, "tasks", self.confidence_threshold
         )
         tasks = {
-            task
+            task: confidence
             for task, confidence in data.get(key, {}).items()
             if confidence >= tasks_threshold
         }
+        if self.max_tasks is not None:
+            builds = {t for t in tasks if t.startswith("build-")}
+            tasks = builds | cap_by_confidence(
+                {t: c for t, c in tasks.items() if t not in builds}, self.max_tasks
+            )
 
         test_manifests = task.attributes.get("test_manifests")
         if test_manifests is None or self.tasks_only:
@@ -189,7 +222,16 @@ class BugBugPushSchedules(OptimizationStrategy):
         groups_threshold = get_confidence_threshold(
             data, "groups", self.confidence_threshold
         )
-        confidences = [c for g, c in groups.items() if g in test_manifests]
+        selectable_groups = groups
+        if self.max_groups is not None:
+            selectable_groups = {
+                g: groups[g]
+                for g in cap_by_confidence(
+                    {g: c for g, c in groups.items() if c >= groups_threshold},
+                    self.max_groups,
+                )
+            }
+        confidences = [c for g, c in selectable_groups.items() if g in test_manifests]
         if not confidences or max(confidences) < groups_threshold:
             return True
 
@@ -198,7 +240,7 @@ class BugBugPushSchedules(OptimizationStrategy):
         if self.select_configs:
             selected_groups = [
                 g
-                for g, c in groups.items()
+                for g, c in selectable_groups.items()
                 if g in test_manifests and c > groups_threshold
             ]
 

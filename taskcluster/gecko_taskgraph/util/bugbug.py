@@ -43,6 +43,7 @@ CT_VERY_LOW = 0.3
 CT_LOW = 0.7
 CT_MEDIUM = 0.8
 CT_HIGH = 0.9
+CT_VERY_HIGH = 0.95
 
 # The confidence levels of the preset thresholds, for which bugbug can return the thresholds to
 # use with its current models.
@@ -51,6 +52,7 @@ CT_LEVELS = {
     CT_LOW: "low",
     CT_MEDIUM: "medium",
     CT_HIGH: "high",
+    CT_VERY_HIGH: "very_high",
 }
 
 GROUP_TRANSLATIONS = {
