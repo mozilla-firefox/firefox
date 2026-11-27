@@ -121,7 +121,7 @@ private fun ItemRow(
             containerColor =
                 when {
                     row.isHidden -> Color.Transparent
-                    isHighlighted -> MaterialTheme.colorScheme.surfaceContainerHighest
+                    isHighlighted -> MaterialTheme.colorScheme.surfaceDim
                     else -> null
                 }
         ) {

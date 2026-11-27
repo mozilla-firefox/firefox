@@ -93,7 +93,7 @@ internal fun CustomizeMenuGroupContent(
                 containerColor =
                     when {
                         isHidden -> Color.Transparent
-                        isHighlighted -> MaterialTheme.colorScheme.surfaceContainerHighest
+                        isHighlighted -> MaterialTheme.colorScheme.surfaceDim
                         else -> null
                     }
             ) {
@@ -226,9 +226,7 @@ internal fun Modifier.hiddenBorder(isHighlighted: Boolean = false): Modifier =
 @Composable
 internal fun Modifier.highlight(isHighlighted: Boolean, isHidden: Boolean, shape: Shape): Modifier {
     if (!isHighlighted) return this
-    return this.then(
-            if (isHidden) Modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest, shape) else Modifier
-        )
+    return this.then(if (isHidden) Modifier.background(MaterialTheme.colorScheme.surfaceDim, shape) else Modifier)
         .border(width = AcornTheme.layout.border.heavy, color = MaterialTheme.colorScheme.tertiary, shape = shape)
 }
 
