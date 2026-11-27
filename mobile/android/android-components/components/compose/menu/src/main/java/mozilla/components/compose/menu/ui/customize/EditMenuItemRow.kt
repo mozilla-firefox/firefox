@@ -46,6 +46,7 @@ import mozilla.components.compose.menu.ui.utils.DRAGGED_GROUP_ALPHA
  * @param itemSpacing Space above each row of the list.
  * @param actions What the rows do for accessibility services, when an expandable item is expanded or collapsed, and
  *   when the user long presses a drag handle.
+ * @param isHighlighted Whether to highlight the row, as the one the open actions sheet acts on.
  * @param modifier The [Modifier] to be applied to the row.
  */
 @Composable
@@ -55,6 +56,7 @@ internal fun LazyItemScope.EditMenuItemRow(
     dragState: CustomizeMenuDragState<CustomizeMenuItems>,
     itemSpacing: Dp,
     actions: EditMenuItemsActions,
+    isHighlighted: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val interactionState = dragState.interactionState
@@ -72,7 +74,15 @@ internal fun LazyItemScope.EditMenuItemRow(
     ) {
         when (row) {
             is EditMenuItemsRow.Item ->
-                ItemRow(row, actions, dragState, row.key.takeIf { row.isDraggable }, isDragged, itemSpacing)
+                ItemRow(
+                    row = row,
+                    actions = actions,
+                    dragState = dragState,
+                    dragKey = row.key.takeIf { row.isDraggable },
+                    isDragged = isDragged,
+                    isHighlighted = isHighlighted,
+                    itemSpacing = itemSpacing,
+                )
             is EditMenuItemsRow.SubItemsEnd ->
                 RowFrame(isSubItem = false, dragState = dragState, dragKey = null, modifier = Modifier) {
                     SubItemsDivider()
@@ -88,11 +98,12 @@ private fun ItemRow(
     dragState: CustomizeMenuDragState<*>,
     dragKey: Any?,
     isDragged: Boolean,
+    isHighlighted: Boolean,
     itemSpacing: Dp,
 ) {
     val item = row.item.item ?: return
     val pillModifier =
-        Modifier.then(if (row.isHidden) Modifier.hiddenBorder() else Modifier)
+        Modifier.then(if (row.isHidden && !isHighlighted) Modifier.hiddenBorder() else Modifier)
             .alpha(if (row.isHidden) DISABLED_ALPHA else 1f)
             .clip(MaterialTheme.shapes.extraLarge)
 
@@ -102,9 +113,18 @@ private fun ItemRow(
         dragKey = dragKey,
         modifier = Modifier.alpha(if (isDragged) DRAGGED_GROUP_ALPHA else 1f).padding(top = itemSpacing),
         semantics = Modifier.editMenuItemSemantics(row, item, actions),
+        isHighlighted = isHighlighted,
+        isHidden = row.isHidden,
         onDragHandleLongPress = { actions.onShowActions(row.item.id) },
     ) {
-        CustomizedGroupTheme(containerColor = if (row.isHidden) Color.Transparent else null) {
+        CustomizedGroupTheme(
+            containerColor =
+                when {
+                    row.isHidden -> Color.Transparent
+                    isHighlighted -> MaterialTheme.colorScheme.surfaceContainerHighest
+                    else -> null
+                }
+        ) {
             if (item is ExpandableMenuItem) {
                 ExpandableItemPill(row, item, actions.onExpansionToggle, dragState, pillModifier)
             } else {
@@ -165,6 +185,8 @@ private fun ItemPill(item: MenuItem, modifier: Modifier) {
  *   handle.
  * @param modifier The [Modifier] to be applied to the row.
  * @param semantics The [Modifier] making the row, with its content and handle, a node for accessibility services.
+ * @param isHighlighted Whether to highlight the row, as the one the open actions sheet acts on.
+ * @param isHidden Whether the row is of a hidden item.
  * @param onDragHandleLongPress Called when the user long presses the drag handle without moving.
  * @param content The content of the row.
  */
@@ -175,6 +197,8 @@ private fun RowFrame(
     dragKey: Any?,
     modifier: Modifier,
     semantics: Modifier = Modifier,
+    isHighlighted: Boolean = false,
+    isHidden: Boolean = false,
     onDragHandleLongPress: () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
@@ -198,7 +222,8 @@ private fun RowFrame(
                         dragKey?.let {
                             Modifier.dragAfterLongPress(dragState.interactionState, dragState.listState, it)
                         } ?: Modifier
-                    ),
+                    )
+                    .highlight(isHighlighted, isHidden, MaterialTheme.shapes.extraLarge),
             propagateMinConstraints = true,
         ) {
             content()

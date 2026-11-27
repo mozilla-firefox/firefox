@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
@@ -85,27 +86,7 @@ internal fun CustomizeMenuGroupContent(
             modifier =
                 Modifier.weight(1f)
                     .dragGroupAfterLongPress(dragState, group.id)
-                    .then(
-                        if (isHighlighted && isHidden) {
-                            Modifier.background(
-                                MaterialTheme.colorScheme.surfaceContainerHighest,
-                                sectionShape,
-                            )
-                        } else {
-                            Modifier
-                        }
-                    )
-                    .then(
-                        if (isHighlighted) {
-                            Modifier.border(
-                                width = AcornTheme.layout.border.heavy,
-                                color = MaterialTheme.colorScheme.tertiary,
-                                shape = sectionShape,
-                            )
-                        } else {
-                            Modifier
-                        }
-                    ),
+                    .highlight(isHighlighted, isHidden, sectionShape),
             propagateMinConstraints = true,
         ) {
             CustomizedGroupTheme(
@@ -233,6 +214,23 @@ internal fun Modifier.hiddenBorder(isHighlighted: Boolean = false): Modifier =
         dashWidth = 6.dp,
         dashGap = 6.dp,
     )
+
+/**
+ * Highlight of the section or item the open actions sheet acts on: a border and, if it is hidden, a fill, as its
+ * content has none.
+ *
+ * @param isHighlighted Whether to highlight.
+ * @param isHidden Whether the section or item is hidden.
+ * @param shape Shape of the section or item.
+ */
+@Composable
+internal fun Modifier.highlight(isHighlighted: Boolean, isHidden: Boolean, shape: Shape): Modifier {
+    if (!isHighlighted) return this
+    return this.then(
+            if (isHidden) Modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest, shape) else Modifier
+        )
+        .border(width = AcornTheme.layout.border.heavy, color = MaterialTheme.colorScheme.tertiary, shape = shape)
+}
 
 @PreviewLightDark
 @Composable

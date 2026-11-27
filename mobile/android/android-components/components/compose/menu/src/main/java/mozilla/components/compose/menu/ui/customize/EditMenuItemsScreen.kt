@@ -116,7 +116,7 @@ private fun EditMenuItemsList(
             )
         }
 
-        editMenuItemRows(menuItems.shownRows, firstIndex = 1, dragState, itemSpacing, actions)
+        editMenuItemRows(menuItems.shownRows, firstIndex = 1, dragState, itemSpacing, actions, actionsItemId.value)
 
         item(key = HIDDEN_TITLE) {
             HiddenSectionsItem(
@@ -135,7 +135,14 @@ private fun EditMenuItemsList(
             }
         }
 
-        editMenuItemRows(menuItems.hiddenRows, dragState.firstHiddenIndex, dragState, itemSpacing, actions)
+        editMenuItemRows(
+            menuItems.hiddenRows,
+            dragState.firstHiddenIndex,
+            dragState,
+            itemSpacing,
+            actions,
+            actionsItemId.value,
+        )
     }
 
     EditMenuItemActionsSheetOf(
@@ -222,6 +229,7 @@ private fun LazyListScope.editMenuItemRows(
     dragState: CustomizeMenuDragState<CustomizeMenuItems>,
     itemSpacing: Dp,
     actions: EditMenuItemsActions,
+    highlightedItemId: String?,
 ) {
     itemsIndexed(items = rows, key = { _, row -> row.key }) { index, row ->
         EditMenuItemRow(
@@ -230,6 +238,7 @@ private fun LazyListScope.editMenuItemRows(
             dragState = dragState,
             itemSpacing = itemSpacing,
             actions = actions,
+            isHighlighted = row.key == highlightedItemId,
         )
     }
 }
