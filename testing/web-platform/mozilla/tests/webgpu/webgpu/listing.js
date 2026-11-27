@@ -4194,6 +4194,24 @@ export const listing = [
     "file": [
       "shader",
       "execution",
+      "mutation",
+      "mesa",
+      "no_input"
+    ]
+  },
+  {
+    "file": [
+      "shader",
+      "execution",
+      "mutation",
+      "mesa",
+      "uniform_input"
+    ]
+  },
+  {
+    "file": [
+      "shader",
+      "execution",
       "override"
     ]
   },

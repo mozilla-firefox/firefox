@@ -34,6 +34,7 @@ Options:
   --unroll-const-eval-loops Unrolls loops in constant-evaluation shader execution tests
   --enforce-default-limits  Enforce the default limits (note: powerPreference tests may fail)
   --force-fallback-adapter  Force a fallback adapter
+  --one-device              Keep at most one device at a time (for tools such as RenderDoc)
   --log-to-websocket        Log to a websocket
   --quiet                   Suppress summary information in output
 `);
@@ -117,6 +118,8 @@ for (let i = 0; i < sys.args.length; ++i) {
       globalTestConfig.subcasesBetweenAttemptingGC = Number(sys.args[++i]);
     } else if (a === '--cases-between-replacing-device') {
       globalTestConfig.casesBetweenReplacingDevice = Number(sys.args[++i]);
+    } else if (a === '--one-device') {
+      globalTestConfig.oneDevice = true;
     } else if (a === '--log-to-websocket') {
       globalTestConfig.logToWebSocket = true;
     } else {

@@ -932,3 +932,72 @@ fn main(
       }
     );
   });
+
+g.test('shuffle,out_of_bounds')
+  .desc(
+    `Tests that OOB subgroupShuffle (using dynamic IDs) does not leak data from outside the workgroup`
+  )
+  .params(u => u.combine('oob_id', [32, 33, 64, 65, 127, 128, 1000, 0xffffffff]))
+  .fn(async t => {
+    t.skipIfDeviceDoesNotHaveFeature('subgroups');
+
+    const kSize = 32;
+    const kSentinelLeft = 0xdead;
+    const kSentinelRight = 0xbeef;
+
+    const wgsl = `
+enable subgroups;
+
+@group(0) @binding(0)
+var<storage, read> input : array<u32>;
+
+@group(0) @binding(1)
+var<storage, read_write> output : array<u32>;
+
+@group(0) @binding(2)
+var<storage, read_write> metadata : array<u32>; // unused
+
+@compute @workgroup_size(${kSize})
+fn main(
+  @builtin(local_invocation_id) lid : vec3<u32>,
+) {
+  // Force usage
+  _ = metadata[0];
+
+  let id = input[0];
+  // offset is 1 (for id) + 64 (for SentinelLeft)
+  let offset = 65u;
+  let value = input[offset + lid.x];
+
+  let res = subgroupShuffle(value, id);
+  output[lid.x] = res;
+}`;
+
+    // input buffer: [OOB_ID, SentinelLeft x 64, Predictable x 32, SentinelRight x 64]
+    const inputData = new Uint32Array(1 + 64 + 32 + 64);
+    inputData[0] = t.params.oob_id;
+    for (let i = 0; i < 64; i++) inputData[1 + i] = kSentinelLeft;
+    for (let i = 0; i < 32; i++) inputData[1 + 64 + i] = i;
+    for (let i = 0; i < 64; i++) inputData[1 + 64 + 32 + i] = kSentinelRight;
+
+    const uintsPerOutput = 1;
+    await runComputeTest(
+      t,
+      wgsl,
+      [kSize, 1, 1],
+      uintsPerOutput,
+      inputData,
+      (metadata: Uint32Array, output: Uint32Array) => {
+        for (let i = 0; i < kSize; i++) {
+          const res = output[i];
+
+          if (res === kSentinelLeft || res === kSentinelRight) {
+            return new Error(`Invocation ${i}: incorrect results (id ${t.params.oob_id})
+- expected: indeterminate value (not a sentinel marker)
+-      got: 0x${res.toString(16)}`);
+          }
+        }
+        return undefined;
+      }
+    );
+  });

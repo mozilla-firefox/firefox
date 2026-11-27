@@ -880,7 +880,7 @@ g.test('inputs,position')
         sampleCount,
         actual,
         expected,
-        maxDiffULPsForFloatFormat: 4,
+        maxDiffULPsForFloatFormat: 32,
       })
     );
   });
@@ -965,7 +965,7 @@ g.test('inputs,interStage')
         sampleCount,
         actual,
         expected,
-        maxDiffULPsForFloatFormat: 4,
+        maxDiffULPsForFloatFormat: 32,
       })
     );
   });

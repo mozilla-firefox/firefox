@@ -582,6 +582,7 @@ class RunCaseSpecific {
     };
 
     const { testHeartbeatCallback, maxSubcasesInFlight } = globalTestConfig;
+    globalTestConfig.testCaseStartCallback(selfQuery.toString());
     try {
       rec.start();
       const sharedState = this.fixture.MakeSharedState(rec, this.params);
@@ -709,6 +710,7 @@ class RunCaseSpecific {
         nonskippedSubcaseCount: rec.nonskippedSubcaseCount
       };
       logToWebSocket(JSON.stringify(msg));
+      globalTestConfig.testCaseEndCallback(selfQuery.toString());
     }
   }
 }

@@ -880,7 +880,7 @@ fn(async (t) => {
       sampleCount,
       actual,
       expected,
-      maxDiffULPsForFloatFormat: 4
+      maxDiffULPsForFloatFormat: 32
     })
   );
 });
@@ -965,7 +965,7 @@ fn(async (t) => {
       sampleCount,
       actual,
       expected,
-      maxDiffULPsForFloatFormat: 4
+      maxDiffULPsForFloatFormat: 32
     })
   );
 });

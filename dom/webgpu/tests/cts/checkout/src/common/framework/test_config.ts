@@ -24,7 +24,24 @@ export type TestConfig = {
    */
   casesBetweenReplacingDevice: number;
 
+  /**
+   * Keep at most one device at a time, destroying the others before creating a new one.
+   * Needed by tools that support only one device at a time, such as RenderDoc.
+   */
+  oneDevice: boolean;
+
   testHeartbeatCallback: () => void;
+
+  /**
+   * Called with a test case's query when the case starts running, and again when it has finished.
+   */
+  testCaseStartCallback: (query: string) => void;
+  testCaseEndCallback: (query: string) => void;
+
+  /**
+   * Called with the device each time a test case acquires one from the device pool.
+   */
+  deviceAcquiredCallback: (device: GPUDevice) => void;
 
   noRaceWithRejectOnTimeout: boolean;
 
@@ -74,7 +91,11 @@ export const globalTestConfig: TestConfig = {
   maxSubcasesInFlight: 100,
   subcasesBetweenAttemptingGC: 5000,
   casesBetweenReplacingDevice: Infinity,
+  oneDevice: false,
   testHeartbeatCallback: () => {},
+  testCaseStartCallback: () => {},
+  testCaseEndCallback: () => {},
+  deviceAcquiredCallback: () => {},
   noRaceWithRejectOnTimeout: false,
   unrollConstEvalLoops: false,
   compatibility: false,

@@ -65,6 +65,7 @@ if (options.subcasesBetweenAttemptingGC) {
 if (options.casesBetweenReplacingDevice) {
   globalTestConfig.casesBetweenReplacingDevice = Number(options.casesBetweenReplacingDevice);
 }
+globalTestConfig.oneDevice = options.oneDevice;
 globalTestConfig.logToWebSocket = options.logToWebSocket;
 
 const logger = new Logger();

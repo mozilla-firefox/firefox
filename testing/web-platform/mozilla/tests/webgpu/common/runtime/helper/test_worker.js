@@ -10,12 +10,9 @@ import { kDefaultCTSOptions } from './options.js';
 
 
 /** Query all currently-registered service workers, and unregister them. */
-function unregisterAllServiceWorkers() {
-  void navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const registration of registrations) {
-      void registration.unregister();
-    }
-  });
+async function unregisterAllServiceWorkers() {
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(registrations.map((r) => r.unregister()));
 }
 
 // In practice all Web-based runtimes should be including this file, so take the opportunity to set
@@ -173,20 +170,16 @@ export class TestServiceWorker extends TestBaseWorker {
   constructor(ctsOptions) {
     super('service', ctsOptions);
 
-    // If the runtime is trying to use service workers, first clean up any service workers that may
-    // have leaked from previous incarnations of the page. Service workers *shouldn't* affect
-    // worker=none/dedicated/shared, so it should be OK if this constructor isn't called.
-    unregisterAllServiceWorkers();
-
     // Try to send a shutdown signal to the worker on shutdown.
     registerShutdownTask(() => {
       this.runShutdownTasksOnLastServiceWorker();
-      unregisterAllServiceWorkers();
+      void unregisterAllServiceWorkers();
     });
   }
 
   runShutdownTasksOnLastServiceWorker() {
     this.lastServiceWorker?.postMessage('shutdown');
+    this.lastServiceWorker = null;
   }
 
   async runImpl(query, expectations = []) {
@@ -204,6 +197,14 @@ export class TestServiceWorker extends TestBaseWorker {
       // <https://bugzilla.mozilla.org/asdf> for removal.
       `${location.origin}/_mozilla/webgpu/${suite}/webworker/${fileName}.as_worker.js`
     ).toString();
+
+    // If we are switching service workers (or on first run, cleaning up any service workers that
+    // may have leaked from previous incarnations of the page), shut down the previous worker and
+    // unregister all existing registrations before registering the new one.
+    if (this.lastServiceWorker?.scriptURL !== serviceWorkerURL) {
+      this.runShutdownTasksOnLastServiceWorker();
+      await unregisterAllServiceWorkers();
+    }
 
     // Ensure the correct service worker is registered.
     const registration = await navigator.serviceWorker.register(serviceWorkerURL, {

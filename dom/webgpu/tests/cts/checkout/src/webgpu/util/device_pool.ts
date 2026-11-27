@@ -87,6 +87,7 @@ export class DevicePool {
     assert(holder.state === 'free', 'Device was in use on DevicePool.acquire');
     holder.state = 'acquired';
     holder.beginTestScope();
+    globalTestConfig.deviceAcquiredCallback(holder.device);
     return holder;
   }
 
@@ -213,6 +214,9 @@ class DescriptorToHolderMap {
     }
 
     // No existing item was found; add a new one.
+    if (globalTestConfig.oneDevice) {
+      await this.destroyAllAndWait();
+    }
     let value;
     try {
       value = await DeviceHolder.create(recorder, descriptor, descriptorModifier);
@@ -246,6 +250,17 @@ class DescriptorToHolderMap {
         break;
       }
     }
+  }
+
+  /** Destroy all the devices, wait for them to be lost, and clear the map. */
+  private async destroyAllAndWait() {
+    const holders = [...this.holders.values()];
+    this.holders.clear();
+    for (const holder of holders) {
+      assert(holder.state === 'free', 'Device was in use when destroying all devices');
+      holder.device.destroy();
+    }
+    await Promise.all(holders.map(holder => holder.device.lost));
   }
 
   /** Destroy all the devices and clear the map. This destroys devices even if they're in use. */

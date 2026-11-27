@@ -59,6 +59,7 @@ export interface CTSOptions {
   powerPreference: GPUPowerPreference | null;
   subcasesBetweenAttemptingGC: string;
   casesBetweenReplacingDevice: string;
+  oneDevice: boolean;
   logToWebSocket: boolean;
 }
 
@@ -73,6 +74,7 @@ export const kDefaultCTSOptions: Readonly<CTSOptions> = {
   powerPreference: null,
   subcasesBetweenAttemptingGC: '5000',
   casesBetweenReplacingDevice: 'Infinity',
+  oneDevice: false,
   logToWebSocket: false,
 };
 
@@ -150,6 +152,9 @@ Note: The spec requires bc or etc2+astc which means tests checking that one or o
       { value: '50', description: '50' },
       { value: '1', description: '1' },
     ],
+  },
+  oneDevice: {
+    description: 'keep at most one device at a time, for tools such as RenderDoc',
   },
   logToWebSocket: { description: 'send some logs to ws://localhost:59497/' },
 };

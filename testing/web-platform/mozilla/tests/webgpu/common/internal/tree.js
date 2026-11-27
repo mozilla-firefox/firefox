@@ -420,6 +420,7 @@ subtree,
 description)
 {
   assert(subtree.description === undefined);
+  assert(!!description, 'missing `export const description = ...;` in your .spec.ts file');
   subtree.description = description.trim();
   subtree.subtreeCounts ??= { tests: 0, nodesWithTODO: 0, totalTimeMS: 0 };
   if (subtree.description.indexOf('TODO') !== -1) {

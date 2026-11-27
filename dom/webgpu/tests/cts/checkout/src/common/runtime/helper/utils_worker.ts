@@ -27,6 +27,7 @@ export function setupWorkerEnvironment(ctsOptions: CTSOptions): Logger {
   if (ctsOptions.casesBetweenReplacingDevice) {
     globalTestConfig.casesBetweenReplacingDevice = Number(ctsOptions.casesBetweenReplacingDevice);
   }
+  globalTestConfig.oneDevice = ctsOptions.oneDevice;
   globalTestConfig.logToWebSocket = ctsOptions.logToWebSocket;
 
   const log = new Logger();
