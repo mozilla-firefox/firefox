@@ -18,6 +18,7 @@ import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.ui.MenuItemIconRes
 import org.junit.Test
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.menu.MenuTarget
 import org.mozilla.fenix.components.menu.fake.FakeMenuHost
 import org.mozilla.fenix.components.menu.fake.reachableEvents
 import org.mozilla.fenix.components.menu.store.MenuAction
@@ -95,9 +96,20 @@ class DefaultBrowserMenuItemProviderTest {
         assertFalse(provider.handles(MenuAction.Navigate.Settings))
     }
 
+    @Test
+    fun `GIVEN the menu preview WHEN interacting with the item THEN don't handle its events`() {
+        val provider =
+            createProvider(shouldShowMenuBanner = true, isDefaultBrowser = false, target = MenuTarget.Preview)
+
+        assertIs<BannerMenuItem>(provider.itemsFlow.value.single())
+        assertFalse(provider.handles(MenuAction.DefaultBrowserMenuBannerClicked))
+        assertFalse(provider.handles(MenuAction.DefaultBrowserMenuBannerDismissed))
+    }
+
     private fun createProvider(
         shouldShowMenuBanner: Boolean,
         isDefaultBrowser: Boolean,
+        target: MenuTarget = MenuTarget.BrowserTab,
     ): DefaultBrowserMenuItemProvider {
         every { settings.shouldShowMenuBanner } returns shouldShowMenuBanner
         every { settings.isDefaultBrowser } returns isDefaultBrowser
@@ -105,6 +117,7 @@ class DefaultBrowserMenuItemProviderTest {
         return DefaultBrowserMenuItemProvider(
             settings = settings,
             appName = APP_NAME,
+            target = target,
             setAsDefaultBrowser = { setAsDefaultBrowserCount++ },
         )
     }

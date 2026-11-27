@@ -22,11 +22,9 @@ object MainMenuSelectors : SelectorContainer {
         BROWSER_VIEW_MAIN_MENU_ITEMS,
         BOOKMARK_ACTIONS,
         EDIT_BOOKMARK_ACTIONS,
-        BROWSER_VIEW_MAIN_MENU_MORE_ITEMS,
         MORE_MAIN_MENU_SUB_LIST,
         EXPANDED_EXTENSIONS_MENU_ITEMS,
         HOME_BANNER,
-        MORE_MENU_ITEMS,
     }
 
     val MAIN_MENU_ANCHOR =
@@ -43,6 +41,7 @@ object MainMenuSelectors : SelectorContainer {
             value = getStringResource(R.string.browser_menu_extensions),
             description = "Main menu Extensions button",
             groups = setOf(Group.HOME_PAGE_MAIN_MENU_ITEMS, Group.BROWSER_VIEW_MAIN_MENU_ITEMS),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val BOOKMARKS_BUTTON =
@@ -108,6 +107,7 @@ object MainMenuSelectors : SelectorContainer {
             secondaryValue = MenuTestTag.MAIN_MENU,
             description = "Bookmark this page button",
             groups = setOf(Group.BOOKMARK_ACTIONS, Group.BROWSER_VIEW_MAIN_MENU_ITEMS),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val EDIT_BOOKMARK_BUTTON =
@@ -125,6 +125,7 @@ object MainMenuSelectors : SelectorContainer {
             value = getStringResource(R.string.browser_menu_find_in_page),
             description = "Main menu Find in page button",
             groups = setOf(Group.BROWSER_VIEW_MAIN_MENU_ITEMS),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val BACK_BUTTON =
@@ -169,6 +170,7 @@ object MainMenuSelectors : SelectorContainer {
             value = getStringResource(R.string.browser_menu_desktop_site),
             description = "Main menu Desktop site button",
             groups = setOf(Group.BROWSER_VIEW_MAIN_MENU_ITEMS),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val DESKTOP_SITE_ON =
@@ -193,6 +195,7 @@ object MainMenuSelectors : SelectorContainer {
             value = getStringResource(R.string.browser_menu_more_settings),
             description = "Main menu More button",
             groups = setOf(Group.BROWSER_VIEW_MAIN_MENU_ITEMS),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val REPORT_BROKEN_SITE_BUTTON =
@@ -200,7 +203,8 @@ object MainMenuSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.browser_menu_webcompat_reporter_2),
             description = "Main menu Report broken site button",
-            groups = setOf(Group.BROWSER_VIEW_MAIN_MENU_MORE_ITEMS, Group.MORE_MAIN_MENU_SUB_LIST),
+            groups = setOf(Group.MORE_MAIN_MENU_SUB_LIST),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val TRY_RECOMMENDED_EXTENSION_BUTTON =
@@ -327,7 +331,8 @@ object MainMenuSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.browser_menu_add_to_shortcuts),
             description = "Main menu Add to shortcuts button",
-            groups = setOf(Group.BROWSER_VIEW_MAIN_MENU_MORE_ITEMS, Group.MORE_MAIN_MENU_SUB_LIST),
+            groups = setOf(Group.MORE_MAIN_MENU_SUB_LIST),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val TRANSLATE_BUTTON =
@@ -335,7 +340,8 @@ object MainMenuSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.browser_menu_translate_page_2),
             description = "Translate page button",
-            groups = setOf(Group.MORE_MENU_ITEMS, Group.MORE_MAIN_MENU_SUB_LIST),
+            groups = setOf(Group.MORE_MAIN_MENU_SUB_LIST),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val TRANSLATED_BUTTON =
@@ -343,7 +349,7 @@ object MainMenuSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.browser_menu_translated),
             description = "Translate page button",
-            groups = setOf(Group.MORE_MENU_ITEMS),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val SAVE_AS_PDF_BUTTON =
@@ -351,7 +357,8 @@ object MainMenuSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.browser_menu_save_as_pdf_2),
             description = "Main menu save as PDF button",
-            groups = setOf(Group.MORE_MENU_ITEMS, Group.MORE_MAIN_MENU_SUB_LIST),
+            groups = setOf(Group.MORE_MAIN_MENU_SUB_LIST),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val SUMMARIZE_PAGE_BUTTON =
@@ -360,6 +367,7 @@ object MainMenuSelectors : SelectorContainer {
             value = getStringResource(R.string.browser_menu_summarize_page),
             description = "Main menu Summarize page button",
             groups = setOf(Group.MORE_MAIN_MENU_SUB_LIST),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val PRINT_BUTTON =
@@ -367,7 +375,7 @@ object MainMenuSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.browser_menu_print_2),
             description = "Print page button",
-            groups = setOf(Group.MORE_MENU_ITEMS, Group.MORE_MAIN_MENU_SUB_LIST),
+            groups = setOf(Group.MORE_MAIN_MENU_SUB_LIST),
             scrollDirection = SwipeDirection.UP,
         )
 
@@ -376,7 +384,7 @@ object MainMenuSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.browser_menu_remove_from_shortcuts),
             description = "Main menu remove from shortcuts button",
-            groups = setOf(Group.BROWSER_VIEW_MAIN_MENU_MORE_ITEMS),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val ADD_TO_HOMESCREEN_BUTTON =
@@ -384,7 +392,8 @@ object MainMenuSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.browser_menu_add_to_homescreen),
             description = "Main menu add to homescreen button",
-            groups = setOf(Group.BROWSER_VIEW_MAIN_MENU_MORE_ITEMS, Group.MORE_MAIN_MENU_SUB_LIST),
+            groups = setOf(Group.MORE_MAIN_MENU_SUB_LIST),
+            scrollDirection = SwipeDirection.UP,
         )
 
     // Only present in the "More settings" submenu while a private tab is in the foreground; not part of the
@@ -402,7 +411,7 @@ object MainMenuSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.browser_menu_add_app_to_homescreen),
             description = "Main menu add app (PWA) to homescreen button",
-            groups = setOf(Group.BROWSER_VIEW_MAIN_MENU_MORE_ITEMS),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val OPEN_IN_APP_BUTTON =
@@ -410,7 +419,8 @@ object MainMenuSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.browser_menu_open_app_link),
             description = "Main menu Open in app button",
-            groups = setOf(Group.BROWSER_VIEW_MAIN_MENU_MORE_ITEMS, Group.MORE_MAIN_MENU_SUB_LIST),
+            groups = setOf(Group.MORE_MAIN_MENU_SUB_LIST),
+            scrollDirection = SwipeDirection.UP,
         )
 
     @Suppress("FunctionName")
@@ -419,6 +429,7 @@ object MainMenuSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT_MERGED,
             value = getStringResource(R.string.browser_menu_open_in_fenix, appName),
             description = "Main menu Open in $appName button",
+            scrollDirection = SwipeDirection.UP,
         )
 
     // Only present when the browser is showing reader view.
@@ -433,6 +444,7 @@ object MainMenuSelectors : SelectorContainer {
         mapOf(
             Group.HOME_PAGE_MAIN_MENU_ITEMS to
                 listOf(
+                    EXTENSIONS_BUTTON,
                     HISTORY_BUTTON,
                     BOOKMARKS_BUTTON,
                     DOWNLOADS_BUTTON,
@@ -442,12 +454,28 @@ object MainMenuSelectors : SelectorContainer {
                 ),
             Group.BROWSER_VIEW_MAIN_MENU_ITEMS to
                 listOf(
+                    BOOKMARK_THIS_PAGE_BUTTON,
+                    FIND_IN_PAGE_BUTTON,
+                    DESKTOP_SITE_BUTTON,
+                    EXTENSIONS_BUTTON,
+                    MORE_BUTTON,
                     HISTORY_BUTTON,
                     BOOKMARKS_BUTTON,
                     DOWNLOADS_BUTTON,
                     PASSWORDS_BUTTON,
                     SIGN_IN_BUTTON,
                     SETTINGS_BUTTON,
+                ),
+            Group.MORE_MAIN_MENU_SUB_LIST to
+                listOf(
+                    TRANSLATE_BUTTON,
+                    SUMMARIZE_PAGE_BUTTON,
+                    REPORT_BROKEN_SITE_BUTTON,
+                    ADD_TO_SHORTCUTS_BUTTON,
+                    ADD_TO_HOMESCREEN_BUTTON,
+                    OPEN_IN_APP_BUTTON,
+                    SAVE_AS_PDF_BUTTON,
+                    PRINT_BUTTON,
                 ),
         )
 }

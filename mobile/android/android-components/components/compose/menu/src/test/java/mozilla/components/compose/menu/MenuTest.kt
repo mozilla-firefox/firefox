@@ -106,6 +106,30 @@ class MenuTest {
     }
 
     @Test
+    fun `GIVEN a navigation only sticky header THEN keep the spacing around it`() {
+        setMenu(listOf(stickyGroup("Header"), row("Item")))
+
+        val menuBounds = composeTestRule.onNodeWithTag("menu").getUnclippedBoundsInRoot()
+        val headerBounds = composeTestRule.onNodeWithContentDescription("Header").getUnclippedBoundsInRoot()
+        val listBounds = composeTestRule.onNode(hasScrollAction()).getUnclippedBoundsInRoot()
+        assertEquals(12f, (headerBounds.top - menuBounds.top).value, 0.5f)
+        assertEquals(8f, (listBounds.top - headerBounds.bottom).value, 0.5f)
+    }
+
+    @Test
+    fun `GIVEN a sticky header followed by a banner THEN space the banner from the header`() {
+        val bannerGroup = MenuItemsGroup.Row(id = "banner", items = listOf(banner))
+        val store = setMenu(listOf(bannerGroup, row("Item")))
+        val offsetWithoutHeader = bannerOffsetInList()
+
+        composeTestRule.runOnIdle {
+            store.dispatch(MenuAction.Update(listOf(stickyGroup("Header"), bannerGroup, row("Item"))))
+        }
+
+        assertEquals(offsetWithoutHeader, bannerOffsetInList(), 0.5f)
+    }
+
+    @Test
     fun `GIVEN a single sticky group THEN show it only once`() {
         setMenu(listOf(stickyGroup("Header")))
 
@@ -281,6 +305,12 @@ class MenuTest {
         composeTestRule.runOnIdle {
             assertTrue(isHeaderDark)
         }
+    }
+
+    private fun bannerOffsetInList(): Float {
+        val listBounds = composeTestRule.onNode(hasScrollAction()).getUnclippedBoundsInRoot()
+        val bannerBounds = composeTestRule.onNodeWithText(BANNER_TITLE).getUnclippedBoundsInRoot()
+        return (bannerBounds.top - listBounds.top).value
     }
 
     private fun recording(events: MutableList<MenuAction>): List<Middleware<MenuState, MenuAction>> =

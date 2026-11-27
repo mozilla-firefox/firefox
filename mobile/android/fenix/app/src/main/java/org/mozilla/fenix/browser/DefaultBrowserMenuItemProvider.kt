@@ -17,6 +17,7 @@ import mozilla.components.compose.menu.ui.MenuItemIconRes
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.MenuHost
 import org.mozilla.fenix.components.menu.MenuItemProvider
+import org.mozilla.fenix.components.menu.MenuTarget
 import org.mozilla.fenix.components.menu.store.MenuAction.DefaultBrowserMenuBannerClicked
 import org.mozilla.fenix.components.menu.store.MenuAction.DefaultBrowserMenuBannerDismissed
 import org.mozilla.fenix.utils.Settings
@@ -26,11 +27,13 @@ import org.mozilla.fenix.utils.Settings
  *
  * @param settings [Settings] application settings from which to read or update whether the item should be shown.
  * @param appName The name of this application, shown in the item.
+ * @param target [MenuTarget] for which this menu item would be shown for.
  * @param setAsDefaultBrowser delegate for setting the current browser as the default.
  */
 class DefaultBrowserMenuItemProvider(
     private val settings: Settings,
     appName: String,
+    private val target: MenuTarget,
     private val setAsDefaultBrowser: () -> Unit,
 ) : MenuItemProvider {
     private val items: MutableStateFlow<List<MenuItem>> =
@@ -60,7 +63,8 @@ class DefaultBrowserMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> = items.asStateFlow()
 
     override fun handles(event: MenuEvent) =
-        event == DefaultBrowserMenuBannerClicked || event == DefaultBrowserMenuBannerDismissed
+        target != MenuTarget.Preview &&
+            (event == DefaultBrowserMenuBannerClicked || event == DefaultBrowserMenuBannerDismissed)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         if (event == DefaultBrowserMenuBannerClicked) {

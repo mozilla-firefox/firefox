@@ -19,6 +19,10 @@ import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.MenuEvent
 import org.junit.Test
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.LIBRARY_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.PAGE_CONTROLS_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.PROMO_BANNER_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.READER_VIEW_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeReaderView
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.FindInPage
@@ -86,7 +90,7 @@ class MenuBuilderTest {
     @Test
     fun `WHEN building the default menu THEN keep the sections in the configured order`() = runTest {
         val configuration =
-            BrowserMenuConfiguration.sections(isToolbarAtBottom = false, isExpandedToolbarEnabled = false)
+            BrowserMenuConfiguration.customizableSections(isToolbarAtBottom = false, isExpandedToolbarEnabled = false)
         val builder =
             createMenuBuilder(
                 resolver = { FakeMenuItemProvider(MutableStateFlow(listOf(readerViewItem))) },
@@ -95,6 +99,39 @@ class MenuBuilderTest {
 
         assertEquals(configuration.map { it.id }, builder.menuStructure.first().map { it.id })
     }
+
+    @Test
+    fun `GIVEN toolbar is at top WHEN building the browser menu THEN show the promo banner right below the navigation block`() =
+        runTest {
+            val configuration =
+                BrowserMenuConfiguration.sections(isToolbarAtBottom = false, isExpandedToolbarEnabled = false)
+
+            val shownIds = buildBrowserMenu(configuration, notOffering = emptySet()).map { it.id }
+
+            assertEquals(listOf(PAGE_CONTROLS_GROUP_ID, PROMO_BANNER_GROUP_ID), shownIds.take(2))
+        }
+
+    @Test
+    fun `GIVEN reader view saved above the navigation block WHEN reader view is not offered THEN keep the navigation block as the header above the promo banner`() =
+        runTest {
+            val shownIds =
+                buildBrowserMenu(readerViewAboveNavigationConfiguration(), notOffering = setOf(CustomizeReaderView))
+                    .map { it.id }
+
+            assertEquals(listOf(PAGE_CONTROLS_GROUP_ID, PROMO_BANNER_GROUP_ID, LIBRARY_GROUP_ID), shownIds)
+        }
+
+    @Test
+    fun `GIVEN reader view saved above the navigation block WHEN reader view is offered THEN show the promo banner first`() =
+        runTest {
+            val shownIds =
+                buildBrowserMenu(readerViewAboveNavigationConfiguration(), notOffering = emptySet()).map { it.id }
+
+            assertEquals(
+                listOf(PROMO_BANNER_GROUP_ID, READER_VIEW_GROUP_ID, PAGE_CONTROLS_GROUP_ID, LIBRARY_GROUP_ID),
+                shownIds,
+            )
+        }
 
     @Test
     fun `GIVEN a section is configured as sticky WHEN building the menu THEN keep it sticky`() = runTest {
@@ -171,6 +208,33 @@ class MenuBuilderTest {
                 builder.menuStructure.first(),
             )
         }
+
+    private suspend fun buildBrowserMenu(
+        configuration: List<MenuSectionConfiguration>,
+        notOffering: Set<FenixMenuItem>,
+    ): List<MenuItemsGroup> =
+        createMenuBuilder(
+                resolver = { item ->
+                    FakeMenuItemProvider(
+                        MutableStateFlow(if (item in notOffering) emptyList() else listOf(readerViewItem))
+                    )
+                },
+                configuration = configuration,
+            )
+            .menuStructure
+            .first()
+
+    private fun readerViewAboveNavigationConfiguration() =
+        BrowserMenuConfiguration.sections(
+            isToolbarAtBottom = false,
+            isExpandedToolbarEnabled = false,
+            customizationInfo =
+                CustomizedMenuInfo(
+                    visibleSectionIds = listOf(READER_VIEW_GROUP_ID, PAGE_CONTROLS_GROUP_ID, LIBRARY_GROUP_ID),
+                    hiddenSectionIds = emptyList(),
+                    isNavigationSectionMoved = true,
+                ),
+        )
 
     private fun createExpandingMenuBuilder(
         expandingTo: StateFlow<List<MenuItem>>,

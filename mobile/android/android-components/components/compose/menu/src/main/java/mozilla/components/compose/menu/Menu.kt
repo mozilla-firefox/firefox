@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.compose.menu.data.BannerMenuItem
 import mozilla.components.compose.menu.data.MenuAttribution
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.store.MenuEvent
@@ -104,7 +105,12 @@ fun Menu(
                 listState = listState,
                 scrollableGroups = scrollableGroups,
                 onInteraction = onInteraction,
-                topPadding = if (headerGroup != null) 0.dp else AcornTheme.layout.space.static100,
+                topPadding =
+                    if (headerGroup == null || scrollableGroups.firstOrNull()?.isBanner() == true) {
+                        AcornTheme.layout.space.static100
+                    } else {
+                        0.dp
+                    },
                 bottomPadding = if (footerGroup != null) 0.dp else AcornTheme.layout.space.static100,
                 modifier = Modifier.weight(1f, fill = false),
             )
@@ -124,6 +130,8 @@ fun Menu(
         }
     }
 }
+
+private fun MenuItemsGroup.isBanner() = this is MenuItemsGroup.Row && items.singleOrNull() is BannerMenuItem
 
 @Composable
 private fun MenuContent(

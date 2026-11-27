@@ -121,7 +121,7 @@ class CustomizeMenuMiddleware(
         val sections = BrowserMenuConfiguration.allSections(itemsCustomization)
         val groups = MenuBuilder(registry, sections).menuStructure.first().associateBy { it.id }
         val shownSections =
-            BrowserMenuConfiguration.sections(isToolbarAtBottom, isExpandedToolbarEnabled, customization)
+            BrowserMenuConfiguration.customizableSections(isToolbarAtBottom, isExpandedToolbarEnabled, customization)
         val hiddenSections = BrowserMenuConfiguration.hiddenSections(customization)
 
         store.dispatch(
@@ -146,8 +146,9 @@ class CustomizeMenuMiddleware(
     ): Boolean {
         val default = BrowserMenuConfiguration.defaultMenuInfo(isToolbarAtBottom, isExpandedToolbarEnabled)
         val shownSections =
-            BrowserMenuConfiguration.sections(isToolbarAtBottom, isExpandedToolbarEnabled, customization)
-        val defaultShownSections = BrowserMenuConfiguration.sections(isToolbarAtBottom, isExpandedToolbarEnabled)
+            BrowserMenuConfiguration.customizableSections(isToolbarAtBottom, isExpandedToolbarEnabled, customization)
+        val defaultShownSections =
+            BrowserMenuConfiguration.customizableSections(isToolbarAtBottom, isExpandedToolbarEnabled)
 
         return shownSections.map { it.id } != defaultShownSections.map { it.id } ||
             customization.hiddenSectionIds.toSet() != default.hiddenSectionIds.toSet() ||

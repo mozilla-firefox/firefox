@@ -47,12 +47,18 @@ class MenuBuilder(
 
     /**
      * A [MenuItemsGroup] for each of these sections, laid out the way the section asks for and holding only the items
-     * that are currently shown. Sections left with nothing to show are dropped.
+     * that are currently shown. Sections left with nothing to show are dropped, and the
+     * [MenuSectionConfiguration.isFirstScrollingSection] ones are then moved right below the sticky header, if any.
      */
-    private fun List<MenuSectionConfiguration>.toGroups(items: Map<String, List<ShownMenuItem>>) = map { section ->
-        section.asMenuItemsGroup(shownItems = section.items.flatMap { it.getMenuItemsToShow(items) })
+    private fun List<MenuSectionConfiguration>.toGroups(items: Map<String, List<ShownMenuItem>>): List<MenuItemsGroup> {
+        val shown = map { section ->
+            section to section.asMenuItemsGroup(shownItems = section.items.flatMap { it.getMenuItemsToShow(items) })
+        }
+            .filterNot { (_, group) -> group.items.isEmpty() }
+        val (first, rest) = shown.partition { (section, _) -> section.isFirstScrollingSection }
+        val stickyHeaderCount = if (rest.firstOrNull()?.second?.isSticky == true) 1 else 0
+        return (rest.take(stickyHeaderCount) + first + rest.drop(stickyHeaderCount)).map { (_, group) -> group }
     }
-        .filterNot { it.items.isEmpty() }
 
     /**
      * Get the menu items configuration to show for this, or an empty list if none is available.
