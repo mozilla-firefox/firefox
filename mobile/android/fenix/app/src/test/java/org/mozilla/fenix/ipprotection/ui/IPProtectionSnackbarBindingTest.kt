@@ -64,12 +64,19 @@ class IPProtectionSnackbarBindingTest {
             val snackbarAction = slot<((v: View) -> Unit)>()
             buildBinding().start()
 
-            appStore.dispatch(IPProtectionSnackbarAction.ShowActionSettingsSnackbar(title = "title"))
+            val dataLimitGb = 25
+
+            appStore.dispatch(
+                IPProtectionSnackbarAction.ShowActionSettingsSnackbar(
+                    titleResId = R.string.ip_protection_data_limit_reached_snackbar,
+                    arguments = listOf(dataLimitGb),
+                )
+            )
             testDispatcher.scheduler.advanceUntilIdle()
 
             verify {
                 snackbarDelegate.show(
-                    text = eq("title"),
+                    text = eq(testContext.getString(R.string.ip_protection_data_limit_reached_snackbar, dataLimitGb)),
                     subText = isNull(),
                     subTextOverflow = isNull(),
                     duration = eq(testContext.components.settings.getSnackbarTimeout(hasAction = true).value.toInt()),
@@ -80,7 +87,56 @@ class IPProtectionSnackbarBindingTest {
                 )
             }
 
-            assertEquals(None(IPProtectionShowActionSettingsSnackbar("title")), appStore.state.snackbarState)
+            assertEquals(
+                None(
+                    IPProtectionShowActionSettingsSnackbar(
+                        R.string.ip_protection_data_limit_reached_snackbar,
+                        listOf(dataLimitGb),
+                    )
+                ),
+                appStore.state.snackbarState,
+            )
+
+            snackbarAction.captured.invoke(mockk())
+
+            verify {
+                navController.navigate(
+                    BrowserFragmentDirections.actionGlobalIpProtectionFragment(
+                        entrypoint = FenixFxAEntryPoint.IPProtectionSettings
+                    )
+                )
+            }
+        }
+
+    @Test
+    fun `GIVEN action settings snackbar with no placeholder argument WHEN the snackbar action is dispatched THEN the title is resolved correctly`() =
+        runTest(testDispatcher) {
+            val snackbarAction = slot<((v: View) -> Unit)>()
+            buildBinding().start()
+
+            val snackbarTitleWithoutPlaceholder = R.string.ip_protection_location_selection_reset_snackbar
+            appStore.dispatch(
+                IPProtectionSnackbarAction.ShowActionSettingsSnackbar(titleResId = snackbarTitleWithoutPlaceholder)
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify {
+                snackbarDelegate.show(
+                    text = eq(testContext.getString(snackbarTitleWithoutPlaceholder)),
+                    subText = isNull(),
+                    subTextOverflow = isNull(),
+                    duration = eq(testContext.components.settings.getSnackbarTimeout(hasAction = true).value.toInt()),
+                    isError = eq(false),
+                    action = eq(testContext.getString(R.string.ip_protection_open_settings_snackbar_action)),
+                    withDismissAction = eq(false),
+                    listener = capture(snackbarAction),
+                )
+            }
+
+            assertEquals(
+                None(IPProtectionShowActionSettingsSnackbar(snackbarTitleWithoutPlaceholder)),
+                appStore.state.snackbarState,
+            )
 
             snackbarAction.captured.invoke(mockk())
 

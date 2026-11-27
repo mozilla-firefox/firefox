@@ -15,13 +15,13 @@ import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.mozilla.fenix.R
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppState
 
 class IPProtectionSnackbarMiddlewareTest {
     private val connectionError = "Couldn't connect to VPN."
-    private val locationSelectionReset = "Selected VPN location unavailable. Switched to the recommended location."
     private lateinit var captureMiddleware: CaptureActionsMiddleware<AppState, AppAction>
     private lateinit var appStore: AppStore
     private lateinit var ipProtectionStore: IPProtectionStore
@@ -37,11 +37,7 @@ class IPProtectionSnackbarMiddlewareTest {
                     listOf(
                         IPProtectionSnackbarMiddleware(
                             lazyAppStore = lazy { appStore },
-                            messages =
-                                IPProtectionSnackbarMessages(
-                                    connectionError = connectionError,
-                                    locationSelectionReset = locationSelectionReset,
-                                ),
+                            messages = IPProtectionSnackbarMessages(connectionError = connectionError),
                         )
                     )
             )
@@ -65,7 +61,8 @@ class IPProtectionSnackbarMiddlewareTest {
 
         captureMiddleware.assertLastAction(AppAction.IPProtectionSnackbarAction.ShowActionSettingsSnackbar::class) {
             action ->
-            assertEquals(locationSelectionReset, action.title)
+            assertEquals(R.string.ip_protection_location_selection_reset_snackbar, action.titleResId)
+            assertEquals(emptyList<Any>(), action.arguments)
         }
     }
 
@@ -90,7 +87,6 @@ class IPProtectionSnackbarMiddlewareTest {
                 IPProtectionInfoPrompter(
                     store = ipProtectionStore,
                     appStore = appStore,
-                    errorMessages = ErrorMessages(dataLimitReached = "Data limit reached"),
                     repository = repository,
                     mainDispatcher = StandardTestDispatcher(testScheduler),
                 )

@@ -29,6 +29,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mozilla.fenix.GleanMetrics.Vpn
+import org.mozilla.fenix.R
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState
@@ -36,7 +37,9 @@ import org.mozilla.fenix.helpers.FenixGleanTestRule
 
 private val RESET_TIME = Instant.parse("2026-10-01T00:00:00Z")
 private val NEXT_CYCLE_RESET_TIME = Instant.parse("2026-11-01T00:00:00Z")
-private val DATA_LIMIT = DataVolume.roundedGigabytes(50)
+
+private const val DATA_LIMIT_GB = 15
+private val DATA_LIMIT = DataVolume.roundedGigabytes(DATA_LIMIT_GB)
 
 @RunWith(AndroidJUnit4::class)
 class IPProtectionInfoPrompterTest {
@@ -45,7 +48,6 @@ class IPProtectionInfoPrompterTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var appStore: AppStore
     private lateinit var repository: FakeIPProtectionRepository
-    private val errorMessages = ErrorMessages(dataLimitReached = "Data limit reached")
 
     @Before
     fun setup() {
@@ -69,8 +71,13 @@ class IPProtectionInfoPrompterTest {
             testDispatcher.scheduler.advanceUntilIdle()
 
             val snackbarState = appStore.state.snackbarState
-            assertIs<SnackbarState.IPProtectionShowActionSettingsSnackbar>(snackbarState)
-            assertEquals(errorMessages.dataLimitReached, snackbarState.title)
+            assertEquals(
+                SnackbarState.IPProtectionShowActionSettingsSnackbar(
+                    titleResId = R.string.ip_protection_data_limit_reached_snackbar,
+                    arguments = listOf(DATA_LIMIT_GB),
+                ),
+                snackbarState,
+            )
         }
 
     @Test
@@ -116,8 +123,13 @@ class IPProtectionInfoPrompterTest {
             testDispatcher.scheduler.advanceUntilIdle()
 
             val snackbarState = appStore.state.snackbarState
-            assertIs<SnackbarState.IPProtectionShowActionSettingsSnackbar>(snackbarState)
-            assertEquals(errorMessages.dataLimitReached, snackbarState.title)
+            assertEquals(
+                SnackbarState.IPProtectionShowActionSettingsSnackbar(
+                    titleResId = R.string.ip_protection_data_limit_reached_snackbar,
+                    arguments = listOf(DATA_LIMIT_GB),
+                ),
+                snackbarState,
+            )
             assertEquals(RESET_TIME, repository.lastDataLimitNoticeCycleResetTime)
             assertNotNull(Vpn.bandwidthLimitError.testGetValue())
         }
@@ -193,7 +205,6 @@ class IPProtectionInfoPrompterTest {
         IPProtectionInfoPrompter(
             store = ipProtectionStore,
             appStore = appStore,
-            errorMessages = errorMessages,
             repository = repository,
             mainDispatcher = testDispatcher,
         )

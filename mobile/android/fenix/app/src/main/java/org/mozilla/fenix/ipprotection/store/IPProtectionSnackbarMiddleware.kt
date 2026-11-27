@@ -8,6 +8,7 @@ import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
+import org.mozilla.fenix.R
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction.IPProtectionSnackbarAction
 
@@ -15,13 +16,8 @@ import org.mozilla.fenix.components.appstate.AppAction.IPProtectionSnackbarActio
  * Localized snackbar messages dispatched by [IPProtectionSnackbarMiddleware].
  *
  * @property connectionError Message shown when activation fails with a connection error.
- * @property locationSelectionReset Message shown when the location selection defaults due to the previously selected
- *   location being no longer available.
  */
-data class IPProtectionSnackbarMessages(
-    val connectionError: String,
-    val locationSelectionReset: String,
-)
+data class IPProtectionSnackbarMessages(val connectionError: String)
 
 /**
  * A middleware for observing error states in [IPProtectionState] and notifying the Snackbar for user-facing messaging.
@@ -44,7 +40,9 @@ class IPProtectionSnackbarMiddleware(
 
             is IPProtectionAction.LocationAction.LocationReset ->
                 lazyAppStore.value.dispatch(
-                    IPProtectionSnackbarAction.ShowActionSettingsSnackbar(title = messages.locationSelectionReset)
+                    IPProtectionSnackbarAction.ShowActionSettingsSnackbar(
+                        titleResId = R.string.ip_protection_location_selection_reset_snackbar
+                    )
                 )
 
             else -> {

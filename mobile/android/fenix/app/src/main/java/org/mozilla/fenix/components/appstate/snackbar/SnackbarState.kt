@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.components.appstate.snackbar
 
+import androidx.annotation.StringRes
 import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_SHORT
 import mozilla.components.browser.state.state.content.DownloadState
 import mozilla.components.concept.storage.BookmarkNode
@@ -163,9 +164,13 @@ sealed class SnackbarState {
      * [IPProtectionSnackbarBinding], which lets the snackbar be drawn on top of menus and to avoid double invocation,
      * depending on which binding has focus.
      *
-     * @property title The title to display in the snackbar.
+     * @property titleResId The string resource id of the title to display in the snackbar.
+     * @property arguments Any placeholder arguments to insert into the title.
      */
-    data class IPProtectionShowActionSettingsSnackbar(val title: String) : SnackbarState()
+    data class IPProtectionShowActionSettingsSnackbar(
+        @StringRes val titleResId: Int,
+        val arguments: List<Any> = emptyList(),
+    ) : SnackbarState()
 
     /**
      * Display a text only snackbar related to the IP Protection feature. Unlike the general [ShowSnackbar], this state

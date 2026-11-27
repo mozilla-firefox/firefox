@@ -5,6 +5,7 @@
 package org.mozilla.fenix.ipprotection.ui
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.navigation.NavController
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -55,7 +56,8 @@ class IPProtectionSnackbarBinding(
             .collect { state ->
                 when (state) {
                     is SnackbarState.IPProtectionShowSnackbar -> showIPProtectionSnackBar(state.title)
-                    is SnackbarState.IPProtectionShowActionSettingsSnackbar -> showActionSettingsSnackbar(state.title)
+                    is SnackbarState.IPProtectionShowActionSettingsSnackbar ->
+                        showActionSettingsSnackbar(state.titleResId, state.arguments)
                     else -> {
                         // no-op, this binding is only concerned with ip protection related snackbars
                     }
@@ -72,9 +74,10 @@ class IPProtectionSnackbarBinding(
         appStore.dispatch(SnackbarAction.SnackbarShown)
     }
 
-    private fun showActionSettingsSnackbar(title: String) {
+    @Suppress("SpreadOperator") // getString(... *arguments..)
+    private fun showActionSettingsSnackbar(@StringRes titleResId: Int, arguments: List<Any>) {
         snackbarDelegate.show(
-            text = title,
+            text = context.getString(titleResId, *arguments.toTypedArray()),
             duration = context.components.settings.getSnackbarTimeout(hasAction = true).value.toInt(),
             action = context.getString(R.string.ip_protection_open_settings_snackbar_action),
         ) {

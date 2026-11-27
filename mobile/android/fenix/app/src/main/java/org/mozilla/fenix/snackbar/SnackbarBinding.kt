@@ -5,6 +5,7 @@
 package org.mozilla.fenix.snackbar
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
 import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_INDEFINITE
@@ -396,7 +397,8 @@ class SnackbarBinding(
 
                     is SnackbarState.None -> Unit
 
-                    is SnackbarState.IPProtectionShowActionSettingsSnackbar -> showActionSettingsSnackbar(state.title)
+                    is SnackbarState.IPProtectionShowActionSettingsSnackbar ->
+                        showActionSettingsSnackbar(state.titleResId, state.arguments)
 
                     is SnackbarState.IPProtectionShowSnackbar -> showIPProtectionSnackBar(state.title)
                 }
@@ -470,10 +472,11 @@ class SnackbarBinding(
      * The state could be consumed by [IPProtectionSnackbarBinding] as well (e.g. three dot menu or trust panel opened),
      * in which case, to avoid showing snackbar twice, we only show it here if the view is active.
      */
-    private fun showActionSettingsSnackbar(title: String) {
+    @Suppress("SpreadOperator") // getString(... *arguments..)
+    private fun showActionSettingsSnackbar(@StringRes titleResId: Int, arguments: List<Any>) {
         if (viewHasFocus()) {
             snackbarDelegate.show(
-                text = title,
+                text = context.getString(titleResId, *arguments.toTypedArray()),
                 duration = context.components.settings.getSnackbarTimeout(hasAction = true).value.toInt(),
                 action = context.getString(R.string.ip_protection_open_settings_snackbar_action),
             ) {

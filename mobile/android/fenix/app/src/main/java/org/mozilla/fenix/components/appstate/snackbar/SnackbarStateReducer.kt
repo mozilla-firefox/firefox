@@ -25,6 +25,9 @@ internal object SnackbarStateReducer {
                 state.copy(snackbarState = SnackbarState.IPProtectionShowSnackbar(action.title))
 
             is IPProtectionSnackbarAction.ShowActionSettingsSnackbar ->
-                state.copy(snackbarState = SnackbarState.IPProtectionShowActionSettingsSnackbar(action.title))
+                state.copy(
+                    snackbarState =
+                        SnackbarState.IPProtectionShowActionSettingsSnackbar(action.titleResId, action.arguments)
+                )
         }
 }

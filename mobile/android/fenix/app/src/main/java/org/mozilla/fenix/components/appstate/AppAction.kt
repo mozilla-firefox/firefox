@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.components.appstate
 
+import androidx.annotation.StringRes
 import com.google.android.material.snackbar.BaseTransientBottomBar.LENGTH_SHORT
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.state.content.DownloadState
@@ -831,8 +832,10 @@ sealed class AppAction : Action {
          * [IPProtectionSnackbarAction] dispatched to show a snackbar with a custom title and with an action that
          * navigates the user into the IP Protection settings screen.
          *
-         * @property title The title to display in the snackbar.
+         * @property titleResId The resource ID of the title to display in the snackbar.
+         * @property arguments The placeholder arguments to use in the snackbar.
          */
-        data class ShowActionSettingsSnackbar(val title: String) : IPProtectionSnackbarAction()
+        data class ShowActionSettingsSnackbar(@StringRes val titleResId: Int, val arguments: List<Any> = emptyList()) :
+            IPProtectionSnackbarAction()
     }
 }

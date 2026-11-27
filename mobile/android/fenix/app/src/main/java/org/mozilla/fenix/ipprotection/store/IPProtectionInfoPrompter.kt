@@ -12,17 +12,12 @@ import mozilla.components.feature.ipprotection.store.IPProtectionStore
 import mozilla.components.feature.ipprotection.store.state.Authorized
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
+import mozilla.components.feature.ipprotection.store.state.gigabytes
 import mozilla.components.lib.state.helpers.AbstractBinding
 import org.mozilla.fenix.GleanMetrics.Vpn
+import org.mozilla.fenix.R
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction
-
-/**
- * Error messages displayed to the user when IP protection operations encounter errors.
- *
- * @property dataLimitReached Message shown when the user has reached their monthly data limit.
- */
-data class ErrorMessages(val dataLimitReached: String)
 
 /**
  * Monitors [IPProtectionStore] state changes and displays informational sticky snackbars to the user via [AppStore].
@@ -30,7 +25,6 @@ data class ErrorMessages(val dataLimitReached: String)
  *
  * @param store The IP protection store to observe for state changes.
  * @param appStore The app store used to dispatch snackbar actions.
- * @param errorMessages Localized error messages to display in snackbars.
  * @param repository [IPProtectionRepository] providing access to IP Protection related
  *   [android.content.SharedPreferences].
  * @param mainDispatcher the dispatcher to run asynchronous work on.
@@ -38,7 +32,6 @@ data class ErrorMessages(val dataLimitReached: String)
 class IPProtectionInfoPrompter(
     store: IPProtectionStore,
     private val appStore: AppStore,
-    private val errorMessages: ErrorMessages,
     private val repository: IPProtectionRepository,
     mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) : AbstractBinding<IPProtectionState>(store, mainDispatcher) {
@@ -56,6 +49,7 @@ class IPProtectionInfoPrompter(
 
     private fun processStateForSnackbar(state: IPProtectionState) {
         if (state.eligibilityStatus == EligibilityStatus.Eligible && state.proxyStatus == Authorized.DataLimitReached) {
+            val maxData = state.usageQuota?.max ?: return
             val resetTime = state.usageQuota?.resetTime
 
             if (resetTime != null && repository.lastDataLimitNoticeCycleResetTime != resetTime) {
@@ -65,7 +59,8 @@ class IPProtectionInfoPrompter(
                 appStore.dispatch(
                     action =
                         AppAction.IPProtectionSnackbarAction.ShowActionSettingsSnackbar(
-                            title = errorMessages.dataLimitReached
+                            titleResId = R.string.ip_protection_data_limit_reached_snackbar,
+                            arguments = listOf(maxData.gigabytes.toInt()),
                         )
                 )
             }

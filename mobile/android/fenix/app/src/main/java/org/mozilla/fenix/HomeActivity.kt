@@ -176,7 +176,6 @@ import org.mozilla.fenix.home.intent.OpenTabsTrayIntentProcessor
 import org.mozilla.fenix.home.intent.SpeechProcessingIntentProcessor
 import org.mozilla.fenix.home.intent.StartSearchIntentProcessor
 import org.mozilla.fenix.home.topsites.DefaultPinnedSitesBinding
-import org.mozilla.fenix.ipprotection.store.ErrorMessages
 import org.mozilla.fenix.ipprotection.store.IPProtectionInfoPrompter
 import org.mozilla.fenix.messaging.FenixMessageSurfaceId
 import org.mozilla.fenix.messaging.MessageNotificationWorker
@@ -272,14 +271,6 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
         IPProtectionInfoPrompter(
             store = components.ipProtection.store,
             appStore = components.appStore,
-            errorMessages =
-                ErrorMessages(
-                    dataLimitReached =
-                        this.getString(
-                            R.string.ip_protection_data_limit_reached_snackbar,
-                            FxNimbus.features.ipProtection.value().dataLimitGigabyte,
-                        )
-                ),
             repository = components.ipProtection.ipProtectionRepository,
         )
     }
