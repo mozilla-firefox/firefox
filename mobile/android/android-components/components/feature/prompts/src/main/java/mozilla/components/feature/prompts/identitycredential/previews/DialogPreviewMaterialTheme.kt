@@ -9,7 +9,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import mozilla.components.ui.colors.PhotonColors
 
 @Composable
 internal fun DialogPreviewMaterialTheme(content: @Composable () -> Unit) {
@@ -17,7 +16,7 @@ internal fun DialogPreviewMaterialTheme(content: @Composable () -> Unit) {
         if (!isSystemInDarkTheme()) {
             lightColorScheme()
         } else {
-            darkColorScheme(background = PhotonColors.DarkGrey30)
+            darkColorScheme()
         }
     MaterialTheme(colorScheme = colorScheme) {
         content()
