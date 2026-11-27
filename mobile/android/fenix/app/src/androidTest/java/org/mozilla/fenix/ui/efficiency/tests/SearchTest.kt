@@ -200,10 +200,10 @@ class SearchTest : BaseTest(LaunchConfig(isPocketEnabled = false)) {
 
         on.mainMenu.navigateToPage().mozClick(MainMenuSelectors.BOOKMARK_THIS_PAGE_BUTTON)
 
-        on.browserPage.navigateToPage()
-
+        // Bookmarking drops back onto the browser, but PageStateTracker still reads MainMenuPage,
+        // so navigateToPage() would flake on a stale start state. Click the menu button directly.
+        on.browserPage.mozClick(HomeSelectors.MAIN_MENU_BUTTON_UIAUTOMATOR)
         on.mainMenu
-            .navigateToPage()
             .mozClick(MainMenuSelectors.BOOKMARKS_BUTTON)
             .mozVerify(BookmarksSelectors.BOOKMARK_ITEM_URL("https://duckduckgo.com/?t=fpas&q=firefox"))
     }
