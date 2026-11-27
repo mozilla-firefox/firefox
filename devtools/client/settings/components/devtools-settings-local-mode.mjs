@@ -89,9 +89,10 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
 
   /**
    * @param {string} mappingOrigin The mapping's hostname.
+   * @param {string} [currentPath] The folder to open the picker in.
    * @returns {Promise<string | null>} The chosen path, or null if cancelled.
    */
-  async #chooseFolder(mappingOrigin) {
+  async #chooseFolder(mappingOrigin, currentPath) {
     const title = await l10n.formatValue(
       "devtools-settings-local-mode-folder-picker-title",
       { url: "https://" + mappingOrigin }
@@ -104,6 +105,9 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
       title ?? "",
       Ci.nsIFilePicker.modeGetFolder
     );
+    if (currentPath && folderExists(currentPath)) {
+      filePicker.displayDirectory = new FileUtils.File(currentPath);
+    }
     return new Promise(resolve => {
       filePicker.open(result => {
         if (result == Ci.nsIFilePicker.returnOK) {
@@ -180,11 +184,30 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
     this.#readMappings();
   }
 
+  /** @param {Event} event */
+  async #changeFolder(event) {
+    const mapping = this.#getMapping(event.currentTarget);
+    if (!mapping) {
+      return;
+    }
+    const path = await this.#chooseFolder(mapping.origin, mapping.path);
+    if (path) {
+      Services.prefs.setStringPref(mapping.prefPrefix + "path", path);
+    }
+  }
+
   /** @param {MappingState} mapping */
   #renderFolder(mapping) {
     return html`
       <div class="folder-row">
         <span data-l10n-id="devtools-settings-local-mode-folder"></span>
+        <moz-button
+          class="choose-folder"
+          size="small"
+          data-l10n-id="devtools-settings-local-mode-choose-folder"
+          ?disabled=${mapping.disabled}
+          @click=${this.#changeFolder}
+        ></moz-button>
       </div>
       <span class="folder">${mapping.path}</span>
       ${mapping.folderExists

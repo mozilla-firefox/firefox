@@ -30,6 +30,13 @@ p {
   margin: 0;
 }
 
+.folder-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-small);
+}
+
 .folder {
   word-break: break-all;
 }
