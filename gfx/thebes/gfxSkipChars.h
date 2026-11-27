@@ -5,7 +5,6 @@
 #ifndef GFX_SKIP_CHARS_H
 #define GFX_SKIP_CHARS_H
 
-#include "mozilla/Attributes.h"
 #include "nsTArray.h"
 
 /*
