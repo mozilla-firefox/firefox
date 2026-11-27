@@ -5,6 +5,7 @@
 #include "OSXSpeechSynthesizerService.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/ClearOnShutdown.h"
+#include "mozilla/DataMutex.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/StaticPrefs_media.h"
 #include "mozilla/dom/nsSpeechTask.h"
@@ -30,6 +31,21 @@
 
 using namespace mozilla;
 
+class SpeechTaskCallback;
+
+class SpeechTaskCallbackBridge final {
+ public:
+  explicit SpeechTaskCallbackBridge(SpeechTaskCallback* aCallback)
+      : mCallback(aCallback, "SpeechTaskCallbackBridge::mCallback") {}
+
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(SpeechTaskCallbackBridge)
+
+  DataMutex<SpeechTaskCallback*> mCallback;
+
+ private:
+  ~SpeechTaskCallbackBridge() = default;
+};
+
 class SpeechTaskCallback final : public nsISpeechTaskCallback {
  public:
   SpeechTaskCallback(nsISpeechTask* aTask, AVSpeechSynthesizer* aSynth,
@@ -52,6 +68,7 @@ class SpeechTaskCallback final : public nsISpeechTaskCallback {
 
   nsCOMPtr<nsISpeechTask> mTask;
   AVSpeechSynthesizer* mSpeechSynthesizer;
+  RefPtr<SpeechTaskCallbackBridge> mBridge;
   SpeechDelegate* mDelegate;
   TimeStamp mStartingTime;
   uint32_t mCurrentIndex;
@@ -60,28 +77,63 @@ class SpeechTaskCallback final : public nsISpeechTaskCallback {
 
 @interface SpeechDelegate : NSObject <AVSpeechSynthesizerDelegate> {
  @private
-  SpeechTaskCallback* mCallback;
+  RefPtr<SpeechTaskCallbackBridge> mBridge;
 }
 
-- (id)initWithCallback:(SpeechTaskCallback*)aCallback;
+- (id)initWithBridge:(SpeechTaskCallbackBridge*)aBridge;
 @end
 
 @implementation SpeechDelegate
-- (id)initWithCallback:(SpeechTaskCallback*)aCallback {
-  [super init];
-  mCallback = aCallback;
+- (id)initWithBridge:(SpeechTaskCallbackBridge*)aBridge {
+  self = [super init];
+  if (self) {
+    mBridge = aBridge;
+  }
   return self;
 }
 
 - (void)speechSynthesizer:(AVSpeechSynthesizer*)aSender
     willSpeakRangeOfSpeechString:(NSRange)aRange
                        utterance:(AVSpeechUtterance*)aUtterance {
-  mCallback->OnWillSpeakWord(aRange.location, aRange.length);
+  RefPtr<SpeechTaskCallbackBridge> bridge = mBridge;
+  uint32_t location = static_cast<uint32_t>(aRange.location);
+  uint32_t length = static_cast<uint32_t>(aRange.length);
+  NS_DispatchToMainThread(NS_NewRunnableFunction(
+      "SpeechDelegate::willSpeakRangeOfSpeechString",
+      [bridge = std::move(bridge), location, length]() {
+        MOZ_ASSERT(NS_IsMainThread());
+        RefPtr<SpeechTaskCallback> callback;
+        {
+          auto locked = bridge->mCallback.Lock();
+          callback = *locked;
+        }
+        if (callback) {
+          callback->OnWillSpeakWord(location, length);
+        }
+      }));
 }
 
 - (void)speechSynthesizer:(AVSpeechSynthesizer*)aSender
     didFinishSpeechUtterance:(AVSpeechUtterance*)aUtterance {
-  mCallback->OnDidFinishSpeaking();
+  RefPtr<SpeechTaskCallbackBridge> bridge = mBridge;
+  NS_DispatchToMainThread(NS_NewRunnableFunction(
+      "SpeechDelegate::didFinishSpeechUtterance",
+      [bridge = std::move(bridge)]() {
+        MOZ_ASSERT(NS_IsMainThread());
+        RefPtr<SpeechTaskCallback> callback;
+        {
+          auto locked = bridge->mCallback.Lock();
+          callback = *locked;
+        }
+        if (callback) {
+          callback->OnDidFinishSpeaking();
+        }
+      }));
+}
+
+- (void)speechSynthesizer:(AVSpeechSynthesizer*)aSender
+    didCancelSpeechUtterance:(AVSpeechUtterance*)aUtterance {
+  [self speechSynthesizer:aSender didFinishSpeechUtterance:aUtterance];
 }
 
 @end
@@ -101,21 +153,30 @@ SpeechTaskCallback::SpeechTaskCallback(nsISpeechTask* aTask,
                                        const nsTArray<size_t>& aOffsets)
     : mTask(aTask),
       mSpeechSynthesizer(aSynth),
+      mBridge(MakeRefPtr<SpeechTaskCallbackBridge>(this)),
       mCurrentIndex(0),
       mOffsets(aOffsets.Clone()) {
-  mDelegate = [[SpeechDelegate alloc] initWithCallback:this];
+  MOZ_ASSERT(NS_IsMainThread());
+  mDelegate = [[SpeechDelegate alloc] initWithBridge:mBridge];
   [mSpeechSynthesizer setDelegate:mDelegate];
   mStartingTime = TimeStamp::Now();
 }
 
 SpeechTaskCallback::~SpeechTaskCallback() {
+  MOZ_ASSERT(NS_IsMainThread());
+  if (mBridge) {
+    auto locked = mBridge->mCallback.Lock();
+    *locked = nullptr;
+  }
   [mSpeechSynthesizer setDelegate:nil];
+  [mSpeechSynthesizer stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
   [mDelegate release];
   [mSpeechSynthesizer release];
 }
 
 NS_IMETHODIMP
 SpeechTaskCallback::OnCancel() {
+  MOZ_ASSERT(NS_IsMainThread());
   NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
 
   [mSpeechSynthesizer stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
@@ -173,26 +234,39 @@ float SpeechTaskCallback::GetTimeDurationFromStart() {
 }
 
 void SpeechTaskCallback::OnWillSpeakWord(uint32_t aIndex, uint32_t aLength) {
+  MOZ_ASSERT(NS_IsMainThread());
+  RefPtr<SpeechTaskCallback> self(this);
   mCurrentIndex = aIndex < mOffsets.Length() ? mOffsets[aIndex] : mCurrentIndex;
-  if (!mTask) {
+  nsCOMPtr<nsISpeechTask> task = mTask;
+  if (!task) {
     return;
   }
-  mTask->DispatchBoundary(u"word"_ns, GetTimeDurationFromStart(), mCurrentIndex,
-                          aLength, 1);
+  task->DispatchBoundary(u"word"_ns, GetTimeDurationFromStart(), mCurrentIndex,
+                         aLength, 1);
 }
 
 void SpeechTaskCallback::OnError(uint32_t aIndex) {
-  if (!mTask) {
+  MOZ_ASSERT(NS_IsMainThread());
+  RefPtr<SpeechTaskCallback> self(this);
+  nsCOMPtr<nsISpeechTask> task = std::move(mTask);
+  if (!task) {
     return;
   }
-  mTask->DispatchError(GetTimeDurationFromStart(), aIndex);
+  [mSpeechSynthesizer setDelegate:nil];
+  task->DispatchError(GetTimeDurationFromStart(), aIndex);
 }
 
 void SpeechTaskCallback::OnDidFinishSpeaking() {
-  mTask->DispatchEnd(GetTimeDurationFromStart(), mCurrentIndex);
-  // no longer needed
+  MOZ_ASSERT(NS_IsMainThread());
+  // Hold a strong reference across DispatchEnd(), which clears
+  // nsSpeechTask::mCallback and may otherwise destroy |this| synchronously.
+  RefPtr<SpeechTaskCallback> self(this);
   [mSpeechSynthesizer setDelegate:nil];
-  mTask = nullptr;
+  nsCOMPtr<nsISpeechTask> task = std::move(mTask);
+  if (!task) {
+    return;
+  }
+  task->DispatchEnd(GetTimeDurationFromStart(), mCurrentIndex);
 }
 
 namespace mozilla {
