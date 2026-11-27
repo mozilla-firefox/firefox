@@ -38,6 +38,7 @@ p {
 }
 
 .folder {
+  align-self: start;
   word-break: break-all;
 }
 

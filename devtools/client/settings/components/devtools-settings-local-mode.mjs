@@ -196,6 +196,16 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
     }
   }
 
+  /** @param {Event} event */
+  #revealFolder(event) {
+    event.preventDefault();
+    const mapping = this.#getMapping(event.currentTarget);
+    if (!mapping) {
+      return;
+    }
+    new FileUtils.File(mapping.path).reveal();
+  }
+
   /** @param {MappingState} mapping */
   #renderFolder(mapping) {
     return html`
@@ -209,7 +219,12 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
           @click=${this.#changeFolder}
         ></moz-button>
       </div>
-      <span class="folder">${mapping.path}</span>
+      <a
+        class="folder"
+        href=${"file://" + mapping.path}
+        @click=${this.#revealFolder}
+        >${mapping.path}</a
+      >
       ${mapping.folderExists
         ? nothing
         : html`<p
