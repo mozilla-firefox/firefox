@@ -160,7 +160,7 @@ tasks:
                 inc-origin-init: []
                 geckoview-isolated-process:
                     by-test-platform:
-                        android-em.*/debug: ['trunk']
+                        android-em.*/debug: built-projects
                         default: []
                 default:
                     by-test-platform:
@@ -183,7 +183,6 @@ tasks:
                     by-test-platform:
                         linux.*: 2
                         default: default
-                geckoview-isolated-process: 2
                 default:
                     by-test-platform:
                         android-hw-.*(-qr)?/.*: 2
@@ -325,7 +324,7 @@ tasks:
                         default: []
                 geckoview-isolated-process:
                     by-test-platform:
-                        android-em.*/debug: ['trunk']
+                        android-em.*/debug: built-projects
                         default: []
                 no-gpu-process:
                     by-test-platform:
@@ -364,7 +363,6 @@ tasks:
                     by-test-platform:
                         linux.*: 2
                         default: default
-                geckoview-isolated-process: 2
                 default: default
 
     reftest-qr:
