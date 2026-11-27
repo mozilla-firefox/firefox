@@ -240,6 +240,12 @@ bool nsWindow::OnPaint() {
       // anything extra.
       return;
     }
+    if (!knowsCompositor || !knowsCompositor->GetCompositorUseDComp()) {
+      // Without DirectComposition, the compositor presents into the window
+      // surface itself. Clearing would only cause flicker until the next
+      // composite.
+      return;
+    }
     auto black = reinterpret_cast<HBRUSH>(::GetStockObject(BLACK_BRUSH));
     // We could use RegionToHRGN, but at least for simple regions (and
     // possibly for complex ones too?) FillRect is faster; see bug 1946365
