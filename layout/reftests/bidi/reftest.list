@@ -148,7 +148,7 @@ skip-if(Android) fuzzy(0-92,0-350) fuzzy-if(gtkWidget,0-1,0-11) == chrome://reft
 
 == 922530-1.html 922530-1-ref.html
 == 922550-1.html 922550-1-ref.html # Bug 1392106
-== 989994-1.html 989994-1-ref.html
+fuzzy-if(winWidget,0-92,0-1) == 989994-1.html 989994-1-ref.html
 == 1067268-1.html 1067268-1-ref.html
 == 1069941-inline-bidi-border-1.html 1069941-inline-bidi-border-1-ref.html
 == 1069941-inline-bidi-margin-1.html 1069941-inline-bidi-margin-1-ref.html
