@@ -5,7 +5,6 @@
 #include "mozilla/dom/cache/TypeUtils.h"
 
 #include <algorithm>
-#include <memory>
 
 #include "mozilla/StaticPrefs_extensions.h"
 #include "mozilla/dom/CacheBinding.h"
@@ -18,6 +17,7 @@
 #include "mozilla/dom/cache/CacheTypes.h"
 #include "mozilla/dom/cache/ReadStream.h"
 #include "mozilla/ipc/BackgroundChild.h"
+#include "mozilla/ipc/BackgroundUtils.h"
 #include "mozilla/ipc/IPCStreamUtils.h"
 #include "mozilla/ipc/InputStreamUtils.h"
 #include "mozilla/ipc/PBackgroundChild.h"
@@ -160,10 +160,15 @@ void TypeUtils::ToCacheRequest(CacheRequest& aOut, const InternalRequest& aIn,
 
   aOut.integrity() = aIn.GetIntegrity();
   aOut.loadingEmbedderPolicy() = aIn.GetEmbedderPolicy();
-  const mozilla::UniquePtr<mozilla::ipc::PrincipalInfo>& principalInfo =
-      aIn.GetPrincipalInfo();
-  if (principalInfo) {
-    aOut.principalInfo() = Some(*(principalInfo.get()));
+  if (nsIPrincipal* principal = aIn.GetPrincipal()) {
+    mozilla::ipc::PrincipalInfo principalInfo;
+    nsresult rv =
+        mozilla::ipc::PrincipalToPrincipalInfo(principal, &principalInfo);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      aRv.Throw(rv);
+      return;
+    }
+    aOut.principalInfo() = Some(std::move(principalInfo));
   }
 
   if (aBodyAction == IgnoreBody) {
@@ -201,8 +206,15 @@ void TypeUtils::ToCacheResponseWithoutBody(CacheResponse& aOut,
   aOut.headers() = ToHeadersEntryList(headers);
   aOut.headersGuard() = headers->Guard();
   aOut.securityInfo() = aIn.GetChannelInfo().SecurityInfo();
-  if (aIn.GetPrincipalInfo()) {
-    aOut.principalInfo() = Some(*aIn.GetPrincipalInfo());
+  if (nsIPrincipal* principal = aIn.GetPrincipal()) {
+    mozilla::ipc::PrincipalInfo principalInfo;
+    nsresult rv =
+        mozilla::ipc::PrincipalToPrincipalInfo(principal, &principalInfo);
+    if (NS_WARN_IF(NS_FAILED(rv))) {
+      aRv.Throw(rv);
+      return;
+    }
+    aOut.principalInfo() = Some(std::move(principalInfo));
   } else {
     aOut.principalInfo() = Nothing();
   }
@@ -288,9 +300,11 @@ already_AddRefed<Response> TypeUtils::ToResponse(const CacheResponse& aIn) {
 
   ir->InitChannelInfo(aIn.securityInfo());
   if (aIn.principalInfo().isSome()) {
-    auto info = std::make_unique<mozilla::ipc::PrincipalInfo>(
-        aIn.principalInfo().ref());
-    ir->SetPrincipalInfo(std::move(info));
+    auto principalOrErr =
+        mozilla::ipc::PrincipalInfoToPrincipal(aIn.principalInfo().ref());
+    if (principalOrErr.isOk()) {
+      ir->SetPrincipal(principalOrErr.inspect());
+    }
   }
 
   nsCOMPtr<nsIInputStream> stream = ReadStream::Create(aIn.body());

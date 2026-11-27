@@ -5,7 +5,6 @@
 #ifndef mozilla_dom_InternalResponse_h
 #define mozilla_dom_InternalResponse_h
 
-#include "mozilla/UniquePtr.h"
 #include "mozilla/dom/ChannelInfo.h"
 #include "mozilla/dom/FetchTypes.h"
 #include "mozilla/dom/InternalHeaders.h"
@@ -21,7 +20,6 @@ namespace mozilla {
 namespace ipc {
 class PBackgroundChild;
 class PBackgroundParent;
-class PrincipalInfo;
 }  // namespace ipc
 
 namespace dom {
@@ -316,16 +314,13 @@ class InternalResponse final : public AtomicSafeRefCounted<InternalResponse> {
 
   const ChannelInfo& GetChannelInfo() const { return mChannelInfo; }
 
-  const UniquePtr<mozilla::ipc::PrincipalInfo>& GetPrincipalInfo() const {
-    return mPrincipalInfo;
-  }
+  nsIPrincipal* GetPrincipal() const { return mPrincipal; }
 
   bool IsRedirected() const { return mURLList.Length() > 1; }
 
   nsresult GetErrorCode() const { return mErrorCode; }
 
-  // Takes ownership of the principal info.
-  void SetPrincipalInfo(UniquePtr<mozilla::ipc::PrincipalInfo> aPrincipalInfo);
+  void SetPrincipal(nsIPrincipal* aPrincipal) { mPrincipal = aPrincipal; }
 
   LoadTainting GetTainting() const;
 
@@ -388,7 +383,7 @@ class InternalResponse final : public AtomicSafeRefCounted<InternalResponse> {
 
  private:
   ChannelInfo mChannelInfo;
-  UniquePtr<mozilla::ipc::PrincipalInfo> mPrincipalInfo;
+  nsCOMPtr<nsIPrincipal> mPrincipal;
 
   // For filtered responses.
   // Cache, and SW interception should always serialize/access the underlying

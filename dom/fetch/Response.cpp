@@ -4,8 +4,6 @@
 
 #include "Response.h"
 
-#include <memory>
-
 #include "BodyExtractor.h"
 #include "FetchStreamReader.h"
 #include "InternalResponse.h"
@@ -184,7 +182,7 @@ already_AddRefed<Response> Response::Redirect(const GlobalObject& aGlobal,
   SafeRefPtr<InternalResponse> internalResponse =
       MakeSafeRefPtr<InternalResponse>(aInit.mStatus, aInit.mStatusText);
 
-  UniquePtr<mozilla::ipc::PrincipalInfo> principalInfo;
+  nsCOMPtr<nsIPrincipal> principal;
 
   // Grab a valid channel info from the global so this response is 'valid' for
   // interception.
@@ -196,13 +194,7 @@ already_AddRefed<Response> Response::Redirect(const GlobalObject& aGlobal,
       MOZ_ASSERT(doc);
       info.InitFromDocument(doc);
 
-      principalInfo = std::make_unique<mozilla::ipc::PrincipalInfo>();
-      nsresult rv =
-          PrincipalToPrincipalInfo(doc->NodePrincipal(), principalInfo.get());
-      if (NS_WARN_IF(NS_FAILED(rv))) {
-        aRv.ThrowTypeError<MSG_FETCH_BODY_CONSUMED_ERROR>();
-        return nullptr;
-      }
+      principal = doc->NodePrincipal();
 
       internalResponse->InitChannelInfo(info);
     } else if (global->PrincipalOrNull()->IsSystemPrincipal()) {
@@ -223,11 +215,10 @@ already_AddRefed<Response> Response::Redirect(const GlobalObject& aGlobal,
     WorkerPrivate* worker = GetCurrentThreadWorkerPrivate();
     MOZ_ASSERT(worker);
     internalResponse->InitChannelInfo(worker->GetChannelInfo());
-    principalInfo = std::make_unique<mozilla::ipc::PrincipalInfo>(
-        worker->GetPrincipalInfo());
+    principal = worker->GetPrincipal();
   }
 
-  internalResponse->SetPrincipalInfo(std::move(principalInfo));
+  internalResponse->SetPrincipal(principal);
 
   RefPtr<Response> r =
       new Response(global, internalResponse.clonePtr(), nullptr);

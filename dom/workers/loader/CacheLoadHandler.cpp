@@ -4,13 +4,14 @@
 
 #include "CacheLoadHandler.h"
 
+#include <memory>
+
 #include "ScriptResponseHeaderProcessor.h"  // ScriptResponseHeaderProcessor
 #include "WorkerLoadContext.h"              // WorkerLoadContext
 #include "jsapi.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/Encoding.h"
 #include "mozilla/TaskQueue.h"
-#include "mozilla/UniquePtr.h"
 #include "mozilla/dom/CacheBinding.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/PolicyContainer.h"
@@ -446,10 +447,7 @@ void CacheLoadHandler::ResolvedCallback(JSContext* aCx,
   nsCOMPtr<nsIInputStream> inputStream;
   response->GetBody(getter_AddRefs(inputStream));
   mChannelInfo = response->GetChannelInfo();
-  const UniquePtr<PrincipalInfo>& pInfo = response->GetPrincipalInfo();
-  if (pInfo) {
-    mPrincipalInfo = std::make_unique<PrincipalInfo>(*pInfo);
-  }
+  mPrincipal = response->GetPrincipal();
 
   if (!inputStream) {
     loadContext->mCacheStatus = WorkerLoadContext::Cached;
@@ -463,9 +461,8 @@ void CacheLoadHandler::ResolvedCallback(JSContext* aCx,
     }
 
     nsresult rv = DataReceivedFromCache(
-        (uint8_t*)"", 0, mChannelInfo, std::move(mPrincipalInfo),
-        mPolicyContainerHeaders, mReferrerPolicyHeaderValue,
-        mReportingEndpointsHeaderValue);
+        (uint8_t*)"", 0, mChannelInfo, mPrincipal, mPolicyContainerHeaders,
+        mReferrerPolicyHeaderValue, mReportingEndpointsHeaderValue);
 
     mRequestHandle->OnStreamComplete(rv);
     return;
@@ -542,19 +539,18 @@ CacheLoadHandler::OnStreamComplete(nsIStreamLoader* aLoader,
   MOZ_ASSERT(loadContext->mCacheStatus == WorkerLoadContext::ReadingFromCache);
   loadContext->mCacheStatus = WorkerLoadContext::Cached;
 
-  MOZ_ASSERT(mPrincipalInfo);
+  MOZ_ASSERT(mPrincipal);
 
   nsresult rv = DataReceivedFromCache(
-      aString, aStringLen, mChannelInfo, std::move(mPrincipalInfo),
-      mPolicyContainerHeaders, mReferrerPolicyHeaderValue,
-      mReportingEndpointsHeaderValue);
+      aString, aStringLen, mChannelInfo, mPrincipal, mPolicyContainerHeaders,
+      mReferrerPolicyHeaderValue, mReportingEndpointsHeaderValue);
   return mRequestHandle->OnStreamComplete(rv);
 }
 
 nsresult CacheLoadHandler::DataReceivedFromCache(
     const uint8_t* aString, uint32_t aStringLen,
     const mozilla::dom::ChannelInfo& aChannelInfo,
-    UniquePtr<PrincipalInfo> aPrincipalInfo,
+    nsIPrincipal* aResponsePrincipal,
     const PolicyContainer::Headers& aPolicyContainerHeaders,
     const nsACString& aReferrerPolicyHeaderValue,
     const nsACString& aReportingEndpointsHeaderValue) {
@@ -567,9 +563,6 @@ nsresult CacheLoadHandler::DataReceivedFromCache(
   MOZ_ASSERT(loadContext->mCacheStatus == WorkerLoadContext::Cached);
   MOZ_ASSERT(loadContext->mRequest);
 
-  auto responsePrincipalOrErr = PrincipalInfoToPrincipal(*aPrincipalInfo);
-  MOZ_DIAGNOSTIC_ASSERT(responsePrincipalOrErr.isOk());
-
   nsIPrincipal* principal = mWorkerRef->Private()->GetPrincipal();
   if (!principal) {
     WorkerPrivate* parentWorker = mWorkerRef->Private()->GetParent();
@@ -577,9 +570,8 @@ nsresult CacheLoadHandler::DataReceivedFromCache(
     principal = parentWorker->GetPrincipal();
   }
 
-  nsCOMPtr<nsIPrincipal> responsePrincipal = responsePrincipalOrErr.unwrap();
-
-  loadContext->mMutedErrorFlag.emplace(!principal->Subsumes(responsePrincipal));
+  loadContext->mMutedErrorFlag.emplace(
+      !principal->Subsumes(aResponsePrincipal));
 
   // May be null.
   Document* parentDoc = mWorkerRef->Private()->GetDocument();
@@ -618,7 +610,7 @@ nsresult CacheLoadHandler::DataReceivedFromCache(
     MOZ_DIAGNOSTIC_ASSERT(principal);
 
     bool equal = false;
-    MOZ_ALWAYS_SUCCEEDS(responsePrincipal->Equals(principal, &equal));
+    MOZ_ALWAYS_SUCCEEDS(aResponsePrincipal->Equals(principal, &equal));
     MOZ_DIAGNOSTIC_ASSERT(equal);
 
     nsCOMPtr<nsIContentSecurityPolicy> csp;
@@ -642,7 +634,7 @@ nsresult CacheLoadHandler::DataReceivedFromCache(
     // This is OK for now because we don't want to expose partitionedPrincipal
     // functionality in ServiceWorkers yet.
     rv = mWorkerRef->Private()->SetPrincipalsOnMainThread(
-        responsePrincipal, responsePrincipal, loadGroup);
+        aResponsePrincipal, aResponsePrincipal, loadGroup);
     MOZ_DIAGNOSTIC_ASSERT(NS_SUCCEEDED(rv));
 
     rv = mWorkerRef->Private()->SetPolicyContainerFromHeaders(
