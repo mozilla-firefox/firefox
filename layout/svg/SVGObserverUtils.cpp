@@ -1329,7 +1329,9 @@ NS_DECLARE_FRAME_PROPERTY_RELEASABLE(OffsetPathProperty,
 template <class T>
 static T* GetEffectProperty(SVGReference* aReference, nsIFrame* aFrame,
                             const FramePropertyDescriptor<T>* aProperty) {
-  MOZ_ASSERT(!aFrame->GetPrevContinuation(), "Require first continuation");
+  // Continuations can come and go during reflow, and we don't need to observe
+  // the referenced element more than once for a given node.
+  aFrame = aFrame->FirstContinuation();
   if (!aReference) {
     return nullptr;
   }
