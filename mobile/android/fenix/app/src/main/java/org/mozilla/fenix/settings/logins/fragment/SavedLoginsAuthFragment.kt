@@ -15,8 +15,6 @@ import mozilla.components.feature.autofill.preference.AutofillPreference
 import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.GleanMetrics.Logins
 import org.mozilla.fenix.R
-import org.mozilla.fenix.biometricauthentication.AuthenticationStatus
-import org.mozilla.fenix.biometricauthentication.BiometricAuthenticationManager
 import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
 import org.mozilla.fenix.ext.components
@@ -114,10 +112,6 @@ class SavedLoginsAuthFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
                 findNavController().navigate(directions)
             },
         )
-
-        BiometricAuthenticationManager.biometricAuthenticationNeededInfo.shouldShowAuthenticationPrompt = true
-        BiometricAuthenticationManager.biometricAuthenticationNeededInfo.authenticationStatus =
-            AuthenticationStatus.NOT_AUTHENTICATED
     }
 
     private fun navigateToSavedLoginsFragment() {

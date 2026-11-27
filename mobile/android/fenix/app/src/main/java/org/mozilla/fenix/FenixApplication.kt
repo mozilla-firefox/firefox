@@ -126,7 +126,6 @@ import org.mozilla.fenix.home.collections.migration.CollectionsToTabGroupsMigrat
 import org.mozilla.fenix.home.topsites.getTopSitesConfig
 import org.mozilla.fenix.lifecycle.PowerSaveModeFeature
 import org.mozilla.fenix.lifecycle.StoreLifecycleObserver
-import org.mozilla.fenix.lifecycle.VisibilityLifecycleObserver
 import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.onboarding.MARKETING_CHANNEL_ID
 import org.mozilla.fenix.onboarding.reconcileOnboardingCompletionState
@@ -458,7 +457,6 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
                     appStore = components.appStore,
                     browserStore = components.core.store,
                 ),
-                VisibilityLifecycleObserver(),
                 PowerSaveModeFeature(
                     context = applicationContext,
                     appStore = components.appStore,

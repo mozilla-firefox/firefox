@@ -176,8 +176,6 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.ReaderViewBinding
 import org.mozilla.fenix.bindings.FindInPageBinding
 import org.mozilla.fenix.bindings.SummarizeToolbarCFRBinding
-import org.mozilla.fenix.biometricauthentication.AuthenticationStatus
-import org.mozilla.fenix.biometricauthentication.BiometricAuthenticationManager
 import org.mozilla.fenix.browser.applinks.AppLinksPromptFragment
 import org.mozilla.fenix.browser.applinks.BrowserFirstHosts
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
@@ -2196,10 +2194,6 @@ abstract class BaseBrowserFragment :
             components.useCases.sessionUseCases.reload()
         }
         hideToolbar()
-
-        BiometricAuthenticationManager.biometricAuthenticationNeededInfo.shouldShowAuthenticationPrompt = true
-        BiometricAuthenticationManager.biometricAuthenticationNeededInfo.authenticationStatus =
-            AuthenticationStatus.NOT_AUTHENTICATED
 
         getSafeCurrentTab()?.id?.let {
             requireComponents.core.store.dispatch(

@@ -95,8 +95,6 @@ import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.NavGraphDirections
 import org.mozilla.fenix.OnLongPressedListener
 import org.mozilla.fenix.R
-import org.mozilla.fenix.biometricauthentication.AuthenticationStatus
-import org.mozilla.fenix.biometricauthentication.BiometricAuthenticationManager
 import org.mozilla.fenix.browser.BrowserFragmentDirections
 import org.mozilla.fenix.browser.SwipeGestureLayout
 import org.mozilla.fenix.browser.TabPreview
@@ -1309,10 +1307,6 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
         components.useCases.sessionUseCases.updateLastAccess()
 
         evaluateMessagesForMicrosurvey(components)
-
-        BiometricAuthenticationManager.biometricAuthenticationNeededInfo.shouldShowAuthenticationPrompt = true
-        BiometricAuthenticationManager.biometricAuthenticationNeededInfo.authenticationStatus =
-            AuthenticationStatus.NOT_AUTHENTICATED
     }
 
     private fun evaluateMessagesForMicrosurvey(components: Components) =
