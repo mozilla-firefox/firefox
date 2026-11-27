@@ -89,14 +89,11 @@ def list_of_paths_to_readable_string(paths):
         elif len(val) < 3:
             final_string += ", ".join([os.path.join(key, v) for v in val]) + ", "
         elif len(val) < 10:
-            final_string += "%s items in %s: %s and %s, " % (
-                len(val),
-                key,
-                ", ".join(val[0:-1]),
-                val[-1],
+            final_string += (
+                f"{len(val)} items in {key}: {', '.join(val[0:-1])} and {val[-1]}, "
             )
         else:
-            final_string += "%s (omitted) items in %s, " % (len(val), key)
+            final_string += f"{len(val)} (omitted) items in {key}, "
 
     if final_string[-2:] == ", ":
         final_string = final_string[:-2]
@@ -211,7 +208,7 @@ class VendorManifest(MozbuildObject):
             return
         elif flavor != "individual-file" and check_for_update:
             # Only print the new revision to stdout
-            print("%s %s" % (new_revision, timestamp))
+            print(f"{new_revision} {timestamp}")
             return
 
         # ==========================================================
@@ -677,8 +674,8 @@ class VendorManifest(MozbuildObject):
 
         replaced = 0
         replacements = [
-            ["  release:", " %s (%s)." % (revision, timestamp)],
-            ["  revision:", " %s" % (revision)],
+            ["  release:", f" {revision} ({timestamp})."],
+            ["  revision:", f" {revision}"],
         ]
 
         for i in range(0, len(yaml)):
@@ -776,8 +773,8 @@ class VendorManifest(MozbuildObject):
 
                 if not os.path.isdir(src):
                     raise Exception(
-                        "Cannot move from a source directory %s that is not a directory"
-                        % src
+                        f"Cannot move from a source directory {src} "
+                        "that is not a directory"
                     )
                 os.makedirs(dst, exist_ok=True)
 
