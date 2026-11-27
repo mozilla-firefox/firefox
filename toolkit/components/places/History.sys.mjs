@@ -70,6 +70,23 @@
  */
 
 /**
+ * @typedef HostAndDateFilter
+ * A filter on the host and the time of visits. At least one property is
+ * required. The methods using this filter may normalize `host` in place.
+ *
+ * @property {string} [host]
+ *  A hostname with or without subhost. Examples:
+ *  - "mozilla.org" matches mozilla.org but not its subdomains
+ *  - ".mozilla.org" matches mozilla.org and its subdomains
+ *  - "." matches local files
+ *  - "::1" matches an IPv6 address, ignoring any wildcard
+ * @property {Date} [beginDate]
+ *  The first time of the visits to match (inclusive).
+ * @property {Date} [endDate]
+ *  The last time of the visits to match (inclusive).
+ */
+
+/**
  * @import {OpenedConnection} from "resource://gre/modules/Sqlite.sys.mjs"
  */
 
@@ -494,17 +511,8 @@ export var History = Object.freeze({
    * Note: This removes pages with at least one visit inside the timeframe.
    * Any visits outside the timeframe will also be removed with the page.
    *
-   * @param {object} filter
-   *   An object containing details of the filter wen removing pages.
-   * @param {string} filter.host
-   *   A hostname with or without subhost. Examples:
-   *   - "mozilla.org" removes pages from mozilla.org but not its subdomains
-   *   - ".mozilla.org" removes pages from mozilla.org and its subdomains
-   *   - "." removes local files
-   * @param {Date} filter.beginDate
-   *   The first time the page was visited (inclusive).
-   * @param {Date} filter.endDate
-   *   The last time the page was visited (inclusive)
+   * @param {HostAndDateFilter} filter
+   *   The filter on the pages to remove.
    * @param {(info: PageInfo) => void} [onResult]
    *   A callback invoked for each page found.
    * @returns {Promise<boolean>}
@@ -514,56 +522,7 @@ export var History = Object.freeze({
    *   is empty, or its components do not satisfy the criteria given above.
    */
   removeByFilter(filter, onResult) {
-    if (!filter || typeof filter !== "object") {
-      throw new TypeError("Expected a filter object");
-    }
-
-    let hasHost = filter.host;
-    if (hasHost) {
-      if (typeof filter.host !== "string") {
-        throw new TypeError("`host` should be a string");
-      }
-      filter.host = filter.host.toLowerCase();
-      if (filter.host.length > 1 && filter.host.lastIndexOf(".") == 0) {
-        // The input contains only an initial period, thus it may be a
-        // wildcarded local host, like ".localhost". Ideally the consumer should
-        // pass just "localhost", because there is no concept of subhosts for
-        // it, but we are being more lenient to allow for simpler input.
-        // Anyway, in this case we remove the wildcard to avoid clearing too
-        // much if the consumer wrongly passes in things like ".com".
-        filter.host = filter.host.slice(1);
-      }
-    }
-
-    let hasBeginDate = "beginDate" in filter;
-    if (hasBeginDate) {
-      this.ensureDate(filter.beginDate);
-    }
-
-    let hasEndDate = "endDate" in filter;
-    if (hasEndDate) {
-      this.ensureDate(filter.endDate);
-    }
-
-    if (hasBeginDate && hasEndDate && filter.beginDate > filter.endDate) {
-      throw new TypeError("`beginDate` should be at least as old as `endDate`");
-    }
-
-    if (!hasBeginDate && !hasEndDate && !hasHost) {
-      throw new TypeError("Expected a non-empty filter");
-    }
-
-    // Check the host format.
-    // Either it has no dots, or has multiple dots, or it's a single dot char.
-    if (
-      hasHost &&
-      (!/^(\.?([.a-z0-9-]+\.[a-z0-9-]+)?|[a-z0-9-]+)\.?$/.test(filter.host) ||
-        filter.host.includes(".."))
-    ) {
-      throw new TypeError(
-        "Expected well formed hostname string for `host` with atmost 1 wildcard."
-      );
-    }
+    validateHostAndDateFilter(filter);
 
     if (onResult && typeof onResult != "function") {
       throw new TypeError("Invalid function: " + onResult);
@@ -610,6 +569,46 @@ export var History = Object.freeze({
         { val: isGuid ? guidOrURL : guidOrURL.href }
       );
       return !!rows.length;
+    });
+  },
+
+  /**
+   * Count the visits matching a filter, including visits to hidden pages.
+   *
+   * @param {HostAndDateFilter} filter
+   *   The filter on the visits to count.
+   * @returns {Promise<number>}
+   *   The number of visits.
+   * @throws (TypeError)
+   *   If `filter` does not have the expected type, in particular if the `object`
+   *   is empty, or its components do not satisfy the criteria given above.
+   */
+  countVisits(filter) {
+    validateHostAndDateFilter(filter);
+
+    let params = {};
+    let conditions = [];
+    if (filter.host) {
+      conditions.push(getHostFilterSQLFragment(filter.host, params));
+    }
+    if ("beginDate" in filter) {
+      conditions.push("v.visit_date >= :begin");
+      params.begin = lazy.PlacesUtils.toPRTime(filter.beginDate);
+    }
+    if ("endDate" in filter) {
+      conditions.push("v.visit_date <= :end");
+      params.end = lazy.PlacesUtils.toPRTime(filter.endDate);
+    }
+
+    return lazy.PlacesUtils.promiseDBConnection().then(async db => {
+      let rows = await db.executeCached(
+        `SELECT count(*) AS count
+         FROM moz_historyvisits v
+         ${filter.host ? "JOIN moz_places h ON h.id = v.place_id" : ""}
+         WHERE ${conditions.join(" AND ")}`,
+        params
+      );
+      return rows[0].getResultByName("count");
     });
   },
 
@@ -1387,6 +1386,110 @@ async function removePagesWithVisits(db, pages) {
   await cleanupPages(db, pages);
 }
 
+/**
+ * Validates and normalizes a filter for `History.removeByFilter` and
+ * `History.countVisits`.
+ *
+ * @param {HostAndDateFilter} filter
+ *   The filter to validate, its `host` is normalized in place.
+ * @throws (TypeError)
+ *   If `filter` is invalid.
+ */
+function validateHostAndDateFilter(filter) {
+  if (!filter || typeof filter !== "object") {
+    throw new TypeError("Expected a filter object");
+  }
+
+  let hasHost = filter.host;
+  let isIPv6 = false;
+  if (hasHost) {
+    if (typeof filter.host !== "string") {
+      throw new TypeError("`host` should be a string");
+    }
+    filter.host = filter.host.toLowerCase();
+    isIPv6 = filter.host.includes(":");
+    if (isIPv6) {
+      // IPv6 addresses have no subhosts, and are stored in canonical form.
+      let address = filter.host.replace(/^\./, "");
+      let url = URL.parse(`http://[${address}]`);
+      if (!url) {
+        throw new TypeError("Expected a valid IPv6 address for `host`.");
+      }
+      filter.host = url.hostname.slice(1, -1);
+    } else if (filter.host.length > 1 && filter.host.lastIndexOf(".") == 0) {
+      // The input contains only an initial period, thus it may be a
+      // wildcarded local host, like ".localhost". Ideally the consumer should
+      // pass just "localhost", because there is no concept of subhosts for
+      // it, but we are being more lenient to allow for simpler input.
+      // Anyway, in this case we remove the wildcard to avoid clearing too
+      // much if the consumer wrongly passes in things like ".com".
+      filter.host = filter.host.slice(1);
+    }
+  }
+
+  let hasBeginDate = "beginDate" in filter;
+  if (hasBeginDate) {
+    History.ensureDate(filter.beginDate);
+  }
+
+  let hasEndDate = "endDate" in filter;
+  if (hasEndDate) {
+    History.ensureDate(filter.endDate);
+  }
+
+  if (hasBeginDate && hasEndDate && filter.beginDate > filter.endDate) {
+    throw new TypeError("`beginDate` should be at least as old as `endDate`");
+  }
+
+  if (!hasBeginDate && !hasEndDate && !hasHost) {
+    throw new TypeError("Expected a non-empty filter");
+  }
+
+  // Check the host format, IPv6 addresses were already validated.
+  // Either it has no dots, or has multiple dots, or it's a single dot char.
+  if (
+    hasHost &&
+    !isIPv6 &&
+    (!/^(\.?([.a-z0-9_-]+\.[a-z0-9_-]+)?|[a-z0-9_-]+)\.?$/.test(filter.host) ||
+      filter.host.includes(".."))
+  ) {
+    throw new TypeError(
+      "Expected well formed hostname string for `host` with at most 1 wildcard."
+    );
+  }
+}
+
+/**
+ * Returns a SQL condition on `h.rev_host` for a host validated by
+ * `validateHostAndDateFilter`.
+ *
+ * @param {string} host
+ *   The host, see `HostAndDateFilter` for the supported formats.
+ * @param {{[name: string]: any}} params
+ *   The query parameters, where `revHost` is set.
+ * @returns {string}
+ *   The SQL condition, to be joined with other conditions.
+ */
+function getHostFilterSQLFragment(host, params) {
+  // There are four cases that we need to consider:
+  // mozilla.org, .mozilla.org, localhost, and local files
+  let revHost = host.split("").reverse().join("");
+  let fragment;
+  if (host == ".") {
+    // Local files.
+    fragment = `h.rev_host = :revHost`;
+  } else if (host.startsWith(".")) {
+    // Remove the subhost wildcard.
+    revHost = revHost.slice(0, -1);
+    fragment = `h.rev_host between :revHost || "." and :revHost || "/"`;
+  } else {
+    // This covers non-wildcarded hosts (e.g.: mozilla.org, localhost)
+    fragment = `h.rev_host = :revHost || "."`;
+  }
+  params.revHost = revHost;
+  return fragment;
+}
+
 // Inner implementation of History.removeByFilter
 var removeByFilter = async function (db, filter, onResult = null) {
   // 1. Create fragment for date filtration
@@ -1412,21 +1515,7 @@ var removeByFilter = async function (db, filter, onResult = null) {
   // 2. Create fragment for host and subhost filtering
   let hostFilterSQLFragment = "";
   if (filter.host) {
-    // There are four cases that we need to consider:
-    // mozilla.org, .mozilla.org, localhost, and local files
-    let revHost = filter.host.split("").reverse().join("");
-    if (filter.host == ".") {
-      // Local files.
-      hostFilterSQLFragment = `h.rev_host = :revHost`;
-    } else if (filter.host.startsWith(".")) {
-      // Remove the subhost wildcard.
-      revHost = revHost.slice(0, -1);
-      hostFilterSQLFragment = `h.rev_host between :revHost || "." and :revHost || "/"`;
-    } else {
-      // This covers non-wildcarded hosts (e.g.: mozilla.org, localhost)
-      hostFilterSQLFragment = `h.rev_host = :revHost || "."`;
-    }
-    params.revHost = revHost;
+    hostFilterSQLFragment = getHostFilterSQLFragment(filter.host, params);
   }
 
   // 3. Find out what needs to be removed

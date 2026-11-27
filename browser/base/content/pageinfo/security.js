@@ -16,6 +16,7 @@ const { QWACs } = ChromeUtils.importESModule(
 
 ChromeUtils.defineESModuleGetters(this, {
   LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
+  PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
 });
 
 var security = {
@@ -336,7 +337,7 @@ async function securityOnLoad(uri, windowInfo, browsingContext) {
   document.l10n.setAttributes(
     document.getElementById("security-privacy-history-value"),
     "security-visits-number",
-    { visits: previousVisitCount(windowInfo.hostName) }
+    { visits: await previousVisitCount(uri) }
   );
 
   /* Set the Technical Detail section messages */
@@ -431,31 +432,24 @@ async function realmHasPasswords(uri) {
 }
 
 /**
- * Return the number of previous visits recorded for host before today.
+ * Return the number of previous visits recorded for the host of uri and its
+ * subdomains, before today.
  *
- * @param host - the domain name to look for in history
+ * @param {nsIURI} uri - the page uri
  */
-function previousVisitCount(host) {
-  if (!host) {
+async function previousVisitCount(uri) {
+  try {
+    // An empty host would count visits to local files.
+    if (!uri.host) {
+      return 0;
+    }
+    let startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    return await PlacesUtils.history.countVisits({
+      host: "." + uri.host,
+      endDate: startOfToday,
+    });
+  } catch (ex) {
     return 0;
   }
-
-  var historyService = Cc[
-    "@mozilla.org/browser/nav-history-service;1"
-  ].getService(Ci.nsINavHistoryService);
-
-  var options = historyService.getNewQueryOptions();
-  options.resultType = options.RESULTS_AS_VISIT;
-
-  // Search for visits to this host before today
-  var query = historyService.getNewQuery();
-  query.endTimeReference = query.TIME_RELATIVE_TODAY;
-  query.endTime = 0;
-  query.domain = host;
-
-  var result = historyService.executeQuery(query, options);
-  result.root.containerOpen = true;
-  var cc = result.root.childCount;
-  result.root.containerOpen = false;
-  return cc;
 }

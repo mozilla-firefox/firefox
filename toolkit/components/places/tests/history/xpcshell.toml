@@ -8,6 +8,8 @@ head = "head_history.js"
 
 ["test_bookmark_unhide.js"]
 
+["test_countVisits.js"]
+
 ["test_fetch.js"]
 
 ["test_fetchAnnotatedPages.js"]
