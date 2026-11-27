@@ -649,6 +649,8 @@ prefs = ["content.cors.use_triggering_principal=true"] # See bug 1982916.
 
 ["test_data_protocol.js"]
 
+["test_ddr_verification.js"]
+
 ["test_defaultURI.js"]
 
 ["test_dictionary_compression_dcb.js"]

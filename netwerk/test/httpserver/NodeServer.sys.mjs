@@ -239,10 +239,42 @@ class CertGenCode {
     );
   }
 
+  // IPv4/IPv6 literals become iPAddress ([7]) GeneralNames; everything else is
+  // a dNSName ([2]). This lets callers request certs covering an IP address
+  // (used to exercise RFC 9462 DDR certificate verification).
+  static ipv4ToBytes(s) {
+    return Buffer.from(s.split(".").map(x => parseInt(x, 10) & 0xff));
+  }
+  static ipv6ToBytes(s) {
+    let [head, tail] = s.split("::");
+    let headGroups = head ? head.split(":") : [];
+    let tailGroups = tail ? tail.split(":") : [];
+    let missing = 8 - (headGroups.length + tailGroups.length);
+    let groups = [
+      ...headGroups,
+      ...Array(missing > 0 ? missing : 0).fill("0"),
+      ...tailGroups,
+    ];
+    let buf = Buffer.alloc(16);
+    for (let i = 0; i < 8; i++) {
+      let v = parseInt(groups[i] || "0", 16);
+      buf[i * 2] = (v >> 8) & 0xff;
+      buf[i * 2 + 1] = v & 0xff;
+    }
+    return buf;
+  }
+  static sanGeneralName(name) {
+    if (/^(\d{1,3}\.){3}\d{1,3}$/.test(name)) {
+      return CertGenCode.derTLV(0x87, CertGenCode.ipv4ToBytes(name));
+    }
+    if (name.includes(":")) {
+      return CertGenCode.derTLV(0x87, CertGenCode.ipv6ToBytes(name));
+    }
+    return CertGenCode.derTLV(0x82, Buffer.from(name, "ascii"));
+  }
+
   static sanExtension(hostnames) {
-    const names = hostnames.map(h =>
-      CertGenCode.derTLV(0x82, Buffer.from(h, "ascii"))
-    );
+    const names = hostnames.map(h => CertGenCode.sanGeneralName(h));
     return CertGenCode.derSeq(
       CertGenCode.derOID([2, 5, 29, 17]),
       CertGenCode.derOctet(CertGenCode.derSeq(...names))
