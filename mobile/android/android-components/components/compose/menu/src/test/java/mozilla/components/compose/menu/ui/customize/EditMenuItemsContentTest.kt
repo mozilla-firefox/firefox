@@ -171,7 +171,7 @@ class EditMenuItemsContentTest {
 
         assertEquals(listOf("Shown 3", "Shown 1", "Shown 2"), store.state.items.map { it.id })
         assertEquals(
-            ItemsChanged(items = store.state.items, hiddenItems = emptyList()),
+            ItemsChanged(items = store.state.items, hiddenItems = emptyList(), movedItemId = "Shown 3"),
             actions.filterIsInstance<ItemsChanged>().single(),
         )
     }
@@ -203,7 +203,7 @@ class EditMenuItemsContentTest {
         assertEquals(listOf("Shown 2"), store.state.items.map { it.id })
         assertEquals(listOf("Shown 1"), store.state.hiddenItems.map { it.id })
         assertEquals(
-            ItemsChanged(items = store.state.items, hiddenItems = store.state.hiddenItems),
+            ItemsChanged(items = store.state.items, hiddenItems = store.state.hiddenItems, movedItemId = "Shown 1"),
             actions.filterIsInstance<ItemsChanged>().single(),
         )
     }
@@ -296,7 +296,7 @@ class EditMenuItemsContentTest {
 
         assertEquals(listOf("Shown 3", "Shown 1", "Shown 2"), store.state.items.map { it.id })
         assertEquals(
-            ItemsChanged(items = store.state.items, hiddenItems = emptyList()),
+            ItemsChanged(items = store.state.items, hiddenItems = emptyList(), movedItemId = "Shown 3"),
             actions.filterIsInstance<ItemsChanged>().single(),
         )
     }
@@ -332,7 +332,7 @@ class EditMenuItemsContentTest {
 
         assertEquals(listOf("More", "Shown"), store.state.items.map { it.id })
         assertEquals(listOf("Sub 1"), store.state.items.first().subItems.map { it.id })
-        assertEquals(1, actions.filterIsInstance<ItemsChanged>().size)
+        assertEquals("More", actions.filterIsInstance<ItemsChanged>().single().movedItemId)
     }
 
     @Test
@@ -727,7 +727,7 @@ class EditMenuItemsContentTest {
 
         assertEquals(listOf("Shown 2", "Shown 1", "Shown 3"), store.state.items.map { it.id })
         assertEquals(
-            ItemsChanged(items = store.state.items, hiddenItems = emptyList()),
+            ItemsChanged(items = store.state.items, hiddenItems = emptyList(), movedItemId = "Shown 1"),
             actions.filterIsInstance<ItemsChanged>().single(),
         )
         composeTestRule.onNodeWithText(moveDown).assertDoesNotExist()
@@ -840,7 +840,9 @@ class EditMenuItemsContentTest {
         longPressHandle("Shown 1")
         composeTestRule.onNodeWithText(moveDown).assertIsDisplayed()
 
-        store.dispatch(ItemsChanged(items = listOf(item("Shown 2")), hiddenItems = emptyList()))
+        store.dispatch(
+            ItemsChanged(items = listOf(item("Shown 2")), hiddenItems = emptyList(), movedItemId = "Shown 1")
+        )
         composeTestRule.waitForIdle()
 
         composeTestRule.onNodeWithText(moveDown).assertDoesNotExist()

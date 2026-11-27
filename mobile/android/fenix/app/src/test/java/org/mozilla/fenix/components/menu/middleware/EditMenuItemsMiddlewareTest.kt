@@ -161,6 +161,7 @@ class EditMenuItemsMiddlewareTest {
                         ),
                     ),
                 hiddenItems = listOf(CustomizableMenuItem(DesktopSite.id, itemOf(DesktopSite.id))),
+                movedItemId = Print.id,
             )
         )
 

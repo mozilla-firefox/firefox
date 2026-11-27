@@ -210,7 +210,7 @@ private fun rememberEditMenuItemsActions(
             onMove = { itemId, moved, announcement ->
                 if (canChange()) {
                     moved.listIndexOf(itemId)?.let { listState.moveAndKeepVisible(itemId, it) }
-                    store.dispatch(ItemsChanged(items = moved.shown, hiddenItems = moved.hidden))
+                    store.dispatch(ItemsChanged(items = moved.shown, hiddenItems = moved.hidden, movedItemId = itemId))
                     announcer.announce(announcement)
                 }
             },

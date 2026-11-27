@@ -384,7 +384,7 @@ class EditMenuItemsAccessibilityTest {
 
         assertEquals(listOf("Second", "First", "Third"), store.state.items.map { it.id })
         assertEquals(
-            ItemsChanged(items = store.state.items, hiddenItems = emptyList()),
+            ItemsChanged(items = store.state.items, hiddenItems = emptyList(), movedItemId = "First"),
             actions.filterIsInstance<ItemsChanged>().single(),
         )
         announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_moved, "First", 2, 3))
@@ -602,7 +602,7 @@ class EditMenuItemsAccessibilityTest {
         assertEquals(listOf("First"), store.state.items.map { it.id })
         assertEquals(listOf("Second", "Hidden"), store.state.hiddenItems.map { it.id })
         assertEquals(
-            ItemsChanged(items = store.state.items, hiddenItems = store.state.hiddenItems),
+            ItemsChanged(items = store.state.items, hiddenItems = store.state.hiddenItems, movedItemId = "Second"),
             actions.filterIsInstance<ItemsChanged>().single(),
         )
         announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_hidden, "Second"))
@@ -645,7 +645,7 @@ class EditMenuItemsAccessibilityTest {
         assertEquals(listOf("First", "More", "Last", "Hidden"), store.state.items.map { it.id })
         assertTrue(store.state.hiddenItems.isEmpty())
         assertEquals(
-            ItemsChanged(items = store.state.items, hiddenItems = emptyList()),
+            ItemsChanged(items = store.state.items, hiddenItems = emptyList(), movedItemId = "Hidden"),
             actions.filterIsInstance<ItemsChanged>().single(),
         )
         announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_shown, "Hidden"))
@@ -872,7 +872,7 @@ class EditMenuItemsAccessibilityTest {
         assertEquals(listOf("First", "Sub 1", "Sub 2"), store.state.items.last().subItems.map { it.id })
         assertEquals(emptySet<String>(), store.state.expandedItemIds)
         assertEquals(
-            listOf(ItemsChanged(items = store.state.items, hiddenItems = emptyList())),
+            listOf(ItemsChanged(items = store.state.items, hiddenItems = emptyList(), movedItemId = "First")),
             actions.filter { it is ItemsChanged || it is CustomizableMenuItemsAction.ExpansionToggled },
         )
         announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_moved_into, "First", "More"))
@@ -925,7 +925,7 @@ class EditMenuItemsAccessibilityTest {
         assertEquals(listOf("Sub 1"), store.state.items[1].subItems.map { it.id })
         assertEquals(setOf("More"), store.state.expandedItemIds)
         assertEquals(
-            ItemsChanged(items = store.state.items, hiddenItems = emptyList()),
+            ItemsChanged(items = store.state.items, hiddenItems = emptyList(), movedItemId = "Sub 2"),
             actions.filterIsInstance<ItemsChanged>().single(),
         )
         assertTrue(actions.none { it is CustomizableMenuItemsAction.ExpansionToggled })

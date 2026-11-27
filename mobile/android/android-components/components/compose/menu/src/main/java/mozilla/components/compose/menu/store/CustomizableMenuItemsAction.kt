@@ -30,10 +30,12 @@ sealed interface CustomizableMenuItemsAction : Action {
      *
      * @property items The items shown in the menu, in the order they are shown in, as moved.
      * @property hiddenItems The items the user removed from the menu, as moved.
+     * @property movedItemId Id of the item the user moved.
      */
     data class ItemsChanged(
         val items: List<CustomizableMenuItem>,
         val hiddenItems: List<CustomizableMenuItem>,
+        val movedItemId: String,
     ) : CustomizableMenuItemsAction
 
     /**

@@ -51,7 +51,10 @@ class MoveItemsHandlerTest {
         handler.onMove(sourceKey = "b", targetKey = "a", placeAfter = false)
         handler.onDragEnd()
 
-        assertEquals(listOf(Init, ItemsChanged(items = items("b", "a"), hiddenItems = items("c"))), actions)
+        assertEquals(
+            listOf(Init, ItemsChanged(items = items("b", "a"), hiddenItems = items("c"), movedItemId = "b")),
+            actions,
+        )
     }
 
     @Test
@@ -69,7 +72,10 @@ class MoveItemsHandlerTest {
         handler.onMove(sourceKey = "a", targetKey = HIDDEN_TITLE, placeAfter = true)
         handler.onDragEnd()
 
-        assertEquals(listOf(Init, ItemsChanged(items = items("b"), hiddenItems = items("a", "c"))), actions)
+        assertEquals(
+            listOf(Init, ItemsChanged(items = items("b"), hiddenItems = items("a", "c"), movedItemId = "a")),
+            actions,
+        )
     }
 
     @Test
@@ -78,7 +84,10 @@ class MoveItemsHandlerTest {
         handler.onMove(sourceKey = "a", targetKey = DROP_AREA, placeAfter = true)
         handler.onDragEnd()
 
-        assertEquals(listOf(Init, ItemsChanged(items = items("b"), hiddenItems = items("a", "c"))), actions)
+        assertEquals(
+            listOf(Init, ItemsChanged(items = items("b"), hiddenItems = items("a", "c"), movedItemId = "a")),
+            actions,
+        )
     }
 
     @Test
@@ -192,7 +201,7 @@ class MoveItemsHandlerTest {
         }
 
         assertEquals(listOf(Init), actions.filter { it !is ItemsChanged })
-        assertEquals(1, actions.filterIsInstance<ItemsChanged>().size)
+        assertEquals("top level only", actions.filterIsInstance<ItemsChanged>().single().movedItemId)
     }
 
     private val topLevelOnly = items("top level only").single().copy(isTopLevelOnly = true)

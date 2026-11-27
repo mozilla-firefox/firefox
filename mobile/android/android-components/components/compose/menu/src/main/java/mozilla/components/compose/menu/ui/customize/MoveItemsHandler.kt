@@ -45,14 +45,20 @@ internal class MoveItemsHandler(
     }
 
     override fun onDragEnd() {
-        val itemId = draggedItemId
+        val itemId = draggedItemId as? String
         val target = dropTarget
         onDragCancel()
         if (itemId == null || target == null) return
         when (val outcome = items.dropOutcome(itemId, target)) {
             is DropOutcome.Moved ->
-                store.dispatch(ItemsChanged(items = outcome.items.shown, hiddenItems = outcome.items.hidden))
-            DropOutcome.RejectedAsSubItem -> if (itemId is String) store.dispatch(AttemptedMoveAsSubItem(itemId))
+                store.dispatch(
+                    ItemsChanged(
+                        items = outcome.items.shown,
+                        hiddenItems = outcome.items.hidden,
+                        movedItemId = itemId,
+                    )
+                )
+            DropOutcome.RejectedAsSubItem -> store.dispatch(AttemptedMoveAsSubItem(itemId))
             DropOutcome.Unchanged -> Unit
         }
     }

@@ -11303,6 +11303,58 @@ customize_menu:
     metadata:
       tags:
         - MainMenu
+  item_reordered:
+    type: event
+    description: |
+      The user moved an item to another place on the edit menu items screen without changing whether it is shown or
+      hidden: between two places among the shown items (within the section, within More, into More or out of More) or
+      among the hidden items (within a hidden More, or between a hidden More and the hidden top level). Moving More
+      moves its sub-items with it and records only More. Not recorded when the move is refused or leaves the item where
+      it was.
+    extra_keys:
+      section:
+        type: string
+        description: |
+          The id of the section whose items are edited. One of: tools.
+      item:
+        type: string
+        description: |
+          The name of the moved item. One of: find_in_page, desktop_site, extensions, more, translate, summarize_page,
+          move_to_normal_tabs, report_broken_site, shortcut, add_to_home_screen, tab_group, open_in_app, save_as_pdf,
+          print.
+      from_container:
+        type: string
+        description: |
+          Where the item was before the move: the section id (`tools`) when directly in the section (shown or hidden),
+          or the id of the item it was inside of (`more`).
+      to_container:
+        type: string
+        description: |
+          Where the item is after the move: the section id (`tools`) when directly in the section (shown or hidden), or
+          the id of the item it is inside of (`more`).
+      position:
+        type: quantity
+        description: |
+          The flat 1-based position of the item after the move: in the shown items list (where More counts as an entry
+          followed by its shown sub-items) when `hidden` is false, in the top-level hidden items list when `hidden` is
+          true and the item is directly in the section, or among the items inside the hidden More that the app can show
+          when `hidden` is true and the item is inside a hidden More.
+      hidden:
+        type: boolean
+        description: |
+          True when the move was among the hidden items, false when among the shown items.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2094049
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D346484
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - MainMenu
 app_theme:
   dark_theme_selected:
     type: event

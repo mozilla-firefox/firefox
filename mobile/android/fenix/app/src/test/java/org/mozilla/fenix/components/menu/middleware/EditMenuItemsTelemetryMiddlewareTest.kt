@@ -15,6 +15,7 @@ import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedEmptySection
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedMoveAsSubItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.BackPressed
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuItemsState
@@ -241,6 +242,7 @@ class EditMenuItemsTelemetryMiddlewareTest {
         store.dispatch(AttemptedMoveAsSubItem(Extensions.id))
 
         assertMoveRefusedRecorded(section = TOOLS_GROUP_ID, item = Extensions.id, reason = "inside_item")
+        assertNull(CustomizeMenu.itemReordered.testGetValue())
     }
 
     @Test
@@ -251,6 +253,376 @@ class EditMenuItemsTelemetryMiddlewareTest {
         store.dispatch(AttemptedEmptySection(DesktopSite.id))
 
         assertMoveRefusedRecorded(section = TOOLS_GROUP_ID, item = DesktopSite.id, reason = "last_shown_item")
+        assertNull(CustomizeMenu.itemReordered.testGetValue())
+    }
+
+    @Test
+    fun `WHEN the user reorders a shown item within the section THEN record that it was reordered`() {
+        val store =
+            createStore(
+                initialState = CustomizableMenuItemsState(items = listOf(item(FindInPage.id), item(DesktopSite.id)))
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(item(DesktopSite.id), item(FindInPage.id)),
+                hiddenItems = emptyList(),
+                movedItemId = DesktopSite.id,
+            )
+        )
+
+        assertItemReorderedRecorded(
+            section = TOOLS_GROUP_ID,
+            item = DesktopSite.id,
+            fromContainer = TOOLS_GROUP_ID,
+            toContainer = TOOLS_GROUP_ID,
+            position = 1,
+            hidden = false,
+        )
+    }
+
+    @Test
+    fun `WHEN the user moves a shown item into More THEN record that it was reordered into More with its position among the shown items`() {
+        val store =
+            createStore(
+                initialState =
+                    CustomizableMenuItemsState(
+                        items =
+                            listOf(
+                                item(FindInPage.id),
+                                item(DesktopSite.id),
+                                expandable(moreId, item(Translate.id), item(Print.id)),
+                            )
+                    )
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items =
+                    listOf(
+                        item(FindInPage.id),
+                        expandable(moreId, item(Translate.id), item(DesktopSite.id), item(Print.id)),
+                    ),
+                hiddenItems = emptyList(),
+                movedItemId = DesktopSite.id,
+            )
+        )
+
+        assertItemReorderedRecorded(
+            section = TOOLS_GROUP_ID,
+            item = DesktopSite.id,
+            fromContainer = TOOLS_GROUP_ID,
+            toContainer = moreId,
+            position = 4,
+            hidden = false,
+        )
+    }
+
+    @Test
+    fun `WHEN the user moves a shown item out of More to the section THEN record that it was reordered out of More`() {
+        val store =
+            createStore(
+                initialState =
+                    CustomizableMenuItemsState(
+                        items = listOf(item(FindInPage.id), expandable(moreId, item(Translate.id), item(Print.id)))
+                    )
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(item(FindInPage.id), item(Translate.id), expandable(moreId, item(Print.id))),
+                hiddenItems = emptyList(),
+                movedItemId = Translate.id,
+            )
+        )
+
+        assertItemReorderedRecorded(
+            section = TOOLS_GROUP_ID,
+            item = Translate.id,
+            fromContainer = moreId,
+            toContainer = TOOLS_GROUP_ID,
+            position = 2,
+            hidden = false,
+        )
+    }
+
+    @Test
+    fun `WHEN the user reorders a shown sub-item within More THEN record that it was reordered counting More and preceding sub-items`() {
+        val store =
+            createStore(
+                initialState =
+                    CustomizableMenuItemsState(
+                        items = listOf(item(FindInPage.id), expandable(moreId, item(Translate.id), item(Print.id)))
+                    )
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(item(FindInPage.id), expandable(moreId, item(Print.id), item(Translate.id))),
+                hiddenItems = emptyList(),
+                movedItemId = Translate.id,
+            )
+        )
+
+        assertItemReorderedRecorded(
+            section = TOOLS_GROUP_ID,
+            item = Translate.id,
+            fromContainer = moreId,
+            toContainer = moreId,
+            position = 4,
+            hidden = false,
+        )
+    }
+
+    @Test
+    fun `WHEN the user moves More among the shown items THEN record only More in the section`() {
+        val store =
+            createStore(
+                initialState =
+                    CustomizableMenuItemsState(
+                        items = listOf(item(FindInPage.id), expandable(moreId, item(Translate.id), item(Print.id)))
+                    )
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(expandable(moreId, item(Translate.id), item(Print.id)), item(FindInPage.id)),
+                hiddenItems = emptyList(),
+                movedItemId = moreId,
+            )
+        )
+
+        assertItemReorderedRecorded(
+            section = TOOLS_GROUP_ID,
+            item = moreId,
+            fromContainer = TOOLS_GROUP_ID,
+            toContainer = TOOLS_GROUP_ID,
+            position = 1,
+            hidden = false,
+        )
+    }
+
+    @Test
+    fun `WHEN the user reorders an item inside a hidden More THEN record that it was reordered among the hidden items with its index among More's items`() {
+        val store =
+            createStore(
+                initialState =
+                    CustomizableMenuItemsState(
+                        items = listOf(item(FindInPage.id)),
+                        hiddenItems =
+                            listOf(item(DesktopSite.id), expandable(moreId, item(Translate.id), item(Print.id))),
+                    )
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(item(FindInPage.id)),
+                hiddenItems = listOf(item(DesktopSite.id), expandable(moreId, item(Print.id), item(Translate.id))),
+                movedItemId = Translate.id,
+            )
+        )
+
+        assertItemReorderedRecorded(
+            section = TOOLS_GROUP_ID,
+            item = Translate.id,
+            fromContainer = moreId,
+            toContainer = moreId,
+            position = 2,
+            hidden = true,
+        )
+    }
+
+    @Test
+    fun `WHEN the user moves an item between a hidden More and the hidden top level THEN record that it was reordered among the hidden items and ignore More's items in top-level position`() {
+        val store =
+            createStore(
+                initialState =
+                    CustomizableMenuItemsState(
+                        items = listOf(item(FindInPage.id)),
+                        hiddenItems =
+                            listOf(expandable(moreId, item(Translate.id), item(Print.id)), item(DesktopSite.id)),
+                    )
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(item(FindInPage.id)),
+                hiddenItems = listOf(expandable(moreId, item(Print.id)), item(DesktopSite.id), item(Translate.id)),
+                movedItemId = Translate.id,
+            )
+        )
+
+        assertItemReorderedRecorded(
+            section = TOOLS_GROUP_ID,
+            item = Translate.id,
+            fromContainer = moreId,
+            toContainer = TOOLS_GROUP_ID,
+            position = 3,
+            hidden = true,
+        )
+    }
+
+    @Test
+    fun `WHEN the user hides or unhides an item THEN do not record it as reordered`() {
+        val store =
+            createStore(
+                initialState =
+                    CustomizableMenuItemsState(
+                        items = listOf(item(FindInPage.id), item(DesktopSite.id)),
+                        hiddenItems = listOf(item(SaveAsPdf.id)),
+                    )
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(item(FindInPage.id)),
+                hiddenItems = listOf(item(DesktopSite.id), item(SaveAsPdf.id)),
+                movedItemId = DesktopSite.id,
+            )
+        )
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(item(FindInPage.id), item(SaveAsPdf.id)),
+                hiddenItems = listOf(item(DesktopSite.id)),
+                movedItemId = SaveAsPdf.id,
+            )
+        )
+
+        assertNull(CustomizeMenu.itemReordered.testGetValue())
+    }
+
+    @Test
+    fun `WHEN an item is moved twice in a row THEN the second record says the item came from where the first move put it`() {
+        val store =
+            createStore(
+                sectionId = LIBRARY_GROUP_ID,
+                initialState =
+                    CustomizableMenuItemsState(items = listOf(item(FindInPage.id), expandable(moreId, item(Print.id)))),
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(expandable(moreId, item(FindInPage.id), item(Print.id))),
+                hiddenItems = emptyList(),
+                movedItemId = FindInPage.id,
+            )
+        )
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(expandable(moreId, item(Print.id)), item(FindInPage.id)),
+                hiddenItems = emptyList(),
+                movedItemId = FindInPage.id,
+            )
+        )
+
+        val events = CustomizeMenu.itemReordered.testGetValue()
+        assertNotNull(events)
+        assertEquals(2, events.size)
+        val second = events[1].extra
+        assertEquals(LIBRARY_GROUP_ID, second?.getValue("section"))
+        assertEquals(FindInPage.id, second?.getValue("item"))
+        assertEquals(moreId, second?.getValue("from_container"))
+        assertEquals(LIBRARY_GROUP_ID, second?.getValue("to_container"))
+        assertEquals("3", second?.getValue("position"))
+        assertEquals("false", second?.getValue("hidden"))
+    }
+
+    @Test
+    fun `WHEN the moved item id is unknown THEN record nothing`() {
+        val store = createStore(initialState = CustomizableMenuItemsState(items = listOf(item(FindInPage.id))))
+
+        store.dispatch(
+            ItemsChanged(
+                items = listOf(item(FindInPage.id)),
+                hiddenItems = emptyList(),
+                movedItemId = DesktopSite.id,
+            )
+        )
+
+        assertNull(CustomizeMenu.itemReordered.testGetValue())
+    }
+
+    @Test
+    fun `WHEN the moved item or its parent is not shown by the app THEN record nothing`() {
+        val store =
+            createStore(
+                initialState =
+                    CustomizableMenuItemsState(
+                        items =
+                            listOf(
+                                item(FindInPage.id),
+                                CustomizableMenuItem(MoveToNormalTabs.id, item = null),
+                                CustomizableMenuItem(moreId, item = null, subItems = listOf(item(Translate.id))),
+                            )
+                    )
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items =
+                    listOf(
+                        CustomizableMenuItem(MoveToNormalTabs.id, item = null),
+                        item(FindInPage.id),
+                        CustomizableMenuItem(moreId, item = null, subItems = listOf(item(Translate.id))),
+                    ),
+                hiddenItems = emptyList(),
+                movedItemId = MoveToNormalTabs.id,
+            )
+        )
+        store.dispatch(
+            ItemsChanged(
+                items =
+                    listOf(
+                        CustomizableMenuItem(MoveToNormalTabs.id, item = null),
+                        item(FindInPage.id),
+                        CustomizableMenuItem(moreId, item = null, subItems = listOf(item(Translate.id))),
+                    ),
+                hiddenItems = emptyList(),
+                movedItemId = Translate.id,
+            )
+        )
+
+        assertNull(CustomizeMenu.itemReordered.testGetValue())
+    }
+
+    @Test
+    fun `WHEN items the app does not show are among siblings THEN position ignores them`() {
+        val store =
+            createStore(
+                initialState =
+                    CustomizableMenuItemsState(
+                        items =
+                            listOf(
+                                CustomizableMenuItem(MoveToNormalTabs.id, item = null),
+                                item(Print.id),
+                                item(FindInPage.id),
+                                CustomizableMenuItem(SaveAsPdf.id, item = null),
+                            )
+                    )
+            )
+
+        store.dispatch(
+            ItemsChanged(
+                items =
+                    listOf(
+                        CustomizableMenuItem(MoveToNormalTabs.id, item = null),
+                        item(FindInPage.id),
+                        CustomizableMenuItem(SaveAsPdf.id, item = null),
+                        item(Print.id),
+                    ),
+                hiddenItems = emptyList(),
+                movedItemId = Print.id,
+            )
+        )
+
+        assertItemReorderedRecorded(
+            section = TOOLS_GROUP_ID,
+            item = Print.id,
+            fromContainer = TOOLS_GROUP_ID,
+            toContainer = TOOLS_GROUP_ID,
+            position = 2,
+            hidden = false,
+        )
     }
 
     private fun createStore(
@@ -301,5 +673,25 @@ class EditMenuItemsTelemetryMiddlewareTest {
         assertEquals(section, extras?.getValue("section"))
         assertEquals(item, extras?.getValue("item"))
         assertEquals(reason, extras?.getValue("reason"))
+    }
+
+    private fun assertItemReorderedRecorded(
+        section: String,
+        item: String,
+        fromContainer: String,
+        toContainer: String,
+        position: Int,
+        hidden: Boolean,
+    ) {
+        val events = CustomizeMenu.itemReordered.testGetValue()
+        assertNotNull(events)
+
+        val extras = events.single().extra
+        assertEquals(section, extras?.getValue("section"))
+        assertEquals(item, extras?.getValue("item"))
+        assertEquals(fromContainer, extras?.getValue("from_container"))
+        assertEquals(toContainer, extras?.getValue("to_container"))
+        assertEquals(position.toString(), extras?.getValue("position"))
+        assertEquals(hidden.toString(), extras?.getValue("hidden"))
     }
 }

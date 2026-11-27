@@ -38,12 +38,14 @@ class EditMenuItemsTelemetryMiddleware(private val sectionId: String) :
         next: (CustomizableMenuItemsAction) -> Unit,
         action: CustomizableMenuItemsAction,
     ) {
-        val isFirstRead = store.state.items.isEmpty() && store.state.hiddenItems.isEmpty()
+        val before = store.state
+        val isFirstRead = before.items.isEmpty() && before.hiddenItems.isEmpty()
 
         next(action)
 
         when (action) {
             is Update -> if (isFirstRead) recordShown(action)
+            is ItemsChanged -> recordItemMoved(before, action)
             is PreviewClicked ->
                 CustomizeMenu.editItemsPreviewClicked.record(
                     CustomizeMenu.EditItemsPreviewClickedExtra(section = sectionId)
@@ -67,8 +69,62 @@ class EditMenuItemsTelemetryMiddleware(private val sectionId: String) :
                     )
                 )
             is Init,
-            is ItemsChanged,
             is ExpansionToggled -> Unit
+        }
+    }
+
+    private fun recordItemMoved(before: CustomizableMenuItemsState, change: ItemsChanged) {
+        val movedId = change.movedItemId
+        val from = placeOf(movedId, before.items, before.hiddenItems) ?: return
+        val to = placeOf(movedId, change.items, change.hiddenItems) ?: return
+
+        when {
+            from.isHidden == to.isHidden ->
+                CustomizeMenu.itemReordered.record(
+                    CustomizeMenu.ItemReorderedExtra(
+                        section = sectionId,
+                        item = movedId,
+                        fromContainer = from.containerId,
+                        toContainer = to.containerId,
+                        position = to.position,
+                        hidden = to.isHidden,
+                    )
+                )
+            !from.isHidden && to.isHidden -> Unit
+            else -> Unit
+        }
+    }
+
+    private fun placeOf(
+        id: String,
+        items: List<CustomizableMenuItem>,
+        hiddenItems: List<CustomizableMenuItem>,
+    ): Place? {
+        val shown = shownItems(items)
+        val shownIndex = shown.indexOfFirst { it.id == id }
+        if (shownIndex != -1) {
+            val containerId =
+                items
+                    .firstOrNull { parent ->
+                        parent.item != null && parent.subItems.any { it.item != null && it.id == id }
+                    }
+                    ?.id ?: sectionId
+            return Place(containerId = containerId, isHidden = false, position = shownIndex + 1)
+        }
+
+        val hidden = hiddenItems(hiddenItems)
+        val hiddenIndex = hidden.indexOfFirst { it.id == id }
+        return if (hiddenIndex != -1) {
+            Place(containerId = sectionId, isHidden = true, position = hiddenIndex + 1)
+        } else {
+            hidden.firstNotNullOfOrNull { parent ->
+                val subIndex = parent.subItems.filter { it.item != null }.indexOfFirst { it.id == id }
+                if (subIndex != -1) {
+                    Place(containerId = parent.id, isHidden = true, position = subIndex + 1)
+                } else {
+                    null
+                }
+            }
         }
     }
 
@@ -96,4 +152,6 @@ class EditMenuItemsTelemetryMiddleware(private val sectionId: String) :
     private fun hiddenItems(items: List<CustomizableMenuItem>): List<CustomizableMenuItem> = items.filter {
         it.item != null
     }
+
+    private class Place(val containerId: String, val isHidden: Boolean, val position: Int)
 }
