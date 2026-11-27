@@ -144,6 +144,70 @@ add_task(async function test_allTabsView() {
 });
 
 /**
+ * Tests that the rows of a tab group in alltabsmenu are wrapped in a group
+ * labelled by the tab group's row, and that the tab group's row's description
+ * says whether the tab group is collapsed.
+ */
+add_task(async function test_allTabsViewGroupA11y() {
+  let tabs = [];
+  for (let i = 1; i <= 3; i++) {
+    tabs.push(
+      await addTab(`data:text/plain,tab${i}`, {
+        skipAnimation: true,
+      })
+    );
+  }
+  let group = gBrowser.addTabGroup([tabs[0], tabs[1]], {
+    label: "Test Group",
+  });
+
+  let getGroupButton = allTabsMenu =>
+    allTabsMenu.querySelector(
+      `#allTabsMenu-allTabsView-tabs [tab-group-id="${group.id}"] .all-tabs-button`
+    );
+
+  let allTabsMenu = await openTabsMenu();
+  let groupButton = getGroupButton(allTabsMenu);
+  let container = groupButton.closest(".all-tabs-group-container");
+  Assert.equal(
+    container.getAttribute("role"),
+    "group",
+    "Tab group rows are wrapped in a group"
+  );
+  Assert.equal(
+    container.getAttribute("aria-labelledby"),
+    groupButton.id,
+    "Group is labelled by the tab group row"
+  );
+  Assert.deepEqual(
+    Array.from(
+      container.querySelectorAll(".all-tabs-button"),
+      button => button.label
+    ),
+    ["Test Group", "data:text/plain,tab1", "data:text/plain,tab2"],
+    "Group contains the tab group row and only its tabs"
+  );
+  Assert.equal(
+    document.l10n.getAttributes(groupButton).id,
+    "tabbrowser-manager-current-window-tab-group-expanded",
+    "Expanded tab group row uses the expanded description"
+  );
+  await closeTabsMenu();
+
+  group.collapsed = true;
+  allTabsMenu = await openTabsMenu();
+  Assert.equal(
+    document.l10n.getAttributes(getGroupButton(allTabsMenu)).id,
+    "tabbrowser-manager-current-window-tab-group-collapsed",
+    "Collapsed tab group row uses the collapsed description"
+  );
+  await closeTabsMenu();
+
+  await removeTabGroup(group);
+  BrowserTestUtils.removeTab(tabs[2]);
+});
+
+/**
  * Tests that groups appear in the supplementary group menu
  * when they are saved (and closed,) or open in any window.
  * Clicking an open group in this menu focuses it,

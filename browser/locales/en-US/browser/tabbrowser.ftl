@@ -217,9 +217,15 @@ tabbrowser-manager-close-tab =
 tabbrowser-manager-closed-tab-group =
   .label = { $tabGroupName }
   .tooltiptext = { $tabGroupName } — Closed
-tabbrowser-manager-current-window-tab-group =
+# .aria-description is read by screen readers after the tab group's name.
+tabbrowser-manager-current-window-tab-group-expanded =
   .label = { $tabGroupName }
   .tooltiptext = { $tabGroupName } — Current window
+  .aria-description = { $tabGroupName } — Tab Group
+tabbrowser-manager-current-window-tab-group-collapsed =
+  .label = { $tabGroupName }
+  .tooltiptext = { $tabGroupName } — Current window
+  .aria-description = { $tabGroupName } — Collapsed Tab Group
 
 ## Tab Groups
 ## Variables:

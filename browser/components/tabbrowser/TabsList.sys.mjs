@@ -15,6 +15,8 @@ const TAB_DROP_TYPE = "application/x-moz-tabbrowser-tab";
 const ROW_VARIANT_TAB = "tab";
 const ROW_VARIANT_TAB_GROUP = "tab-group";
 
+const GROUP_CONTAINER_CLASS = "all-tabs-group-container";
+
 /**
  * A row of a tabs list, with the tab or tab group it stands for.
  *
@@ -154,7 +156,22 @@ class TabsListBase {
    */
   #ownsEvent(event) {
     let row = /** @type {Element} */ (event.target).closest("toolbaritem");
-    return !row || row.parentNode == this.containerNode;
+    if (!row) {
+      return true;
+    }
+    let list = row.parentElement;
+    if (this._isGroupContainer(list)) {
+      list = list.parentElement;
+    }
+    return list == this.containerNode;
+  }
+
+  /**
+   * @param {Element|null} element
+   * @returns {boolean}
+   */
+  _isGroupContainer(element) {
+    return !!element?.classList.contains(GROUP_CONTAINER_CLASS);
   }
 
   handleEvent(event) {
@@ -263,12 +280,18 @@ class TabsListBase {
   _populateDOM() {
     let fragment = this.doc.createDocumentFragment();
     let currentGroupId;
+    /** @type {DocumentFragment|HTMLDivElement} */
+    let parent = fragment;
 
     for (let tab of this.gBrowser.tabs) {
       if (this.filterFn(tab)) {
-        if (tab.group && tab.group.id != currentGroupId) {
-          fragment.appendChild(this._createGroupRow(tab.group));
-          currentGroupId = tab.group.id;
+        if (tab.group?.id != currentGroupId) {
+          currentGroupId = tab.group?.id;
+          parent = fragment;
+          if (tab.group) {
+            parent = this._createGroupContainer(tab.group);
+            fragment.appendChild(parent);
+          }
         }
 
         let tabHiddenByGroup = tab.group?.collapsed && !tab.selected;
@@ -276,7 +299,7 @@ class TabsListBase {
           // Don't show tabs in collapsed tab groups in the main tabs list.
           // However, in the hidden tabs lists, do show hidden tabs even if
           // they belong to collapsed tab groups.
-          fragment.appendChild(this._createRow(tab));
+          parent.appendChild(this._createRow(tab));
         }
       }
     }
@@ -299,9 +322,39 @@ class TabsListBase {
 
   _cleanupDOM() {
     this.containerNode
-      .querySelectorAll(":scope toolbaritem")
+      .querySelectorAll(`:scope .${GROUP_CONTAINER_CLASS}, :scope toolbaritem`)
       .forEach(node => node.remove());
     this.tabToElement = new Map();
+  }
+
+  /**
+   * Creates the element wrapping the rows of a tab group, which exposes them
+   * to assistive technology as a group named after the tab group.
+   *
+   * @param {MozTabbrowserTabGroup} group
+   * @returns {HTMLDivElement}
+   */
+  _createGroupContainer(group) {
+    let groupRow = this._createGroupRow(group);
+    let button = groupRow.firstElementChild;
+    button.id = `${this.containerNode.id}-tab-group-${group.id}`;
+
+    let container = this.doc.createElement("div");
+    container.classList.add(GROUP_CONTAINER_CLASS);
+    container.setAttribute("role", "group");
+    container.setAttribute("aria-labelledby", button.id);
+    container.appendChild(groupRow);
+    return container;
+  }
+
+  /**
+   * @param {MozTabbrowserTabGroup} group
+   * @returns {Element|undefined}
+   */
+  _getGroupContainer(group) {
+    return this.containerNode
+      .querySelector(`[tab-group-id="${group.id}"]`)
+      ?.closest(`.${GROUP_CONTAINER_CLASS}`);
   }
 
   _refreshDOM() {
@@ -418,24 +471,20 @@ class TabsListBase {
       return;
     }
 
-    let newRow = this._createRow(newTab);
     let nextTab = this.gBrowser.tabContainer.findNextTab(newTab, {
       filter: this.filterFn,
     });
+    if (newTab.group || nextTab?.group) {
+      // Rebuild so the row ends up inside or outside the right tab group
+      // container.
+      this._refreshDOM();
+      return;
+    }
+
+    let newRow = this._createRow(newTab);
     if (!nextTab) {
       // If there's no next tab then append the new row to the end of the menu.
       this._addElement(newRow);
-    } else if (!newTab.group && nextTab.group) {
-      // newTab should not go right before nextTab because then it would
-      // appear to be inside the tab group; instead, put newTab before
-      // nextTab's tab group's row menu item.
-      // Should be equivalent to `.insertBefore(newRow, nextRow.previousSiblingElement)`
-      // but this is more explicit about inserting before the nextTab's tab group's
-      // row menu item.
-      let nextTabTabGroupRow = this.containerNode.querySelector(
-        `:scope [tab-group-id="${nextTab.group.id}"]`
-      );
-      this.containerNode.insertBefore(newRow, nextTabTabGroupRow);
     } else {
       let nextRow = this.tabToElement.get(nextTab);
       if (!nextRow) {
@@ -460,17 +509,16 @@ class TabsListBase {
     item.remove();
     // If removing this grouped tab results in there being no more tabs from
     // this tab group in the menu list, then also remove the tab group label
-    // menu item. This is only relevant right now in tabs lists that only show
-    // hidden tabs. For the normal tabs list, removing the last tab in a group
-    // will also remove the tab group, which re-renders the whole tabs list
-    // with the side-effect of removing the tab group label menu item.
+    // menu item and the element wrapping it. This is only relevant right now
+    // in tabs lists that only show hidden tabs. For the normal tabs list,
+    // removing the last tab in a group will also remove the tab group, which
+    // re-renders the whole tabs list with the side-effect of removing the tab
+    // group label menu item.
     if (
       tab.group &&
       !this.tabToElement.keys().some(t => t.group == tab.group)
     ) {
-      this.containerNode
-        .querySelector(`:scope [tab-group-id="${tab.group.id}"]`)
-        ?.remove();
+      this._getGroupContainer(tab.group)?.remove();
     }
   }
 
@@ -798,11 +846,15 @@ export class TabsPanel extends TabsListBase {
     button.setAttribute("flex", "1");
     button.setAttribute("crop", "end");
 
+    button.setAttribute("data-l10n-attrs", "aria-description");
     doc.l10n.setAttributes(
       button,
-      "tabbrowser-manager-current-window-tab-group",
+      group.collapsed
+        ? "tabbrowser-manager-current-window-tab-group-collapsed"
+        : "tabbrowser-manager-current-window-tab-group-expanded",
       { tabGroupName: group.label || group.defaultGroupName }
     );
+
     row.appendChild(button);
     return row;
   }
@@ -1005,18 +1057,27 @@ export class TabsPanel extends TabsListBase {
   /**
    * @param {Element|null} element
    * @returns {boolean}
+   *   Whether `element` is a row of this list, including a row inside a tab
+   *   group container, or a tab group container, which holds rows.
    */
   _isDropCandidateRow(element) {
-    return (
-      element?.localName == "toolbaritem" &&
-      element.parentNode == this.containerNode
-    );
+    if (
+      element?.localName != "toolbaritem" &&
+      !this._isGroupContainer(element)
+    ) {
+      return false;
+    }
+    let list = element.parentElement;
+    if (this._isGroupContainer(list)) {
+      list = list.parentElement;
+    }
+    return list == this.containerNode;
   }
 
   /**
    * @param {Element|null} start
    * @param {boolean} backward
-   * @returns {XulToolbarItem|null}
+   * @returns {Element|null}
    *   The first drop candidate row at `start` or after it, or at `start` or
    *   before it if `backward` is true.
    */
@@ -1027,23 +1088,25 @@ export class TabsPanel extends TabsListBase {
         ? element.previousElementSibling
         : element.nextElementSibling;
     }
-    return /** @type {XulToolbarItem|null} */ (element);
+    return element;
   }
 
   /**
-   * Finds the first row that ends below `y` with a binary search.
+   * Finds the first row that ends below `y` with a binary search. If that is
+   * a tab group container, searches the rows inside it.
    *
    * @param {number} y
    *   A vertical position in CSS pixels, in client coordinates. These are the
    *   coordinates of `DragEvent.clientY` and `getBoundingClientRect()`.
+   * @param {HTMLCollection} [children]
+   *   The elements to search.
    * @returns {XulToolbarItem|null}
    *   The row, or the last row if no row ends below `y`, or null if the list
    *   has no rows.
    */
-  _findRowEndingBelow(y) {
+  _findRowEndingBelow(y, children = this.containerNode.children) {
     // Elements that are not rows, such as the hidden tabs button, are only at
     // the start or the end of the list. Search the range between them.
-    const children = this.containerNode.children;
     let low = 0;
     let high = children.length - 1;
     while (low <= high && !this._isDropCandidateRow(children[low])) {
@@ -1062,6 +1125,9 @@ export class TabsPanel extends TabsListBase {
       } else {
         high = mid;
       }
+    }
+    if (this._isGroupContainer(children[low])) {
+      return this._findRowEndingBelow(y, children[low].children);
     }
     return /** @type {XulToolbarItem} */ (children[low]);
   }

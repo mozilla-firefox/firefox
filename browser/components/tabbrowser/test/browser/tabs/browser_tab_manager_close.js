@@ -132,8 +132,8 @@ add_task(
     await allTabsPopupShownPromise;
 
     let list = win.document.getElementById("allTabsMenu-allTabsView-tabs");
-    let tabGroupRow = Array.from(list.children).find(
-      row => row.getAttribute("tab-group-id") == tabGroupId
+    let tabGroupRow = list.querySelector(
+      `.all-tabs-group-item[tab-group-id="${tabGroupId}"]`
     );
     Assert.ok(tabGroupRow, "tab group appears in the list all tabs menu");
 
