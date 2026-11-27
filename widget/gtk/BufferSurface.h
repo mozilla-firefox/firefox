@@ -122,6 +122,11 @@ class BufferSurface {
   int GetFormatBPP() const;
   mozilla::gfx::ColorDepth GetColorDepth() const;
 
+  // Get hardware compatible format for SW decoded one.
+  // It's used for uploading SW decoded images to DMABuf.
+  static mozilla::gfx::SurfaceFormat GetHWFormat(
+      mozilla::gfx::SurfaceFormat aSWFormat);
+
 #ifdef MOZ_WAYLAND
   int GetWLFormat() const;
 #endif

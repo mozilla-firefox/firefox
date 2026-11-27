@@ -207,6 +207,17 @@ mozilla::gfx::SurfaceFormat BufferSurface::GetFormat() const {
   }
 }
 
+gfx::SurfaceFormat BufferSurface::GetHWFormat(gfx::SurfaceFormat aSWFormat) {
+  switch (aSWFormat) {
+    case gfx::SurfaceFormat::YUV420P10:
+      return gfx::SurfaceFormat::P010;
+    case gfx::SurfaceFormat::YUV420:
+      return gfx::SurfaceFormat::NV12;
+    default:
+      return gfx::SurfaceFormat::UNKNOWN;
+  }
+}
+
 void BufferSurface::SetFormat(mozilla::gfx::SurfaceFormat aFormat) {
   mFOURCCFormat = [aFormat]() {
     switch (aFormat) {

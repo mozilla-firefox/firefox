@@ -2313,17 +2313,6 @@ bool DMABufSurfaceYUV::VerifyTextureCreation() {
   return true;
 }
 
-gfx::SurfaceFormat DMABufSurfaceYUV::GetHWFormat(gfx::SurfaceFormat aSWFormat) {
-  switch (aSWFormat) {
-    case gfx::SurfaceFormat::YUV420P10:
-      return gfx::SurfaceFormat::P010;
-    case gfx::SurfaceFormat::YUV420:
-      return gfx::SurfaceFormat::NV12;
-    default:
-      return gfx::SurfaceFormat::UNKNOWN;
-  }
-}
-
 void DMABufSurfaceYUV::ReleaseSurface() {
   LOGDMABUF("DMABufSurfaceYUV::ReleaseSurface() UID %d", mUID);
   ReleaseTextures();

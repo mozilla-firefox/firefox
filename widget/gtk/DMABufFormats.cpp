@@ -11,6 +11,7 @@
 
 #include <mutex>
 
+#include "BufferSurface.h"
 #include "DMABufDevice.h"
 #include "WidgetUtilsGtk.h"
 #include "mozilla/ClearOnShutdown.h"
@@ -520,7 +521,13 @@ DRMFormat* GlobalDMABufFormats::GetDRMFormat(int32_t aFOURCCFormat) {
 
 bool GlobalDMABufFormats::SupportsDirectComposition(
     mozilla::gfx::SurfaceFormat aFormat) const {
-  switch (aFormat) {
+  // We directly composite YUV in HW format (P010/NV12) only.
+  gfx::SurfaceFormat format = aFormat;
+  gfx::SurfaceFormat hwFormat = BufferSurface::GetHWFormat(aFormat);
+  if (hwFormat != gfx::SurfaceFormat::UNKNOWN) {
+    format = hwFormat;
+  }
+  switch (format) {
     case gfx::SurfaceFormat::R8G8B8X8:
     case gfx::SurfaceFormat::R8G8B8A8:
     case gfx::SurfaceFormat::B8G8R8A8:
@@ -528,8 +535,6 @@ bool GlobalDMABufFormats::SupportsDirectComposition(
       return true;
     case gfx::SurfaceFormat::NV12:
       return mFormatNV12 && gfxVars::UseDMABufYUVDirectComposition();
-    case gfx::SurfaceFormat::YUV420:
-      return mFormatYUV420 && gfxVars::UseDMABufYUVDirectComposition();
     case gfx::SurfaceFormat::P010:
       return mFormatP010 && gfxVars::UseDMABufYUVDirectComposition();
     case gfx::SurfaceFormat::R10G10B10A2_UINT32:

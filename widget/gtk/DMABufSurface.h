@@ -332,11 +332,6 @@ class DMABufSurfaceYUV final : public DMABufSurface {
     return mHeightAligned[aPlane];
   }
 
-  // Get hardware compatible format for SW decoded one.
-  // It's used for uploading SW decoded images to DMABuf.
-  mozilla::gfx::SurfaceFormat GetHWFormat(
-      mozilla::gfx::SurfaceFormat aSWFormat);
-
   bool CreateTextureViaCopyYUV(mozilla::gl::GLContext* aGLContext,
                                int aPlane = 0);
   bool CreateTextureViaCopyP010(mozilla::gl::GLContext* aGLContext,
