@@ -1951,8 +1951,6 @@ firefox-appdir = "browser"
 
 ["test_tls_server_multiple_clients.js"]
 
-["test_tls_server_session_tickets.js"]
-
 ["test_traceable_channel.js"]
 
 ["test_trackingProtection_annotateChannels.js"]
@@ -2124,14 +2122,6 @@ run-sequentially = ["true"] # node server exceptions dont replay well
 skip-if = [
   "os == 'android' && os_version == '14' && arch == 'x86_64'", # Bug 1982955
   "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && msix", # Bug 1808049
-]
-
-["test_webtransport_datagram_open_at_shutdown.js"]
-prefs = ["network.http.happy_eyeballs_enabled=true"]
-run-sequentially = ["true"] # http3server
-skip-if = [
-  "os == 'android'",
-  "os == 'win' && msix", # Bug 1807931
 ]
 
 ["test_webtransport_https_rr_no_h3.js"]

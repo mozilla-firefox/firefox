@@ -44,7 +44,7 @@ nsresult TLSServerSocket::SetSocketDefaults() {
   // (to revalidate peer certs, etc.), so disable it for now.
   SSL_OptionSet(mFD, SSL_ENABLE_RENEGOTIATION, SSL_RENEGOTIATE_NEVER);
 
-  SetSessionTickets(false);
+  SetSessionTickets(true);
   SetRequestClientCertificate(REQUEST_NEVER);
 
   return NS_OK;
