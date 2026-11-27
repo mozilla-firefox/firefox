@@ -15,6 +15,13 @@
 #  include <windns.h>
 #endif  // DNSQUERY_AVAILABLE
 
+#ifndef XP_WIN
+#  include <netinet/in.h>
+#  include <sys/socket.h>
+#endif
+
+#include <string.h>
+
 #include <algorithm>
 
 #include "mozilla/ClearOnShutdown.h"
@@ -584,8 +591,12 @@ nsresult ResolveHTTPSRecord(const nsACString& aHost,
       // The host has an override entry; treat it as authoritative.
       rv = NS_OK;
     } else {
-      rv = ResolveHTTPSRecordImpl(host, originHost, aFlags, aResult, aTTL,
-                                  alias, aType, aResolverAddrs);
+      // Every hop is resolved by the same system resolvers, so capture them
+      // only once.
+      rv = ResolveHTTPSRecordImpl(
+          host, originHost, aFlags, aResult, aTTL, alias, aType,
+          aResolverAddrs && aResolverAddrs->IsEmpty() ? aResolverAddrs
+                                                      : nullptr);
     }
 
     if (NS_FAILED(rv) && rv != NS_ERROR_UNKNOWN_HOST) {
@@ -636,6 +647,33 @@ nsresult ResolveHTTPSRecord(const nsACString& aHost,
 
   LOG("ResolveHTTPSRecord alias chain too long");
   return NS_ERROR_UNKNOWN_HOST;
+}
+
+bool SockaddrToNetAddr(const struct sockaddr* aSockAddr, NetAddr& aOut) {
+  if (!aSockAddr) {
+    return false;
+  }
+  if (aSockAddr->sa_family == AF_INET) {
+    const auto* sin = reinterpret_cast<const struct sockaddr_in*>(aSockAddr);
+    aOut = NetAddr();
+    aOut.inet.family = AF_INET;
+    aOut.inet.ip = sin->sin_addr.s_addr;
+    return true;
+  }
+  if (aSockAddr->sa_family == AF_INET6) {
+    const auto* sin6 = reinterpret_cast<const struct sockaddr_in6*>(aSockAddr);
+    aOut = NetAddr();
+    aOut.inet6.family = AF_INET6;
+    memcpy(&aOut.inet6.ip, &sin6->sin6_addr, sizeof(aOut.inet6.ip));
+    return true;
+  }
+  return false;
+}
+
+void AppendResolverAddr(nsTArray<NetAddr>& aOut, const NetAddr& aAddr) {
+  if (!aOut.Contains(aAddr)) {
+    aOut.AppendElement(aAddr);
+  }
 }
 
 nsresult CreateAndResolveMockHTTPSRecord(const nsACString& aHost,
