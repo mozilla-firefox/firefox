@@ -182,9 +182,6 @@ async function installGeneratedWidget({ name }) {
   let { ExtensionTestCommon } = ChromeUtils.importESModule(
     "resource://testing-common/ExtensionTestCommon.sys.mjs"
   );
-  let { ExtensionCommon } = ChromeUtils.importESModule(
-    "resource://gre/modules/ExtensionCommon.sys.mjs"
-  );
   let { GeneratedWidgetsProvider, widgetsDirectory } =
     ChromeUtils.importESModule(
       "moz-src:///toolkit/components/widgets/GeneratedWidgetsProvider.sys.mjs"
@@ -205,10 +202,12 @@ async function installGeneratedWidget({ name }) {
   await IOUtils.move(file.path, path);
   let { id } = await GeneratedWidgetsProvider.install(path);
   registerCleanupFunction(async () => {
+    if (!(await GeneratedWidgetsProvider.getAddonByID(id))) {
+      return;
+    }
+    let prefsCleanedup = WidgetManager.once("cleanupPrefsDone");
     await GeneratedWidgetsProvider.uninstall(id);
-    Services.prefs.deleteBranch(
-      `extensions.widgets.${ExtensionCommon.makeWidgetId(id)}.`
-    );
+    await prefsCleanedup;
   });
   await TestUtils.waitForCondition(
     () => WidgetManager.getWidgetByID(id),

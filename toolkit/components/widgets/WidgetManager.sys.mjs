@@ -12,11 +12,32 @@ ChromeUtils.defineESModuleGetters(lazy, {
 const PREF_ROOT = "extensions.widgets.";
 
 /**
- * @param {string} id - the id of a widget's extension
+ * @param {string} extensionId - the id of a widget's extension
  * @returns {string} the key naming the widget's prefs
  */
-function prefKeyFor(id) {
-  return lazy.ExtensionCommon.makeWidgetId(id.replace(/@mozilla\.org$/, ""));
+function prefKeyFor(extensionId) {
+  return lazy.ExtensionCommon.makeWidgetId(
+    extensionId.replace(/@mozilla\.org$/, "")
+  );
+}
+
+/**
+ * @param {string} extensionId - the id of a widget's extension
+ * @returns {string} the pref recording the widget's pref branch
+ */
+function prefBranchPrefFor(extensionId) {
+  return `${PREF_ROOT}${prefKeyFor(extensionId)}.prefBranch`;
+}
+
+/**
+ * @param {string} extensionId - the id of a widget's extension
+ * @returns {string} the pref branch storing the widget's prefs
+ */
+function prefBranchFor(extensionId) {
+  return Services.prefs.getStringPref(
+    prefBranchPrefFor(extensionId),
+    `${PREF_ROOT}${prefKeyFor(extensionId)}`
+  );
 }
 
 /**
@@ -117,11 +138,16 @@ const REQUIRED_OPTIONS = ["id", "src", "name", "sizes"];
  * Manages the widgets registered by extensions.
  *
  * Each widget's enabled state and size are stored in prefs under its pref
- * branch, by default `extensions.widgets.<key>`.
+ * branch, by default `extensions.widgets.<key>`. Registering records the
+ * branch in `extensions.widgets.<key>.prefBranch` so the prefs can be cleared
+ * after the widget unregisters.
  *
  * Emits "change" with a widget's id when the widget registers, unregisters,
  * or one of its prefs changes after init, and at init for each widget
  * registered before it.
+ *
+ * Emits "cleanupPrefsDone" with an extension's id when the extension is
+ * uninstalled, after its widget prefs are cleared.
  */
 export class _WidgetManager {
   /** @type {Map<string, Widget>} registered widgets keyed by widget id */
@@ -227,6 +253,7 @@ export class _WidgetManager {
     }
     const widget = new Widget(properties);
     this.#widgets.set(id, widget);
+    Services.prefs.setStringPref(prefBranchPrefFor(id), prefBranch);
     for (const pref of prefs) {
       this.#prefHolders.set(pref, id);
       Services.prefs.addObserver(pref, this.#onPrefChanged);
@@ -251,6 +278,27 @@ export class _WidgetManager {
       }
     }
     this.#emitChange(id);
+  }
+
+  /**
+   * @param {string} extensionId - an extension id
+   * @returns {boolean} whether the extension has registered a widget
+   */
+  hasWidgetPreferences(extensionId) {
+    return Services.prefs.prefHasUserValue(prefBranchPrefFor(extensionId));
+  }
+
+  /**
+   * Clear the prefs of a widget whose extension was uninstalled.
+   *
+   * @param {string} extensionId - the id of a widget's extension
+   */
+  cleanupPrefs(extensionId) {
+    const branch = prefBranchFor(extensionId);
+    Services.prefs.clearUserPref(`${branch}.enabled`);
+    Services.prefs.clearUserPref(`${branch}.size`);
+    Services.prefs.clearUserPref(prefBranchPrefFor(extensionId));
+    this.emit("cleanupPrefsDone", extensionId);
   }
 
   /**
