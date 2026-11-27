@@ -419,7 +419,7 @@ nsresult nsXMLContentSink::OnTransformDone(Document* aSourceDocument,
 NS_IMETHODIMP
 nsXMLContentSink::StyleSheetLoaded(StyleSheet* aSheet, bool aWasDeferred,
                                    nsresult aStatus) {
-  if (!mPrettyPrinting) {
+  if (!mPrettyPrinting || aWasDeferred) {
     return nsContentSink::StyleSheetLoaded(aSheet, aWasDeferred, aStatus);
   }
 
