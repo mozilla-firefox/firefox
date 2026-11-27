@@ -571,14 +571,15 @@ void BaseStackFrame::zeroLocals(BaseRegAlloc* ra) {
     return;
   }
 
-  // For other cases, it's best to have a zero in a register. ARM64 stores an
-  // immediate zero from its zero register.
+  // For other cases, it's best to have a zero in a register. ARM64, RISCV64,
+  // Loong64, and MIPS64 can store an immediate zero from its zero register.
   //
   // One can do more here with SIMD registers (store 16 bytes at a time) or
   // with instructions like STRD on ARM (store 8 bytes at a time), but that's
   // for another day.
 
-#ifdef JS_CODEGEN_ARM64
+#if defined(JS_CODEGEN_ARM64) || defined(JS_CODEGEN_RISCV64) || \
+    defined(JS_CODEGEN_LOONG64) || defined(JS_CODEGEN_MIPS64)
   ImmWord zero(0);
 #else
   RegI32 zero = ra->needI32();
@@ -599,7 +600,8 @@ void BaseStackFrame::zeroLocals(BaseRegAlloc* ra) {
     for (uint32_t i = low; i < high; i += wordSize) {
       masm.storePtr(zero, Address(sp_, localOffset(i + wordSize)));
     }
-#ifndef JS_CODEGEN_ARM64
+#if !(defined(JS_CODEGEN_ARM64) || defined(JS_CODEGEN_RISCV64) || \
+      defined(JS_CODEGEN_LOONG64) || defined(JS_CODEGEN_MIPS64))
     ra->freeI32(zero);
 #endif
     return;
@@ -634,7 +636,8 @@ void BaseStackFrame::zeroLocals(BaseRegAlloc* ra) {
 
   ra->freeI32(p);
   ra->freeI32(lim);
-#ifndef JS_CODEGEN_ARM64
+#if !(defined(JS_CODEGEN_ARM64) || defined(JS_CODEGEN_RISCV64) || \
+      defined(JS_CODEGEN_LOONG64) || defined(JS_CODEGEN_MIPS64))
   ra->freeI32(zero);
 #endif
 }
