@@ -4,8 +4,8 @@
   <link rel="help" href="https://bugzilla.mozilla.org/show_bug.cgi?id=2096640">
   <meta name="assert" content="A parse-time resolvable calc() in a @counter-style range should not crash (resolves range).">
   <style>
-    @counter-style x { 
-        system: extends decimal; 
+    @counter-style x {
+        system: extends decimal;
         range: -1 calc(0);
     }
   </style>
