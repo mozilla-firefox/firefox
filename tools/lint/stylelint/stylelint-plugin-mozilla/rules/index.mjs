@@ -8,6 +8,7 @@ import mediaQueryNoInvalid from "./media-query-no-invalid.mjs";
 import noBaseDesignTokens from "./no-base-design-tokens.mjs";
 import noBrowserRefsInToolkit from "./no-browser-refs-in-toolkit.mjs";
 import noHasSelector from "./no-has-selector.mjs";
+import noUnguardedHighContrastTokenOverrides from "./no-unguarded-high-contrast-token-overrides.mjs";
 import useBooleanForcedColorsQuery from "./use-boolean-forced-colors-query.mjs";
 import useDesignTokens from "./use-design-tokens.mjs";
 import usePairedColorTokens from "./use-paired-color-tokens.mjs";
@@ -17,6 +18,8 @@ export default {
   "no-base-design-tokens": noBaseDesignTokens,
   "no-browser-refs-in-toolkit": noBrowserRefsInToolkit,
   "no-has-selector": noHasSelector,
+  "no-unguarded-high-contrast-token-overrides":
+    noUnguardedHighContrastTokenOverrides,
   "use-boolean-forced-colors-query": useBooleanForcedColorsQuery,
   "use-design-tokens": useDesignTokens,
   "use-paired-color-tokens": usePairedColorTokens,
