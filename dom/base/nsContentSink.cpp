@@ -515,28 +515,29 @@ void nsContentSink::PreloadModule(
 }
 
 void nsContentSink::PrefetchDNS(const nsAString& aHref) {
-  nsAutoCString hostname;
-  bool isHttps = false;
-
-  if (StringBeginsWith(aHref, u"//"_ns)) {
-    CopyUTF16toUTF8(Substring(aHref, 2), hostname);
-  } else {
-    nsCOMPtr<nsIURI> uri;
-    NS_NewURI(getter_AddRefs(uri), aHref);
-    if (!uri) {
-      return;
-    }
-    nsresult rv;
-    bool isLocalResource = false;
-    rv = NS_URIChainHasFlags(uri, nsIProtocolHandler::URI_IS_LOCAL_RESOURCE,
-                             &isLocalResource);
-    if (NS_SUCCEEDED(rv) && !isLocalResource) {
-      uri->GetHost(hostname);
-    }
-    isHttps = uri->SchemeIs("https");
+  if (!HTMLDNSPrefetch::IsAllowed(mDocument)) {
+    return;
   }
 
-  if (!hostname.IsEmpty() && HTMLDNSPrefetch::IsAllowed(mDocument)) {
+  nsCOMPtr<nsIURI> uri;
+  NS_NewURI(getter_AddRefs(uri), aHref, mDocument->GetDocumentCharacterSet(),
+            mDocument->GetDocBaseURI());
+  if (!uri) {
+    return;
+  }
+
+  bool isLocalResource = false;
+  nsresult rv = NS_URIChainHasFlags(
+      uri, nsIProtocolHandler::URI_IS_LOCAL_RESOURCE, &isLocalResource);
+  if (NS_FAILED(rv) || isLocalResource) {
+    return;
+  }
+
+  nsAutoCString hostname;
+  uri->GetAsciiHost(hostname);
+  bool isHttps = uri->SchemeIs("https");
+
+  if (!hostname.IsEmpty()) {
     OriginAttributes oa;
     StoragePrincipalHelper::GetOriginAttributesForNetworkState(mDocument, oa);
 

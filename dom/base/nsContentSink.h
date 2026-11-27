@@ -116,8 +116,6 @@ class nsContentSink : public nsICSSLoaderObserver,
                      uint64_t aEarlyHintPreloaderId,
                      const nsAString& aFetchPriority);
 
-  // For PrefetchDNS() aHref can either be the usual
-  // URI format or of the form "//www.hostname.com" without a scheme.
   void PrefetchDNS(const nsAString& aHref);
 
   // Gets the cache key (used to identify items in a cache) of the channel.
