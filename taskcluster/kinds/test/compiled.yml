@@ -80,7 +80,9 @@ gtest:
                 by-test-platform:
                     .*android.*: built-projects
                     .*-devedition.*: []
-                    .*-wayland.*: []
+                    linux.*-wayland/debug: ['autoland', 'mozilla-central']
+                    linux.*-wayland/opt: ['autoland']
+                    linux.*-wayland-shippable/opt: ['mozilla-central']
                     default: built-projects
             inc-origin-init: []
             default: []
@@ -94,6 +96,8 @@ gtest:
                         # process.
                         .*-tsan.*:
                             - --combine-suites
+                        linux.*-wayland.*:
+                            - --filter-set=linux-wayland-ci
                         default: []
                 inc-origin-init:
                     - --disable-e10s
