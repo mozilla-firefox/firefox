@@ -21,11 +21,9 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
-import mozilla.components.ui.colors.PhotonColors
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private val heightProgressBarChecklist = 12.dp
@@ -47,7 +45,7 @@ fun ProgressBarSetupChecklistView(numberOfTasks: Int, numberOfTasksCompleted: In
     }
 }
 
-/** The gray background for progressbar. */
+/** The background for progressbar. */
 @Composable
 private fun ProgressBarBackground() {
     Row(
@@ -55,27 +53,17 @@ private fun ProgressBarBackground() {
             Modifier.fillMaxWidth()
                 .height(heightProgressBarChecklist)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
+                .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.45f))
     ) {}
 }
 
-/** The progress bar with the colored gradient for checklist tasks. */
+/** The progress bar for checklist tasks. */
 @Composable
 private fun ProgressBarCompleted(numberOfTasks: Int, numberOfTasksCompleted: Int) {
     val progress by
         remember(numberOfTasksCompleted) {
             mutableFloatStateOf(numberOfTasksCompleted.toFloat() / numberOfTasks.toFloat())
         }
-
-    val gradient =
-        Brush.horizontalGradient(
-            colors =
-                listOf(
-                    Color(PhotonColors.Violet50.value),
-                    Color(PhotonColors.Pink40.value),
-                    Color(PhotonColors.Yellow40.value),
-                )
-        )
 
     var shape = MaterialTheme.shapes.extraLarge
 
@@ -89,7 +77,10 @@ private fun ProgressBarCompleted(numberOfTasks: Int, numberOfTasksCompleted: Int
 
     Row(
         modifier =
-            Modifier.fillMaxWidth(progress).height(heightProgressBarChecklist).clip(shape).background(brush = gradient)
+            Modifier.fillMaxWidth(progress)
+                .height(heightProgressBarChecklist)
+                .clip(shape)
+                .background(MaterialTheme.colorScheme.tertiary)
     ) {}
 }
 

@@ -8,7 +8,6 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,7 +52,6 @@ import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.utils.inComposePreview
 import mozilla.components.support.ktx.kotlin.trimmed
 import mozilla.components.support.ktx.util.URLStringUtils
-import mozilla.components.ui.colors.PhotonColors
 import org.mozilla.fenix.components.components
 import org.mozilla.fenix.compose.Image
 import org.mozilla.fenix.compose.TabThumbnail
@@ -309,16 +307,7 @@ private fun RecentTabIcon(
  */
 @Composable
 private fun PlaceHolderTabIcon(modifier: Modifier) {
-    Box(
-        modifier =
-            modifier.background(
-                color =
-                    when (isSystemInDarkTheme()) {
-                        true -> PhotonColors.DarkGrey60
-                        false -> PhotonColors.LightGrey30
-                    }
-            )
-    )
+    Box(modifier = modifier.background(color = MaterialTheme.colorScheme.surfaceContainerHighest))
 }
 
 @PreviewLightDark

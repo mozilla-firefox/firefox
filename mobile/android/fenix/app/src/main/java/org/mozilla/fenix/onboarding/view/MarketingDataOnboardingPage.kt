@@ -56,7 +56,7 @@ import mozilla.components.compose.base.LinkText
 import mozilla.components.compose.base.LinkTextState
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.OutlinedButton
-import mozilla.components.ui.colors.PhotonColors
+import mozilla.components.ui.colors.NovaColors
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.ScrollIndicator
 import org.mozilla.fenix.nimbus.MarketingCardVariant
@@ -267,7 +267,7 @@ private fun PrimaryButton(
                 },
             icon = painterResource(id = R.drawable.ic_favourite_filled),
             iconModifier = Modifier.size(16.dp),
-            iconTint = PhotonColors.Red50,
+            iconTint = NovaColors.Red40,
             onClick = hapticOnClick { onMarketingDataContinueClick(true) },
         )
     }

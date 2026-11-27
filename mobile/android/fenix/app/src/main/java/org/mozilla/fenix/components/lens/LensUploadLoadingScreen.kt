@@ -59,7 +59,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import mozilla.components.compose.base.button.FilledButton
-import mozilla.components.ui.colors.PhotonColors
+import mozilla.components.ui.colors.NovaColors
 import org.mozilla.fenix.R
 import org.mozilla.fenix.theme.FirefoxTheme
 
@@ -287,7 +287,7 @@ private fun previewImage(width: Int, height: Int): ImageBitmap {
                 LinearGradientShader(
                     from = Offset.Zero,
                     to = Offset(width.toFloat(), height.toFloat()),
-                    colors = listOf(PhotonColors.Orange60, PhotonColors.Violet60),
+                    colors = listOf(NovaColors.Orange50, NovaColors.Violet50),
                 )
         }
     Canvas(image).drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)
