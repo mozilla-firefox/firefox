@@ -33,6 +33,7 @@ dependencies {
     implementation project(':components:browser-state')
     implementation project(':components:support-base')
     implementation project(':components:support-ktx')
+    implementation project(':components:ui-icons')
 
     implementation libs.androidx.lifecycle.livedata
     implementation libs.androidx.paging

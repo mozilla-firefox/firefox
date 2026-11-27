@@ -876,6 +876,7 @@ projects:
     - components:support-test-libstate
     - components:support-utils
     - components:tooling-lint
+    - components:ui-icons
   components:feature-contextmenu:
     description: Component for displaying context menus for web content.
     path: components/feature/contextmenu
