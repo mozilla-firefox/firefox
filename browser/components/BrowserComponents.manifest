@@ -238,6 +238,8 @@ category browser-idle-startup moz-src:///browser/components/defaultlaunchonlogin
 category browser-idle-startup moz-src:///browser/components/shell/StartupOSIntegration.sys.mjs StartupOSIntegration.onStartupIdle
 #endif
 
+category browser-best-effort-idle-startup resource://passwordmgr/passwordstorage.sys.mjs LoginManagerStorage.recordDecryptability
+
 # Note that these telemetry entries schedule their own idle tasks,
 # so they are guaranteed to run after everything else.
 category browser-idle-startup moz-src:///browser/components/StartupTelemetry.sys.mjs StartupTelemetry.browserIdleStartup

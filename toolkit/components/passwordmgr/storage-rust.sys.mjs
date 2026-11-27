@@ -28,6 +28,11 @@ import {
   LoginEntryWithMeta,
   BulkResultEntry,
   createLoginStoreWithNssKeymanager,
+  AuthenticationError,
+  InvalidKey,
+  MissingKey,
+  NssAuthenticationError,
+  NssUninitialized,
 } from "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustLogins.sys.mjs";
 
 // AuthenticationCanceled must come from db_crypto, not logins: it is the error
@@ -288,6 +293,10 @@ class RustLoginsStoreAdapter {
     return this.#store.listCandidatesByOrigin(origins, domains);
   }
 
+  async checkDecryptability() {
+    return this.#store.checkDecryptability();
+  }
+
   // getMany() returns the rows in whatever order the query gives it, so sort
   // them back into the order of `ids`. Callers hand the logins on in the order
   // they receive them, and both the deduping in LoginManagerParent and the
@@ -444,6 +453,9 @@ class RustLoginStorageAuthenticator extends PrimaryPasswordAuthenticator {
   #shutDown = false;
   #cancelPendingPrompt = null;
 
+  // Set while a background check runs that must never prompt.
+  declinePrompts = false;
+
   constructor() {
     super();
     this.#logger = lazy.LoginHelper.createLogger(
@@ -459,6 +471,12 @@ class RustLoginStorageAuthenticator extends PrimaryPasswordAuthenticator {
   // shutdown() can release it while the prompt is still open.
   getPrimaryPassword() {
     this.#logger.log("getPrimaryPassword called");
+    if (this.declinePrompts) {
+      this.#logger.log("declining, a background check never prompts");
+      return Promise.reject(
+        new AuthenticationCanceled("Background check never prompts")
+      );
+    }
     if (this.#shutDown) {
       this.#logger.log("declining, the storage is shutting down");
       this.authCanceled = true;
@@ -569,6 +587,63 @@ export class LoginManagerRustStorage {
 
   get backendName() {
     return "rust";
+  }
+
+  /**
+   * Records how many logins do not decrypt with the current key. Only for
+   * profiles without a primary password. The check never prompts: a primary
+   * password set later in the session declines the prompt, and nothing is
+   * recorded.
+   */
+  async recordDecryptability() {
+    const authenticator = this.#authenticator;
+    if (
+      !authenticator ||
+      Services.startup.shuttingDown ||
+      Services.ppmm.sharedData.get("isPrimaryPasswordSet") !== false
+    ) {
+      return;
+    }
+    let extra = null;
+    authenticator.declinePrompts = true;
+    try {
+      const { total, undecryptable } =
+        await this.#storageAdapter.checkDecryptability();
+      extra = { result: "ok", total, undecryptable };
+    } catch (e) {
+      const errorKind = this.#keyErrorKind(e);
+      if (errorKind) {
+        extra = { result: "error", error_kind: errorKind };
+      }
+    } finally {
+      authenticator.declinePrompts = false;
+    }
+    if (extra) {
+      Glean.pwmgr.rustStoreDecryptability.record(extra);
+    }
+  }
+
+  /**
+   * @param {Error} e The error checkDecryptability() threw.
+   * @returns {string|null} The kind of key error, or null for an error that
+   *   is not about the key, such as a store closed at shutdown, or for a
+   *   declined prompt.
+   */
+  #keyErrorKind(e) {
+    if (
+      e instanceof NssUninitialized ||
+      e instanceof NssAuthenticationError ||
+      e instanceof AuthenticationError
+    ) {
+      return "nss_auth";
+    }
+    if (e instanceof MissingKey) {
+      return "missing_key";
+    }
+    if (e instanceof InvalidKey) {
+      return "invalid_key";
+    }
+    return null;
   }
 
   get initTimings() {

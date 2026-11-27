@@ -1106,6 +1106,49 @@ pwmgr:
           "unknown" for a cancelled prompt recorded against an error that
           names neither.
 
+  rust_store_decryptability:
+    type: event
+    description: >
+      At most one record per session on the Rust login store, recorded once
+      the user has been idle for a while, of how many logins the store holds
+      and how many of them do not decrypt although the key is available. Tells
+      a store with a few unreadable logins (0 < undecryptable < total) apart
+      from one whose key no longer fits any of them (undecryptable == total).
+      Only recorded for profiles that had no primary password at startup. The
+      check never prompts; if the key is locked behind a primary password set
+      later in the session, nothing is recorded.
+    bugs:
+      - https://bugzil.la/2095514
+    data_reviews:
+      - https://bugzil.la/2095514
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - passwords-dev@mozilla.org
+    expires: never
+    extra_keys:
+      result:
+        type: string
+        description: >
+          "ok", or "error" when the key itself could not be used and nothing
+          was counted. A check that fails for another reason, such as a store
+          closed at shutdown, is not recorded.
+      total:
+        type: quantity
+        description: >
+          Logins in the store, local and synced. Only with result "ok".
+      undecryptable:
+        type: quantity
+        description: >
+          Logins that did not decrypt with the available key. Only with
+          result "ok".
+      error_kind:
+        type: string
+        description: >
+          With result "error": "nss_auth", "missing_key" or "invalid_key",
+          with the meanings of
+          pwmgr.rust_storage_crypto_error.
+
   rust_init_status:
     type: event
     description: >

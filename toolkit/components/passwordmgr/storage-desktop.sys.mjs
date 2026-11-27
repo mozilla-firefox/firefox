@@ -68,4 +68,15 @@ export class LoginManagerStorage extends LoginManagerStorage_json {
   static getActiveStore() {
     return this.#activeStore;
   }
+
+  /**
+   * Called once per session from the browser-best-effort-idle-startup
+   * category, so it may not run at all.
+   */
+  static async recordDecryptability() {
+    const store = await this.#initializationPromise?.catch(() => null);
+    if (store && store === this.#rustStorage) {
+      await store.recordDecryptability();
+    }
+  }
 }
