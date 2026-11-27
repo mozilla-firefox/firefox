@@ -7383,11 +7383,14 @@ static bool PromiseThenNewPromiseCapability(
 
   // Step 3. Let C be ? SpeciesConstructor(promise, %Promise%).
   // Step 4. Let resultCapability be ? NewPromiseCapability(C).
+  // With the default properties, C is known to be %Promise%.
   Rooted<PromiseCapability> resultCapability(cx);
-  if (!PromiseThenNewPromiseCapability(
-          cx, promise, CreateDependentPromise::SkipIfCtorUnobservable,
-          &resultCapability)) {
-    return false;
+  if (!IsPromiseWithDefaultProperties(promise, cx)) {
+    if (!PromiseThenNewPromiseCapability(
+            cx, promise, CreateDependentPromise::SkipIfCtorUnobservable,
+            &resultCapability)) {
+      return false;
+    }
   }
 
   // Step 5. Return PerformPromiseThen(promise, onFulfilled, onRejected,
