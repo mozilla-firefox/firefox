@@ -189,11 +189,10 @@ function getTreeWalkerFilter(options) {
       node.isNativeAnonymous &&
       !isInXULDocument(node)
     ) {
-      const nodeTypeAttribute = node.getAttribute && node.getAttribute("type");
       // The ::view-transition pseudo element node has a <div type=":-moz-snapshot-containing-block">
       // parent element that we don't want to display in the markup view.
       // Instead, we want to directly display the ::view-transition pseudo-element.
-      if (nodeTypeAttribute === ":-moz-snapshot-containing-block") {
+      if (isViewTransitionSnapshotContainingBlockNode(node)) {
         // FILTER_ACCEPT_CHILDREN means that the node won't be returned, but its children
         // will be instead
         return nodeFilterConstants.FILTER_ACCEPT_CHILDREN;
@@ -201,8 +200,8 @@ function getTreeWalkerFilter(options) {
 
       // Display all the ::view-transition* nodes
       if (
-        nodeTypeAttribute &&
-        nodeTypeAttribute.startsWith(":view-transition")
+        node.implementedPseudoElement &&
+        node.implementedPseudoElement.startsWith("::view-transition")
       ) {
         return nodeFilterConstants.FILTER_ACCEPT;
       }
@@ -235,6 +234,10 @@ function isWhitespaceTextNode(node) {
  */
 function isCommentNode(node) {
   return node.nodeType === Node.COMMENT_NODE;
+}
+
+function isViewTransitionSnapshotContainingBlockNode(node) {
+  return node.implementedPseudoElement === "::-moz-snapshot-containing-block";
 }
 
 /**
@@ -600,6 +603,7 @@ function isDocumentReady(document) {
 
 module.exports = {
   isDocumentReady,
+  isViewTransitionSnapshotContainingBlockNode,
   isWhitespaceTextNode,
   findGridParentContainerForNode,
   getBackgroundColor,
