@@ -102,14 +102,17 @@ def get_hash(path, algo="sha512"):
     return h.hexdigest()
 
 
+def _rel_posix(path, start):
+    return os.path.relpath(path, start).replace(os.sep, "/")
+
+
 def _hash_dir(directory):
     """Return {rel_path: sha256_hex} for every file under directory."""
     result = {}
     for root, _, filenames in os.walk(directory):
         for filename in filenames:
             abs_path = os.path.join(root, filename)
-            rel_path = os.path.relpath(abs_path, directory)
-            result[rel_path] = get_hash(abs_path, "sha256")
+            result[_rel_posix(abs_path, directory)] = get_hash(abs_path, "sha256")
     return result
 
 
@@ -239,9 +242,9 @@ def list_files_and_dirs(dir_path):
     dirs = []
     for root, directories, filenames in os.walk(dir_path):
         for directory in directories:
-            dirs.append(os.path.relpath(os.path.join(root, directory), dir_path))
+            dirs.append(_rel_posix(os.path.join(root, directory), dir_path))
         for filename in filenames:
-            files.append(os.path.relpath(os.path.join(root, filename), dir_path))
+            files.append(_rel_posix(os.path.join(root, filename), dir_path))
     return files, dirs
 
 

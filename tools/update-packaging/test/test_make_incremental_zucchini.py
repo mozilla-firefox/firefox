@@ -378,6 +378,15 @@ def test_check_for_add_if_not_update_rejects_other_files():
         assert not mz.check_for_add_if_not_update(path), path
 
 
+def test_list_files_and_dirs_returns_posix_paths(tmp_path):
+    _write(tmp_path / "sub/nested/a.txt", b"a")
+
+    files, dirs = mz.list_files_and_dirs(str(tmp_path))
+
+    assert files == ["sub/nested/a.txt"]
+    assert sorted(dirs) == ["sub", "sub/nested"]
+
+
 def test_download_file_succeeds_first_try(tmp_path):
     url = "https://archive.mozilla.org/firefox.mar"
     dest = str(tmp_path / "out.mar")
