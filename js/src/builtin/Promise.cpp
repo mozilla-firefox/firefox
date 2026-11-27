@@ -1941,6 +1941,18 @@ static bool Promise_then_impl(JSContext* cx, HandleValue promiseVal,
                               HandleValue onFulfilled, HandleValue onRejected,
                               MutableHandleValue rval, bool rvalExplicitlyUsed);
 
+// Whether resolving |promise| with |resolution|, whose "then" property is
+// |thenVal|, can skip storing and calling |thenVal| because it is the original
+// Promise.prototype.then of the current realm. Both must be unwrapped Promise
+// objects, so the builtin thenable job doesn't need to cope with wrappers.
+static bool CanResolveWithBuiltinThenableJob(JSContext* cx, JSObject* promise,
+                                             JSObject* resolution,
+                                             const Value& thenVal) {
+  return resolution->is<PromiseObject>() && promise->is<PromiseObject>() &&
+         IsNativeFunction(thenVal, Promise_then) &&
+         thenVal.toObject().as<JSFunction>().realm() == cx->realm();
+}
+
 /**
  * ES2022 draft rev d03c1ec6e235a5180fa772b6178727c17974cb14
  *
@@ -2028,32 +2040,13 @@ static bool Promise_then_impl(JSContext* cx, HandleValue promiseVal,
   //          NewPromiseResolveThenableJob(promise, resolution,
   //                                       thenJobCallback).
   // Step 15. Perform HostEnqueuePromiseJob(job.[[Job]], job.[[Realm]]).
-
-  // If the resolution object is a built-in Promise object and the
-  // `then` property is the original Promise.prototype.then function
-  // from the current realm, we skip storing/calling it.
-  // Additionally we require that |promise| itself is also a built-in
-  // Promise object, so the fast path doesn't need to cope with wrappers.
-  bool isBuiltinThen = false;
-  if (resolution->is<PromiseObject>() && promise->is<PromiseObject>() &&
-      IsNativeFunction(thenVal, Promise_then) &&
-      thenVal.toObject().as<JSFunction>().realm() == cx->realm()) {
-    isBuiltinThen = true;
+  if (CanResolveWithBuiltinThenableJob(cx, promise, resolution, thenVal)) {
+    return EnqueuePromiseResolveThenableBuiltinJob(cx, promise, resolution);
   }
 
-  if (!isBuiltinThen) {
-    RootedField<Value, 4> promiseVal(roots, ObjectValue(*promise));
-    if (!EnqueuePromiseResolveThenableJob(cx, promiseVal, resolutionVal,
-                                          thenVal)) {
-      return false;
-    }
-  } else {
-    if (!EnqueuePromiseResolveThenableBuiltinJob(cx, promise, resolution)) {
-      return false;
-    }
-  }
-
-  return true;
+  RootedField<Value, 4> promiseVal(roots, ObjectValue(*promise));
+  return EnqueuePromiseResolveThenableJob(cx, promiseVal, resolutionVal,
+                                          thenVal);
 }
 
 /**
