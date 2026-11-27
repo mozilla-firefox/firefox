@@ -334,9 +334,16 @@ set_define("JS_HW_SHADOW_STACK", js_hw_shstk)
 
 # Hardware-enforced indirect target landing pad support
 # =======================================================
+@depends("--enable-jit", "--enable-simulator")
+def js_hw_indirect_targets_default(jit_enabled, simulator):
+    if jit_enabled and simulator and simulator[0] == "arm64":
+        return True
+
+
 option(
     "--enable-js-hardware-indirect-targets",
-    help="Enable experimental hardware-enforced landing pads at JIT indirect targets (x86-64 IBT, ARM64 BTI)",
+    default=js_hw_indirect_targets_default,
+    help="{Enable|Disable} experimental hardware-enforced landing pads at JIT indirect targets (x86-64 IBT, ARM64 BTI)",
 )
 
 
