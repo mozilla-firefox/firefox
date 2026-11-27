@@ -87,7 +87,7 @@ class BRFrame final : public nsIFrame {
 }  // namespace mozilla
 
 nsIFrame* NS_NewBRFrame(mozilla::PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell) BRFrame(aStyle, aPresShell->GetPresContext());
+  return new BRFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(BRFrame)

@@ -576,14 +576,14 @@ already_AddRefed<gfxPattern> SVGRadialGradientFrame::CreateGradient() {
 
 nsIFrame* NS_NewSVGLinearGradientFrame(mozilla::PresShell* aPresShell,
                                        mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGLinearGradientFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGLinearGradientFrame(aStyle,
+                                             aPresShell->GetPresContext());
 }
 
 nsIFrame* NS_NewSVGRadialGradientFrame(mozilla::PresShell* aPresShell,
                                        mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGRadialGradientFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGRadialGradientFrame(aStyle,
+                                             aPresShell->GetPresContext());
 }
 
 namespace mozilla {

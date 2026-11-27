@@ -122,7 +122,7 @@ class gfxSkipChars {
  * or the skipped-characters string length if there is no next unskipped
  * character.
  */
-class MOZ_STACK_CLASS gfxSkipCharsIterator {
+class gfxSkipCharsIterator {
  public:
   /**
    * @param aOriginalStringToSkipCharsOffset add this to all incoming and

@@ -297,8 +297,7 @@ class nsDisplayCanvas final : public nsPaintedDisplayItem {
 };
 
 nsIFrame* NS_NewHTMLCanvasFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsHTMLCanvasFrame(aStyle, aPresShell->GetPresContext());
+  return new nsHTMLCanvasFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_QUERYFRAME_HEAD(nsHTMLCanvasFrame)

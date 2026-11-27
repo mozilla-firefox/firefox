@@ -35,8 +35,7 @@ using namespace mozilla::image;
 
 nsIFrame* NS_NewSVGGeometryFrame(mozilla::PresShell* aPresShell,
                                  mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGGeometryFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGGeometryFrame(aStyle, aPresShell->GetPresContext());
 }
 
 namespace mozilla {

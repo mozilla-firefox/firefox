@@ -4929,15 +4929,14 @@ static void VerifyNotDirty(nsFrameState state) {
 #endif
 
 nsIFrame* NS_NewTextFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell) nsTextFrame(aStyle, aPresShell->GetPresContext());
+  return new nsTextFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsTextFrame)
 
 nsIFrame* NS_NewContinuingTextFrame(PresShell* aPresShell,
                                     ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsContinuingTextFrame(aStyle, aPresShell->GetPresContext());
+  return new nsContinuingTextFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsContinuingTextFrame)

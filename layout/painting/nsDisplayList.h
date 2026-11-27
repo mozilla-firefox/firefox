@@ -25,6 +25,7 @@
 #include "mozilla/Assertions.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/DebugOnly.h"
+#include "mozilla/DisplayListArenaObjectId.h"
 #include "mozilla/EffectCompositor.h"
 #include "mozilla/EnumSet.h"
 #include "mozilla/Logging.h"
@@ -94,12 +95,13 @@ class RemoteBrowser;
 class Selection;
 }  // namespace dom
 
-enum class DisplayListArenaObjectId {
-#define DISPLAY_LIST_ARENA_OBJECT(name_) name_,
-#include "nsDisplayListArenaTypes.inc"
-#undef DISPLAY_LIST_ARENA_OBJECT
-  COUNT
-};
+/**
+ * Return type of nsDisplayItem::CreateWebRenderCommands. The error case
+ * carries a string literal naming the reason the item could not be expressed
+ * as WebRender commands, which callers use for diagnostics before falling
+ * back to painting the item into an image.
+ */
+using WebRenderCommandsResult = Result<Ok, const char*>;
 
 extern LazyLogModule sContentDisplayListLog;
 extern LazyLogModule sParentDisplayListLog;
@@ -634,7 +636,7 @@ class nsDisplayListBuilder {
     return mCurrentOffsetToReferenceFrame;
   }
 
-  void Check() { mPool.Check(); }
+  void Check() { DisplayListArena::Check(); }
 
   /*
    * Get the paint sequence number of the current paint.
@@ -941,41 +943,6 @@ class nsDisplayListBuilder {
    * Invalidates the caret frames from previous paints, if they have changed.
    */
   void InvalidateCaretFramesIfNeeded();
-
-  /**
-   * Allocate memory in our arena. It will only be freed when this display list
-   * builder is destroyed. This memory holds nsDisplayItems and
-   * DisplayItemClipChain objects.
-   *
-   * Destructors are called as soon as the item is no longer used.
-   */
-  void* Allocate(size_t aSize, DisplayListArenaObjectId aId) {
-    return mPool.Allocate(aId, aSize);
-  }
-  void* Allocate(size_t aSize, DisplayItemType aType) {
-#define DECLARE_DISPLAY_ITEM_TYPE(name_, ...)                \
-  static_assert(size_t(DisplayItemType::TYPE_##name_) ==     \
-                    size_t(DisplayListArenaObjectId::name_), \
-                "");
-#include "nsDisplayItemTypesList.inc"
-    static_assert(size_t(DisplayItemType::TYPE_MAX) ==
-                      size_t(DisplayListArenaObjectId::CLIPCHAIN),
-                  "");
-    static_assert(size_t(DisplayItemType::TYPE_MAX) + 1 ==
-                      size_t(DisplayListArenaObjectId::LISTNODE),
-                  "");
-#undef DECLARE_DISPLAY_ITEM_TYPE
-    return Allocate(aSize, DisplayListArenaObjectId(size_t(aType)));
-  }
-
-  void Destroy(DisplayListArenaObjectId aId, void* aPtr) {
-    if (!mIsDestroying) {
-      mPool.Free(aId, aPtr);
-    }
-  }
-  void Destroy(DisplayItemType aType, void* aPtr) {
-    Destroy(DisplayListArenaObjectId(size_t(aType)), aPtr);
-  }
 
   /**
    * Get an existing or allocate a new ActiveScrolledRoot in the arena. Will be
@@ -1789,9 +1756,6 @@ class nsDisplayListBuilder {
    */
   void ReuseDisplayItem(nsDisplayItem* aItem);
 
-  void SetIsDestroying() { mIsDestroying = true; }
-  bool IsDestroying() const { return mIsDestroying; }
-
   nsTHashMap<nsPtrHashKey<const nsIFrame>, bool>&
   AsyncScrollsWithAnchorHashmap() {
     return mAsyncScrollsWithAnchor;
@@ -1901,10 +1865,6 @@ class nsDisplayListBuilder {
   AutoTArray<nsIFrame*, 40> mFramesMarkedForDisplayIfVisible;
   AutoTArray<PresShellState, 8> mPresShellStates;
 
-  using Arena = nsPresArena<32768, DisplayListArenaObjectId,
-                            size_t(DisplayListArenaObjectId::COUNT)>;
-  Arena mPool;
-
   AutoTArray<nsIFrame*, 400> mFramesMarkedForDisplay;
 
   gfx::CompositorHitTestInfo mCompositorHitTestInfo;
@@ -1980,7 +1940,6 @@ class nsDisplayListBuilder {
   bool mAlwaysLayerizeScrollbars;
 
   bool mIsReusingStackingContextItems;
-  bool mIsDestroying;
   // We need to build display items for the same frame in a bunch of situations
   // in paged mode:
   //  * When building overflow from a previous page.
@@ -2004,7 +1963,7 @@ class nsDisplayListBuilder {
                                                                              \
  private:                                                                    \
   void* operator new(size_t aSize, nsDisplayListBuilder* aBuilder) {         \
-    return aBuilder->Allocate(aSize, DisplayItemType::e);                    \
+    return DisplayListArena::Allocate(DisplayItemType::e, aSize);            \
   }                                                                          \
                                                                              \
   template <typename T, typename F, typename... Args>                        \
@@ -2184,7 +2143,7 @@ class nsDisplayItem {
     RemoveDisplayItemFromFrame(aBuilder, mFrame);
 
     this->~nsDisplayItem();
-    aBuilder->Destroy(type, this);
+    DisplayListArena::Free(type, this);
   }
 
   /**
@@ -3403,14 +3362,14 @@ class nsDisplayList {
 
  private:
   inline Node* Allocate(nsDisplayItem* aItem) {
-    void* ptr =
-        mBuilder->Allocate(sizeof(Node), DisplayListArenaObjectId::LISTNODE);
+    void* ptr = DisplayListArena::Allocate(DisplayListArenaObjectId::LISTNODE,
+                                           sizeof(Node));
     return new (ptr) Node(aItem);
   }
 
   inline void Deallocate(Node* aNode) {
     aNode->~Node();
-    mBuilder->Destroy(DisplayListArenaObjectId::LISTNODE, aNode);
+    DisplayListArena::Free(DisplayListArenaObjectId::LISTNODE, aNode);
   }
 
   void DeallocateNodes() {
@@ -3811,12 +3770,12 @@ class nsDisplayGeneric final : public nsPaintedDisplayItem {
     }
 
     this->~nsDisplayGeneric();
-    aBuilder->Destroy(DisplayItemType::TYPE_GENERIC, this);
+    DisplayListArena::Free(DisplayItemType::TYPE_GENERIC, this);
   }
 
  protected:
   void* operator new(size_t aSize, nsDisplayListBuilder* aBuilder) {
-    return aBuilder->Allocate(aSize, DisplayItemType::TYPE_GENERIC);
+    return DisplayListArena::Allocate(DisplayItemType::TYPE_GENERIC, aSize);
   }
 
   template <typename T, typename F, typename... Args>

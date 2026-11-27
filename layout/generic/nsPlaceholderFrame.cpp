@@ -31,8 +31,8 @@ using namespace mozilla::gfx;
 nsPlaceholderFrame* NS_NewPlaceholderFrame(PresShell* aPresShell,
                                            ComputedStyle* aStyle,
                                            nsFrameState aTypeBits) {
-  return new (aPresShell)
-      nsPlaceholderFrame(aStyle, aPresShell->GetPresContext(), aTypeBits);
+  return new nsPlaceholderFrame(aStyle, aPresShell->GetPresContext(),
+                                aTypeBits);
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsPlaceholderFrame)

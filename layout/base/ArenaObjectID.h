@@ -7,8 +7,6 @@
 #ifndef mozilla_ArenaObjectID_h
 #define mozilla_ArenaObjectID_h
 
-#include "nsQueryFrame.h"
-
 namespace mozilla {
 
 enum ArenaObjectID {

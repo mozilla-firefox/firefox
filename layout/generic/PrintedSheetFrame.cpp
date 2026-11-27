@@ -18,8 +18,7 @@ using namespace mozilla;
 
 PrintedSheetFrame* NS_NewPrintedSheetFrame(PresShell* aPresShell,
                                            ComputedStyle* aStyle) {
-  return new (aPresShell)
-      PrintedSheetFrame(aStyle, aPresShell->GetPresContext());
+  return new PrintedSheetFrame(aStyle, aPresShell->GetPresContext());
 }
 
 namespace mozilla {

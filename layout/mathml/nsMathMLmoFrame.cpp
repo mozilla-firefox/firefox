@@ -25,7 +25,7 @@ using namespace mozilla;
 //
 
 nsIFrame* NS_NewMathMLmoFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell) nsMathMLmoFrame(aStyle, aPresShell->GetPresContext());
+  return new nsMathMLmoFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsMathMLmoFrame)

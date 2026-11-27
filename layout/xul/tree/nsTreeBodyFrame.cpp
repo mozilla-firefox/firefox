@@ -222,7 +222,7 @@ void nsTreeBodyFrame::CancelImageRequests() {
 // Creates a new tree frame
 //
 nsIFrame* NS_NewTreeBodyFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell) nsTreeBodyFrame(aStyle, aPresShell->GetPresContext());
+  return new nsTreeBodyFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsTreeBodyFrame)

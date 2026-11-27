@@ -32,11 +32,11 @@ using namespace mozilla::dom;
 using namespace mozilla::gfx;
 
 nsIFrame* NS_NewHTMLVideoFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell) nsVideoFrame(aStyle, aPresShell->GetPresContext());
+  return new nsVideoFrame(aStyle, aPresShell->GetPresContext());
 }
 
 nsIFrame* NS_NewHTMLAudioFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell) nsAudioFrame(aStyle, aPresShell->GetPresContext());
+  return new nsAudioFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsVideoFrame)

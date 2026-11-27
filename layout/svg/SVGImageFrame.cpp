@@ -64,8 +64,7 @@ NS_QUERYFRAME_TAIL_INHERITING(nsIFrame)
 
 nsIFrame* NS_NewSVGImageFrame(mozilla::PresShell* aPresShell,
                               mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGImageFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGImageFrame(aStyle, aPresShell->GetPresContext());
 }
 
 namespace mozilla {

@@ -635,8 +635,7 @@ NS_QUERYFRAME_TAIL_INHERITING(nsTableWrapperFrame)
 
 nsContainerFrame* NS_NewMathMLmtableOuterFrame(PresShell* aPresShell,
                                                ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsMathMLmtableWrapperFrame(aStyle, aPresShell->GetPresContext());
+  return new nsMathMLmtableWrapperFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsMathMLmtableWrapperFrame)
@@ -855,8 +854,7 @@ void nsMathMLmtableWrapperFrame::Reflow(nsPresContext* aPresContext,
 
 nsContainerFrame* NS_NewMathMLmtableFrame(PresShell* aPresShell,
                                           ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsMathMLmtableFrame(aStyle, aPresShell->GetPresContext());
+  return new nsMathMLmtableFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsMathMLmtableFrame)
@@ -1008,8 +1006,7 @@ NS_QUERYFRAME_TAIL_INHERITING(nsTableFrame)
 
 nsContainerFrame* NS_NewMathMLmtrFrame(PresShell* aPresShell,
                                        ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsMathMLmtrFrame(aStyle, aPresShell->GetPresContext());
+  return new nsMathMLmtrFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsMathMLmtrFrame)
@@ -1053,7 +1050,7 @@ nsresult nsMathMLmtrFrame::AttributeChanged(int32_t aNameSpaceID,
 nsContainerFrame* NS_NewMathMLmtdFrame(PresShell* aPresShell,
                                        ComputedStyle* aStyle,
                                        nsTableFrame* aTableFrame) {
-  return new (aPresShell) nsMathMLmtdFrame(aStyle, aTableFrame);
+  return new nsMathMLmtdFrame(aStyle, aTableFrame);
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsMathMLmtdFrame)
@@ -1150,8 +1147,7 @@ NS_QUERYFRAME_TAIL_INHERITING(nsBlockFrame)
 
 nsContainerFrame* NS_NewMathMLmtdInnerFrame(PresShell* aPresShell,
                                             ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsMathMLmtdInnerFrame(aStyle, aPresShell->GetPresContext());
+  return new nsMathMLmtdInnerFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsMathMLmtdInnerFrame)

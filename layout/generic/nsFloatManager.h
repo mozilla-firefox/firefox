@@ -92,8 +92,7 @@ struct nsFlowAreaRect {
  */
 class nsFloatManager {
  public:
-  explicit nsFloatManager(mozilla::PresShell* aPresShell,
-                          mozilla::WritingMode aWM);
+  explicit nsFloatManager(mozilla::WritingMode aWM);
   ~nsFloatManager();
 
   nsFloatManager(const nsFloatManager&) = delete;

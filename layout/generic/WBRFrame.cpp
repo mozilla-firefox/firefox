@@ -38,7 +38,7 @@ class WBRFrame final : public nsIFrame {
 
 nsIFrame* NS_NewWBRFrame(mozilla::PresShell* aPresShell,
                          ComputedStyle* aStyle) {
-  return new (aPresShell) WBRFrame(aStyle, aPresShell->GetPresContext());
+  return new WBRFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(WBRFrame)

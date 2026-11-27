@@ -21,8 +21,7 @@ using namespace mozilla::image;
 
 nsContainerFrame* NS_NewSVGMarkerFrame(mozilla::PresShell* aPresShell,
                                        mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGMarkerFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGMarkerFrame(aStyle, aPresShell->GetPresContext());
 }
 
 namespace mozilla {
@@ -225,8 +224,8 @@ SVGMarkerFrame::AutoMarkerReferencer::~AutoMarkerReferencer() {
 
 nsContainerFrame* NS_NewSVGMarkerAnonChildFrame(
     mozilla::PresShell* aPresShell, mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGMarkerAnonChildFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGMarkerAnonChildFrame(aStyle,
+                                              aPresShell->GetPresContext());
 }
 
 namespace mozilla {

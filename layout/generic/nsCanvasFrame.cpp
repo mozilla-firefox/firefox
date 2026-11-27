@@ -36,7 +36,7 @@ using namespace mozilla::gfx;
 using namespace mozilla::layers;
 
 nsCanvasFrame* NS_NewCanvasFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell) nsCanvasFrame(aStyle, aPresShell->GetPresContext());
+  return new nsCanvasFrame(aStyle, aPresShell->GetPresContext());
 }
 
 nsIPopupContainer* nsIPopupContainer::GetPopupContainer(PresShell* aPresShell) {
@@ -424,8 +424,7 @@ void nsCanvasFrame::Reflow(nsPresContext* aPresContext,
 
   auto* prevCanvasFrame = static_cast<nsCanvasFrame*>(GetPrevInFlow());
   if (prevCanvasFrame) {
-    AutoFrameListPtr overflow(aPresContext,
-                              prevCanvasFrame->StealOverflowFrames());
+    AutoFrameListPtr overflow(prevCanvasFrame->StealOverflowFrames());
     if (overflow) {
       NS_ASSERTION(overflow->OnlyChild(),
                    "must have doc root as canvas frame's only child");

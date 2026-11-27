@@ -6,11 +6,8 @@
    preprocessing */
 
 // These are objects that can be stored in the pres arena
-//
-// FIXME(emilio): Including abstract frame classes in the arena is a bit
-// wasteful, but it simplifies the allocation code.
 #define FRAME_ID(classname, ...) PRES_ARENA_OBJECT(classname)
-#define ABSTRACT_FRAME_ID(classname) PRES_ARENA_OBJECT(classname)
+#define ABSTRACT_FRAME_ID(classname)
 #include "mozilla/FrameIdList.h"
 #undef FRAME_ID
 #undef ABSTRACT_FRAME_ID

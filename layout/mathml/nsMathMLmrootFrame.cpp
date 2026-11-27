@@ -22,8 +22,7 @@ using namespace mozilla;
 static const char16_t kSqrChar = char16_t(0x221A);
 
 nsIFrame* NS_NewMathMLmrootFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsMathMLmrootFrame(aStyle, aPresShell->GetPresContext());
+  return new nsMathMLmrootFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsMathMLmrootFrame)

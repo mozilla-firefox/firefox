@@ -40,8 +40,7 @@ mozilla::LazyLogModule gLayoutPrintingLog("printing-layout");
 
 nsPageSequenceFrame* NS_NewPageSequenceFrame(PresShell* aPresShell,
                                              ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsPageSequenceFrame(aStyle, aPresShell->GetPresContext());
+  return new nsPageSequenceFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsPageSequenceFrame)

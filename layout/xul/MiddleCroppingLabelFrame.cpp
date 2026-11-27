@@ -10,8 +10,8 @@
 
 nsIFrame* NS_NewMiddleCroppingLabelFrame(mozilla::PresShell* aPresShell,
                                          mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::MiddleCroppingLabelFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::MiddleCroppingLabelFrame(aStyle,
+                                               aPresShell->GetPresContext());
 }
 
 namespace mozilla {

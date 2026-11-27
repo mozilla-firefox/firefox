@@ -2825,8 +2825,7 @@ NS_QUERYFRAME_TAIL_INHERITING(SVGDisplayContainerFrame)
 
 nsIFrame* NS_NewSVGTextFrame(mozilla::PresShell* aPresShell,
                              mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGTextFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGTextFrame(aStyle, aPresShell->GetPresContext());
 }
 
 namespace mozilla {

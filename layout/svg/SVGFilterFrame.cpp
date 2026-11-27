@@ -21,8 +21,7 @@ using namespace mozilla::dom;
 
 nsIFrame* NS_NewSVGFilterFrame(mozilla::PresShell* aPresShell,
                                mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGFilterFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGFilterFrame(aStyle, aPresShell->GetPresContext());
 }
 
 namespace mozilla {

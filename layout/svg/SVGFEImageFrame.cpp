@@ -64,8 +64,7 @@ class SVGFEImageFrame final : public nsIFrame {
 
 nsIFrame* NS_NewSVGFEImageFrame(mozilla::PresShell* aPresShell,
                                 mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGFEImageFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGFEImageFrame(aStyle, aPresShell->GetPresContext());
 }
 
 namespace mozilla {

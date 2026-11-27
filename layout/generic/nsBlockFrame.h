@@ -444,11 +444,11 @@ class nsBlockFrame : public nsContainerFrame {
   }
 
   nsLineBox* NewLineBox(nsIFrame* aFrame, bool aIsBlock) {
-    return NS_NewLineBox(PresShell(), aFrame, aIsBlock);
+    return NS_NewLineBox(aFrame, aIsBlock);
   }
   nsLineBox* NewLineBox(nsLineBox* aFromLine, nsIFrame* aFrame,
                         int32_t aCount) {
-    return NS_NewLineBox(PresShell(), aFromLine, aFrame, aCount);
+    return NS_NewLineBox(aFromLine, aFrame, aCount);
   }
   void FreeLineBox(nsLineBox* aLine) {
     if (aLine == GetLineCursorForDisplay()) {
@@ -457,7 +457,7 @@ class nsBlockFrame : public nsContainerFrame {
     if (aLine == GetLineCursorForQuery()) {
       ClearLineCursorForQuery();
     }
-    aLine->Destroy(PresShell());
+    aLine->Destroy();
   }
   /**
    * Helper method for StealFrame.

@@ -26,8 +26,7 @@ nsColorControlFrame::nsColorControlFrame(ComputedStyle* aStyle,
 
 nsIFrame* NS_NewColorControlFrame(PresShell* aPresShell,
                                   ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsColorControlFrame(aStyle, aPresShell->GetPresContext());
+  return new nsColorControlFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsColorControlFrame)

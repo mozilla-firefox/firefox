@@ -21,9 +21,9 @@ using namespace mozilla::image;
 
 nsIFrame* NS_NewSVGContainerFrame(mozilla::PresShell* aPresShell,
                                   mozilla::ComputedStyle* aStyle) {
-  nsIFrame* frame = new (aPresShell)
-      mozilla::SVGContainerFrame(aStyle, aPresShell->GetPresContext(),
-                                 mozilla::SVGContainerFrame::kClassID);
+  nsIFrame* frame =
+      new mozilla::SVGContainerFrame(aStyle, aPresShell->GetPresContext(),
+                                     mozilla::SVGContainerFrame::kClassID);
   // If we were called directly, then the frame is for a <defs> or
   // an unknown element type. In both cases we prevent the content
   // from displaying directly.

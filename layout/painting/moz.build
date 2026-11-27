@@ -27,6 +27,10 @@ EXPORTS += [
     "WindowRenderer.h",
 ]
 
+EXPORTS.mozilla += [
+    "DisplayListArenaObjectId.h",
+]
+
 UNIFIED_SOURCES += [
     "ActiveLayerTracker.cpp",
     "DashedCornerFinder.cpp",

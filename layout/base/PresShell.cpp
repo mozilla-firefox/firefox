@@ -779,9 +779,6 @@ PresShell::~PresShell() {
                    mLastCallbackEventRequest == nullptr,
                "post-reflow queues not empty.  This means we're leaking");
 
-  MOZ_ASSERT(!mAllocatedPointers || mAllocatedPointers->IsEmpty(),
-             "Some pres arena objects were not freed");
-
   mFrameConstructor = nullptr;
 }
 
@@ -1674,6 +1671,8 @@ nsresult PresShell::Initialize() {
   // time we do this!
   MOZ_ASSERT(!mFrameConstructor->GetRootFrame(),
              "How did that happen, exactly?");
+  FrameArena::SortFreeLists();
+
   ViewportFrame* rootFrame;
   {
     nsAutoScriptBlocker scriptBlocker;
@@ -4288,8 +4287,8 @@ void PresShell::UnsuppressPainting() {
 
 // Post a request to handle an arbitrary callback after reflow has finished.
 nsresult PresShell::PostReflowCallback(nsIReflowCallback* aCallback) {
-  void* result = AllocateByObjectID(eArenaObjectID_nsCallbackEventRequest,
-                                    sizeof(nsCallbackEventRequest));
+  void* result = FrameArena::Allocate(eArenaObjectID_nsCallbackEventRequest,
+                                      sizeof(nsCallbackEventRequest));
   nsCallbackEventRequest* request = (nsCallbackEventRequest*)result;
 
   request->callback = aCallback;
@@ -4326,7 +4325,7 @@ void PresShell::CancelReflowCallback(nsIReflowCallback* aCallback) {
         mLastCallbackEventRequest = before;
       }
 
-      FreeByObjectID(eArenaObjectID_nsCallbackEventRequest, toFree);
+      FrameArena::Free(eArenaObjectID_nsCallbackEventRequest, toFree);
     } else {
       before = node;
       node = node->next;
@@ -4342,7 +4341,7 @@ void PresShell::CancelPostedReflowCallbacks() {
       mLastCallbackEventRequest = nullptr;
     }
     nsIReflowCallback* callback = node->callback;
-    FreeByObjectID(eArenaObjectID_nsCallbackEventRequest, node);
+    FrameArena::Free(eArenaObjectID_nsCallbackEventRequest, node);
     if (callback) {
       callback->ReflowCallbackCanceled();
     }
@@ -4360,7 +4359,7 @@ void PresShell::HandlePostedReflowCallbacks(bool aInterruptible) {
         mLastCallbackEventRequest = nullptr;
       }
       nsIReflowCallback* callback = node->callback;
-      FreeByObjectID(eArenaObjectID_nsCallbackEventRequest, node);
+      FrameArena::Free(eArenaObjectID_nsCallbackEventRequest, node);
       if (callback && callback->ReflowFinished()) {
         shouldFlush = true;
       }
@@ -12050,7 +12049,6 @@ PresShell* PresShell::GetRootPresShell() const {
 
 void PresShell::AddSizeOfIncludingThis(nsWindowSizes& aSizes) const {
   MallocSizeOf mallocSizeOf = aSizes.mState.mMallocSizeOf;
-  mFrameArena.AddSizeOfExcludingThis(aSizes, Arena::ArenaKind::PresShell);
   aSizes.mLayoutPresShellSize += mallocSizeOf(this);
   if (mCaret) {
     aSizes.mLayoutPresShellSize += mCaret->SizeOfIncludingThis(mallocSizeOf);

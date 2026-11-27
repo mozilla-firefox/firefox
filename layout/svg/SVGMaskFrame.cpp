@@ -24,8 +24,7 @@ using namespace mozilla::image;
 
 nsIFrame* NS_NewSVGMaskFrame(mozilla::PresShell* aPresShell,
                              mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGMaskFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGMaskFrame(aStyle, aPresShell->GetPresContext());
 }
 
 namespace mozilla {

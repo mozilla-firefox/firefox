@@ -9,8 +9,7 @@
 
 nsIFrame* NS_NewSVGInnerSVGFrame(mozilla::PresShell* aPresShell,
                                  mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGInnerSVGFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGInnerSVGFrame(aStyle, aPresShell->GetPresContext());
 }
 
 namespace mozilla {

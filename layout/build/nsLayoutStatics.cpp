@@ -50,6 +50,7 @@
 #include "nsImageFrame.h"
 #include "nsMathMLAtoms.h"
 #include "nsMathMLOperators.h"
+#include "nsPresArena.h"
 #include "nsRegion.h"
 #include "nsRepeatService.h"
 #include "nsTextControlFrame.h"
@@ -216,6 +217,7 @@ nsresult nsLayoutStatics::Initialize() {
 
   nsHtml5Module::InitializeStatics();
   nsLayoutUtils::Initialize();
+  InitPresArenas();
   PointerEventHandler::InitializeStatics();
   TouchManager::InitializeStatics();
 
@@ -357,6 +359,7 @@ void nsLayoutStatics::Shutdown() {
   HTMLInputElement::DestroyUploadLastDir();
 
   nsLayoutUtils::Shutdown();
+  ShutdownPresArenas();
 
   nsHyphenationManager::Shutdown();
   nsDOMMutationObserver::Shutdown();

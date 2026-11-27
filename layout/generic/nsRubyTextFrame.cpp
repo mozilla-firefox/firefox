@@ -27,7 +27,7 @@ NS_IMPL_FRAMEARENA_HELPERS(nsRubyTextFrame)
 
 nsContainerFrame* NS_NewRubyTextFrame(PresShell* aPresShell,
                                       ComputedStyle* aStyle) {
-  return new (aPresShell) nsRubyTextFrame(aStyle, aPresShell->GetPresContext());
+  return new nsRubyTextFrame(aStyle, aPresShell->GetPresContext());
 }
 
 //----------------------------------------------------------------------

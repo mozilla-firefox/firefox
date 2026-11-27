@@ -231,8 +231,8 @@ static StaticAutoPtr<ScrollFrameActivityTracker> gScrollFrameActivityTracker;
 ScrollContainerFrame* NS_NewScrollContainerFrame(mozilla::PresShell* aPresShell,
                                                  ComputedStyle* aStyle,
                                                  bool aIsRoot) {
-  return new (aPresShell)
-      ScrollContainerFrame(aStyle, aPresShell->GetPresContext(), aIsRoot);
+  return new ScrollContainerFrame(aStyle, aPresShell->GetPresContext(),
+                                  aIsRoot);
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(ScrollContainerFrame)

@@ -50,8 +50,8 @@ class SVGFEUnstyledLeafFrame final : public nsIFrame {
 
 nsIFrame* NS_NewSVGFEUnstyledLeafFrame(mozilla::PresShell* aPresShell,
                                        mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGFEUnstyledLeafFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGFEUnstyledLeafFrame(aStyle,
+                                             aPresShell->GetPresContext());
 }
 
 namespace mozilla {

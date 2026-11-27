@@ -111,7 +111,7 @@ nsContainerFrame* NS_NewColumnSetFrame(PresShell* aPresShell,
                                        ComputedStyle* aStyle,
                                        nsFrameState aStateFlags) {
   nsColumnSetFrame* it =
-      new (aPresShell) nsColumnSetFrame(aStyle, aPresShell->GetPresContext());
+      new nsColumnSetFrame(aStyle, aPresShell->GetPresContext());
   it->AddStateBits(aStateFlags);
   return it;
 }
@@ -951,10 +951,9 @@ nsColumnSetFrame::ColumnBalanceData nsColumnSetFrame::ReflowColumns(
 void nsColumnSetFrame::DrainOverflowColumns() {
   // First grab the prev-in-flows overflows and reparent them to this
   // frame.
-  nsPresContext* presContext = PresContext();
   nsColumnSetFrame* prev = static_cast<nsColumnSetFrame*>(GetPrevInFlow());
   if (prev) {
-    AutoFrameListPtr overflows(presContext, prev->StealOverflowFrames());
+    AutoFrameListPtr overflows(prev->StealOverflowFrames());
     if (overflows) {
       mFrames.InsertFrames(this, nullptr, std::move(*overflows));
     }
@@ -962,7 +961,7 @@ void nsColumnSetFrame::DrainOverflowColumns() {
 
   // Now pull back our own overflows and append them to our children.
   // We don't need to reparent them since we're already their parent.
-  AutoFrameListPtr overflows(presContext, StealOverflowFrames());
+  AutoFrameListPtr overflows(StealOverflowFrames());
   if (overflows) {
     // We're already the parent for these frames, so no need to set
     // their parent again.

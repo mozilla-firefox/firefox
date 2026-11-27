@@ -913,16 +913,14 @@ class DependentBuiltinCounterStyle final : public BuiltinCounterStyle {
 
   virtual CounterStyle* GetFallback() override;
 
-  void* operator new(size_t sz, nsPresContext* aPresContext) {
-    return aPresContext->PresShell()->AllocateByObjectID(
-        eArenaObjectID_DependentBuiltinCounterStyle, sz);
+  void* operator new(size_t sz) {
+    return FrameArena::Allocate(eArenaObjectID_DependentBuiltinCounterStyle,
+                                sz);
   }
 
   void Destroy() {
-    PresShell* presShell = mManager->PresContext()->PresShell();
     this->~DependentBuiltinCounterStyle();
-    presShell->FreeByObjectID(eArenaObjectID_DependentBuiltinCounterStyle,
-                              this);
+    FrameArena::Free(eArenaObjectID_DependentBuiltinCounterStyle, this);
   }
 
  private:
@@ -1005,15 +1003,13 @@ class CustomCounterStyle final : public CounterStyle {
 
   bool IsExtendsSystem() { return mSystem == StyleCounterSystem::Extends; }
 
-  void* operator new(size_t sz, nsPresContext* aPresContext) {
-    return aPresContext->PresShell()->AllocateByObjectID(
-        eArenaObjectID_CustomCounterStyle, sz);
+  void* operator new(size_t sz) {
+    return FrameArena::Allocate(eArenaObjectID_CustomCounterStyle, sz);
   }
 
   void Destroy() {
-    PresShell* presShell = mManager->PresContext()->PresShell();
     this->~CustomCounterStyle();
-    presShell->FreeByObjectID(eArenaObjectID_CustomCounterStyle, this);
+    FrameArena::Free(eArenaObjectID_CustomCounterStyle, this);
   }
 
  private:
@@ -1801,14 +1797,13 @@ CounterStyle* CounterStyleManager::ResolveCounterStyle(nsAtom* aName) {
   auto* rule = styleSet->CounterStyleRuleForName(aName);
   if (rule) {
     MOZ_ASSERT(Servo_CounterStyleRule_GetName(rule) == aName);
-    data = new (mPresContext) CustomCounterStyle(this, rule);
+    data = new CustomCounterStyle(this, rule);
   } else {
     for (const BuiltinCounterStyle& item : gBuiltinStyleTable) {
       if (item.GetStyleName() == aName) {
         const auto style = item.GetStyle();
         data = item.IsDependentStyle()
-                   ? new (mPresContext)
-                         DependentBuiltinCounterStyle(style, this)
+                   ? new DependentBuiltinCounterStyle(style, this)
                    : GetBuiltinStyle(style);
         break;
       }

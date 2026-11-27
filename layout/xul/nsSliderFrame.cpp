@@ -63,7 +63,7 @@ bool nsSliderFrame::gMiddlePref = false;
 #undef DEBUG_SLIDER
 
 nsIFrame* NS_NewSliderFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell) nsSliderFrame(aStyle, aPresShell->GetPresContext());
+  return new nsSliderFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsSliderFrame)

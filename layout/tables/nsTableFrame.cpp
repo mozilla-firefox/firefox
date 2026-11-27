@@ -3170,7 +3170,7 @@ Maybe<nscoord> nsTableFrame::GetNaturalBaselineBOffset(
 /* ----- global methods ----- */
 
 nsTableFrame* NS_NewTableFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell) nsTableFrame(aStyle, aPresShell->GetPresContext());
+  return new nsTableFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsTableFrame)

@@ -59,8 +59,7 @@ class SVGFEContainerFrame final : public nsContainerFrame {
 
 nsIFrame* NS_NewSVGFEContainerFrame(mozilla::PresShell* aPresShell,
                                     mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGFEContainerFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGFEContainerFrame(aStyle, aPresShell->GetPresContext());
 }
 
 namespace mozilla {

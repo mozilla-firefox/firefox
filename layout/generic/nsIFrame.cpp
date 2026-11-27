@@ -459,7 +459,7 @@ void WeakFrame::Init(nsIFrame* aFrame) {
 }
 
 nsIFrame* NS_NewEmptyFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell) nsIFrame(aStyle, aPresShell->GetPresContext());
+  return new nsIFrame(aStyle, aPresShell->GetPresContext());
 }
 
 nsIFrame::~nsIFrame() {
@@ -1037,8 +1037,8 @@ void nsIFrame::Destroy(DestroyContext& aContext) {
 #endif
 
   // Now that we're totally cleaned out, we need to add ourselves to
-  // the presshell's recycler.
-  ps->FreeFrame(id, this);
+  // the frame arena.
+  FrameArena::Free(id, this);
 }
 
 std::pair<int32_t, int32_t> nsIFrame::GetOffsets() const {

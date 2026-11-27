@@ -36,8 +36,7 @@ using namespace mozilla::dom;
 //---------------------------------------------------------
 nsListControlFrame* NS_NewListControlFrame(PresShell* aPresShell,
                                            ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsListControlFrame(aStyle, aPresShell->GetPresContext());
+  return new nsListControlFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsListControlFrame)

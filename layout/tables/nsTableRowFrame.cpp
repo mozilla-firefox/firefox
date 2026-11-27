@@ -1324,7 +1324,7 @@ void nsTableRowFrame::InvalidateFrameWithRect(const nsRect& aRect,
 
 nsTableRowFrame* NS_NewTableRowFrame(PresShell* aPresShell,
                                      ComputedStyle* aStyle) {
-  return new (aPresShell) nsTableRowFrame(aStyle, aPresShell->GetPresContext());
+  return new nsTableRowFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsTableRowFrame)

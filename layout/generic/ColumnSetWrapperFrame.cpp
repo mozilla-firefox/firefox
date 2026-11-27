@@ -15,8 +15,8 @@ using namespace mozilla;
 nsBlockFrame* NS_NewColumnSetWrapperFrame(PresShell* aPresShell,
                                           ComputedStyle* aStyle,
                                           nsFrameState aStateFlags) {
-  ColumnSetWrapperFrame* frame = new (aPresShell)
-      ColumnSetWrapperFrame(aStyle, aPresShell->GetPresContext());
+  ColumnSetWrapperFrame* frame =
+      new ColumnSetWrapperFrame(aStyle, aPresShell->GetPresContext());
   frame->AddStateBits(aStateFlags);
   return frame;
 }

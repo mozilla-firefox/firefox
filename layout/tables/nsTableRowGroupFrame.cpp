@@ -1019,7 +1019,7 @@ void nsTableRowGroupFrame::UndoContinuedRow(nsPresContext* aPresContext,
 
   // Needs to match `CreateContinuingRowFrame` - we're assuming that continued
   // frames always go into overflow frames list.
-  AutoFrameListPtr overflows(aPresContext, StealOverflowFrames());
+  AutoFrameListPtr overflows(StealOverflowFrames());
   if (!rowBefore || !overflows || overflows->IsEmpty() ||
       overflows->FirstChild() != aRow) {
     NS_ERROR("invalid continued row");
@@ -1602,8 +1602,7 @@ bool nsTableRowGroupFrame::HasInternalBreakAfter() const {
 
 nsTableRowGroupFrame* NS_NewTableRowGroupFrame(PresShell* aPresShell,
                                                ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsTableRowGroupFrame(aStyle, aPresShell->GetPresContext());
+  return new nsTableRowGroupFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsTableRowGroupFrame)

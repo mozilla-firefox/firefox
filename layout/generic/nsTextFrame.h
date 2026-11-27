@@ -38,7 +38,7 @@ class CharacterDataBuffer;
 /**
  * Helper for CSS text-autospace, used by nsTextFrame::PropertyProvider.
  */
-class MOZ_STACK_CLASS TextAutospace final {
+class TextAutospace final {
  public:
   enum class CharClass : uint8_t {
     Other,

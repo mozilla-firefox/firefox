@@ -34,7 +34,7 @@ NS_IMPL_FRAMEARENA_HELPERS(nsRubyFrame)
 
 nsContainerFrame* NS_NewRubyFrame(PresShell* aPresShell,
                                   ComputedStyle* aStyle) {
-  return new (aPresShell) nsRubyFrame(aStyle, aPresShell->GetPresContext());
+  return new nsRubyFrame(aStyle, aPresShell->GetPresContext());
 }
 
 //----------------------------------------------------------------------

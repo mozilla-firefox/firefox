@@ -29,14 +29,13 @@ class PresShell;
  * it's better to use the next function that does that for you in an
  * optimal way.
  */
-nsLineBox* NS_NewLineBox(mozilla::PresShell* aPresShell, nsIFrame* aFrame,
-                         bool aIsBlock);
+nsLineBox* NS_NewLineBox(nsIFrame* aFrame, bool aIsBlock);
 /**
  * Function to create a line box and initialize it with aCount frames
  * that are currently on aFromLine.  The allocation is infallible.
  */
-nsLineBox* NS_NewLineBox(mozilla::PresShell* aPresShell, nsLineBox* aFromLine,
-                         nsIFrame* aFrame, int32_t aCount);
+nsLineBox* NS_NewLineBox(nsLineBox* aFromLine, nsIFrame* aFrame,
+                         int32_t aCount);
 
 /**
  * Users must have the class that is to be part of the list inherit
@@ -66,19 +65,17 @@ class nsLineBox final : public nsLineLink {
   nsLineBox(nsIFrame* aFrame, int32_t aCount, bool aIsBlock);
   ~nsLineBox();
 
-  // Infallible overloaded new operator. Uses an arena (which comes from the
-  // presShell) to perform the allocation.
-  void* operator new(size_t sz, mozilla::PresShell* aPresShell);
+  // Infallible overloaded new operator. Uses the frame arena to perform the
+  // allocation.
+  void* operator new(size_t sz);
 
  public:
   void operator delete(void* aPtr, size_t sz) = delete;
   // Use these functions to allocate and destroy line boxes
-  friend nsLineBox* NS_NewLineBox(mozilla::PresShell* aPresShell,
-                                  nsIFrame* aFrame, bool aIsBlock);
-  friend nsLineBox* NS_NewLineBox(mozilla::PresShell* aPresShell,
-                                  nsLineBox* aFromLine, nsIFrame* aFrame,
+  friend nsLineBox* NS_NewLineBox(nsIFrame* aFrame, bool aIsBlock);
+  friend nsLineBox* NS_NewLineBox(nsLineBox* aFromLine, nsIFrame* aFrame,
                                   int32_t aCount);
-  void Destroy(mozilla::PresShell* aPresShell);
+  void Destroy();
 
   // mBlock bit
   bool IsBlock() const { return mFlags.mBlock; }

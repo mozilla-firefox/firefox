@@ -19,8 +19,7 @@ using namespace mozilla::dom;
 
 nsIFrame* NS_NewDateTimeControlFrame(PresShell* aPresShell,
                                      ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsDateTimeControlFrame(aStyle, aPresShell->GetPresContext());
+  return new nsDateTimeControlFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsDateTimeControlFrame)

@@ -2418,27 +2418,25 @@ void nsCellMap::DestroyCellData(CellData* aData) {
   if (mIsBC) {
     BCCellData* bcData = static_cast<BCCellData*>(aData);
     bcData->~BCCellData();
-    mPresContext->PresShell()->FreeByObjectID(eArenaObjectID_BCCellData,
-                                              bcData);
+    FrameArena::Free(eArenaObjectID_BCCellData, bcData);
   } else {
     aData->~CellData();
-    mPresContext->PresShell()->FreeByObjectID(eArenaObjectID_CellData, aData);
+    FrameArena::Free(eArenaObjectID_CellData, aData);
   }
 }
 
 CellData* nsCellMap::AllocCellData(nsTableCellFrame* aOrigCell) {
   if (mIsBC) {
-    BCCellData* data =
-        (BCCellData*)mPresContext->PresShell()->AllocateByObjectID(
-            eArenaObjectID_BCCellData, sizeof(BCCellData));
+    BCCellData* data = (BCCellData*)FrameArena::Allocate(
+        eArenaObjectID_BCCellData, sizeof(BCCellData));
     if (data) {
       new (data) BCCellData(aOrigCell);
     }
     return data;
   }
 
-  CellData* data = (CellData*)mPresContext->PresShell()->AllocateByObjectID(
-      eArenaObjectID_CellData, sizeof(CellData));
+  CellData* data = (CellData*)FrameArena::Allocate(eArenaObjectID_CellData,
+                                                   sizeof(CellData));
   if (data) {
     new (data) CellData(aOrigCell);
   }

@@ -27,14 +27,12 @@ using namespace mozilla::layout;
 
 nsFirstLetterFrame* NS_NewFirstLetterFrame(PresShell* aPresShell,
                                            ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsFirstLetterFrame(aStyle, aPresShell->GetPresContext());
+  return new nsFirstLetterFrame(aStyle, aPresShell->GetPresContext());
 }
 
 nsFirstLetterFrame* NS_NewFloatingFirstLetterFrame(PresShell* aPresShell,
                                                    ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsFloatingFirstLetterFrame(aStyle, aPresShell->GetPresContext());
+  return new nsFloatingFirstLetterFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsFirstLetterFrame)
@@ -430,8 +428,7 @@ void nsFirstLetterFrame::DrainOverflowFrames(nsPresContext* aPresContext) {
   // Check for an overflow list with our prev-in-flow
   nsFirstLetterFrame* prevInFlow = (nsFirstLetterFrame*)GetPrevInFlow();
   if (prevInFlow) {
-    AutoFrameListPtr overflowFrames(aPresContext,
-                                    prevInFlow->StealOverflowFrames());
+    AutoFrameListPtr overflowFrames(prevInFlow->StealOverflowFrames());
     if (overflowFrames) {
       NS_ASSERTION(mFrames.IsEmpty(), "bad overflow list");
       mFrames.InsertFrames(this, nullptr, std::move(*overflowFrames));
@@ -439,7 +436,7 @@ void nsFirstLetterFrame::DrainOverflowFrames(nsPresContext* aPresContext) {
   }
 
   // It's also possible that we have an overflow list for ourselves
-  AutoFrameListPtr overflowFrames(aPresContext, StealOverflowFrames());
+  AutoFrameListPtr overflowFrames(StealOverflowFrames());
   if (overflowFrames) {
     NS_ASSERTION(mFrames.NotEmpty(), "overflow list w/o frames");
     mFrames.AppendFrames(nullptr, std::move(*overflowFrames));

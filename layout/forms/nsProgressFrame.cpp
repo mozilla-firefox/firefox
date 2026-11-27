@@ -23,13 +23,13 @@ using namespace mozilla;
 using namespace mozilla::dom;
 
 nsIFrame* NS_NewProgressFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell) nsProgressFrame(aStyle, aPresShell->GetPresContext(),
-                                          nsProgressFrame::Type::Progress);
+  return new nsProgressFrame(aStyle, aPresShell->GetPresContext(),
+                             nsProgressFrame::Type::Progress);
 }
 
 nsIFrame* NS_NewMeterFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell) nsProgressFrame(aStyle, aPresShell->GetPresContext(),
-                                          nsProgressFrame::Type::Meter);
+  return new nsProgressFrame(aStyle, aPresShell->GetPresContext(),
+                             nsProgressFrame::Type::Meter);
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsProgressFrame)

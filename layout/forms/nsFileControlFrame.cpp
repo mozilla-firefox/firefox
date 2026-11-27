@@ -38,8 +38,7 @@ using namespace mozilla;
 using namespace mozilla::dom;
 
 nsIFrame* NS_NewFileControlFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsFileControlFrame(aStyle, aPresShell->GetPresContext());
+  return new nsFileControlFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsFileControlFrame)
@@ -421,6 +420,5 @@ NS_IMPL_FRAMEARENA_HELPERS(FileControlLabelFrame)
 
 nsIFrame* NS_NewFileControlLabelFrame(PresShell* aPresShell,
                                       ComputedStyle* aStyle) {
-  return new (aPresShell)
-      FileControlLabelFrame(aStyle, aPresShell->GetPresContext());
+  return new FileControlLabelFrame(aStyle, aPresShell->GetPresContext());
 }

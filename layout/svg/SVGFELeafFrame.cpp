@@ -57,8 +57,7 @@ class SVGFELeafFrame final : public nsIFrame {
 
 nsIFrame* NS_NewSVGFELeafFrame(mozilla::PresShell* aPresShell,
                                mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGFELeafFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGFELeafFrame(aStyle, aPresShell->GetPresContext());
 }
 
 namespace mozilla {

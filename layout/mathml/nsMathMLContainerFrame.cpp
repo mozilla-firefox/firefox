@@ -1528,8 +1528,8 @@ nsresult nsMathMLContainerFrame::ReportInvalidChildError(nsAtom* aChildTag) {
 
 nsContainerFrame* NS_NewMathMLmathBlockFrame(PresShell* aPresShell,
                                              ComputedStyle* aStyle) {
-  auto newFrame = new (aPresShell)
-      nsMathMLmathBlockFrame(aStyle, aPresShell->GetPresContext());
+  auto newFrame =
+      new nsMathMLmathBlockFrame(aStyle, aPresShell->GetPresContext());
   return newFrame;
 }
 
@@ -1541,8 +1541,7 @@ NS_QUERYFRAME_TAIL_INHERITING(nsBlockFrame)
 
 nsContainerFrame* NS_NewMathMLmathInlineFrame(PresShell* aPresShell,
                                               ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsMathMLmathInlineFrame(aStyle, aPresShell->GetPresContext());
+  return new nsMathMLmathInlineFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsMathMLmathInlineFrame)

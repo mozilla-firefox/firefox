@@ -40,7 +40,7 @@ using namespace mozilla::dom;
 using namespace mozilla::image;
 
 nsIFrame* NS_NewRangeFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell) nsRangeFrame(aStyle, aPresShell->GetPresContext());
+  return new nsRangeFrame(aStyle, aPresShell->GetPresContext());
 }
 
 nsRangeFrame::nsRangeFrame(ComputedStyle* aStyle, nsPresContext* aPresContext)

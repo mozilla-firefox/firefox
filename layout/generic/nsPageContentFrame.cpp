@@ -22,8 +22,8 @@ using namespace mozilla;
 nsPageContentFrame* NS_NewPageContentFrame(
     PresShell* aPresShell, ComputedStyle* aStyle,
     already_AddRefed<const nsAtom> aPageName) {
-  return new (aPresShell) nsPageContentFrame(
-      aStyle, aPresShell->GetPresContext(), std::move(aPageName));
+  return new nsPageContentFrame(aStyle, aPresShell->GetPresContext(),
+                                std::move(aPageName));
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsPageContentFrame)

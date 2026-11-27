@@ -89,8 +89,7 @@ extern mozilla::LazyLogModule gWidgetPopupLog;
 #endif
 
 nsIFrame* NS_NewMenuPopupFrame(PresShell* aPresShell, ComputedStyle* aStyle) {
-  return new (aPresShell)
-      nsMenuPopupFrame(aStyle, aPresShell->GetPresContext());
+  return new nsMenuPopupFrame(aStyle, aPresShell->GetPresContext());
 }
 
 NS_IMPL_FRAMEARENA_HELPERS(nsMenuPopupFrame)

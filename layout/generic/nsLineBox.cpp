@@ -71,14 +71,13 @@ nsLineBox::~nsLineBox() {
   Cleanup();
 }
 
-nsLineBox* NS_NewLineBox(PresShell* aPresShell, nsIFrame* aFrame,
-                         bool aIsBlock) {
-  return new (aPresShell) nsLineBox(aFrame, 1, aIsBlock);
+nsLineBox* NS_NewLineBox(nsIFrame* aFrame, bool aIsBlock) {
+  return new nsLineBox(aFrame, 1, aIsBlock);
 }
 
-nsLineBox* NS_NewLineBox(PresShell* aPresShell, nsLineBox* aFromLine,
-                         nsIFrame* aFrame, int32_t aCount) {
-  nsLineBox* newLine = new (aPresShell) nsLineBox(aFrame, aCount, false);
+nsLineBox* NS_NewLineBox(nsLineBox* aFromLine, nsIFrame* aFrame,
+                         int32_t aCount) {
+  nsLineBox* newLine = new nsLineBox(aFrame, aCount, false);
   newLine->NoteFramesMovedFrom(aFromLine);
   newLine->mContainerSize = aFromLine->mContainerSize;
   return newLine;
@@ -149,13 +148,13 @@ void nsLineBox::NoteFramesMovedFrom(nsLineBox* aFromLine) {
   }
 }
 
-void* nsLineBox::operator new(size_t sz, PresShell* aPresShell) {
-  return aPresShell->AllocateByObjectID(eArenaObjectID_nsLineBox, sz);
+void* nsLineBox::operator new(size_t sz) {
+  return FrameArena::Allocate(eArenaObjectID_nsLineBox, sz);
 }
 
-void nsLineBox::Destroy(PresShell* aPresShell) {
+void nsLineBox::Destroy() {
   this->nsLineBox::~nsLineBox();
-  aPresShell->FreeByObjectID(eArenaObjectID_nsLineBox, this);
+  FrameArena::Free(eArenaObjectID_nsLineBox, this);
 }
 
 void nsLineBox::Cleanup() {
@@ -367,8 +366,6 @@ bool nsLineBox::CachedIsEmpty() {
 
 void nsLineBox::DeleteLineList(nsPresContext* aPresContext, nsLineList& aLines,
                                nsFrameList* aFrames, DestroyContext& aContext) {
-  PresShell* presShell = aPresContext->PresShell();
-
   // Keep our line list and frame list up to date as we remove frames, in case
   // something wants to traverse the frame tree while we're destroying.
   //
@@ -390,7 +387,7 @@ void nsLineBox::DeleteLineList(nsPresContext* aPresContext, nsLineList& aLines,
     MOZ_DIAGNOSTIC_ASSERT(line == aLines.back(),
                           "destroying child frames messed up our lines!");
     aLines.pop_back();
-    line->Destroy(presShell);
+    line->Destroy();
   }
 }
 

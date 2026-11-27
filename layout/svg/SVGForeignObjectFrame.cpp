@@ -31,8 +31,8 @@ namespace SVGT = SVGGeometryProperty::Tags;
 
 nsContainerFrame* NS_NewSVGForeignObjectFrame(mozilla::PresShell* aPresShell,
                                               mozilla::ComputedStyle* aStyle) {
-  return new (aPresShell)
-      mozilla::SVGForeignObjectFrame(aStyle, aPresShell->GetPresContext());
+  return new mozilla::SVGForeignObjectFrame(aStyle,
+                                            aPresShell->GetPresContext());
 }
 
 namespace mozilla {

@@ -14,7 +14,6 @@
 #include "TouchManager.h"
 #include "Units.h"
 #include "Visibility.h"
-#include "mozilla/ArenaObjectID.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/FlushType.h"
 #include "mozilla/Logging.h"
@@ -35,7 +34,6 @@
 #include "nsIContent.h"
 #include "nsIObserver.h"
 #include "nsISelectionController.h"
-#include "nsPresArena.h"
 #include "nsPresContext.h"
 #include "nsQueryFrame.h"
 #include "nsRect.h"
@@ -260,45 +258,6 @@ class PresShell final : public nsStubDocumentObserver,
    */
   [[nodiscard]] bool IsRoot() const {
     return mPresContext && mPresContext->IsRoot();
-  }
-
-  /**
-   * All frames owned by the shell are allocated from an arena.  They
-   * are also recycled using free lists.  Separate free lists are
-   * maintained for each frame type (aID), which must always correspond
-   * to the same aSize value.  AllocateFrame is infallible and will abort
-   * on out-of-memory.
-   */
-  void* AllocateFrame(nsQueryFrame::FrameIID aID, size_t aSize) {
-#define FRAME_ID(classname, ...)                                  \
-  static_assert(size_t(nsQueryFrame::FrameIID::classname##_id) == \
-                    size_t(eArenaObjectID_##classname),           \
-                "");
-#define ABSTRACT_FRAME_ID(classname)                              \
-  static_assert(size_t(nsQueryFrame::FrameIID::classname##_id) == \
-                    size_t(eArenaObjectID_##classname),           \
-                "");
-#include "mozilla/FrameIdList.h"
-#undef FRAME_ID
-#undef ABSTRACT_FRAME_ID
-    return AllocateByObjectID(ArenaObjectID(size_t(aID)), aSize);
-  }
-
-  void FreeFrame(nsQueryFrame::FrameIID aID, void* aPtr) {
-    return FreeByObjectID(ArenaObjectID(size_t(aID)), aPtr);
-  }
-
-  void* AllocateByObjectID(ArenaObjectID aID, size_t aSize) {
-    void* result = mFrameArena.Allocate(aID, aSize);
-    RecordAlloc(result);
-    return result;
-  }
-
-  void FreeByObjectID(ArenaObjectID aID, void* aPtr) {
-    RecordFree(aPtr);
-    if (!mIsDestroying) {
-      mFrameArena.Free(aID, aPtr);
-    }
   }
 
   Document* GetDocument() const { return mDocument; }
@@ -1924,32 +1883,6 @@ class PresShell final : public nsStubDocumentObserver,
    */
   bool DetermineFontSizeInflationState();
 
-  void RecordAlloc(void* aPtr) {
-#ifdef DEBUG
-    if (!mAllocatedPointers) {
-      return;  // Hash set was presumably freed to avert OOM.
-    }
-    MOZ_ASSERT(!mAllocatedPointers->Contains(aPtr));
-    if (!mAllocatedPointers->Insert(aPtr, fallible)) {
-      // Yikes! We're nearly out of memory, and this insertion would've pushed
-      // us over the ledge. At this point, we discard & stop using this set,
-      // since we don't have enough memory to keep it accurate from this point
-      // onwards. Hopefully this helps relieve the memory pressure a bit, too.
-      mAllocatedPointers = nullptr;
-    }
-#endif
-  }
-
-  void RecordFree(void* aPtr) {
-#ifdef DEBUG
-    if (!mAllocatedPointers) {
-      return;  // Hash set was presumably freed to avert OOM.
-    }
-    MOZ_ASSERT(mAllocatedPointers->Contains(aPtr));
-    mAllocatedPointers->Remove(aPtr);
-#endif
-  }
-
   struct EventTargetInfo {
     EventTargetInfo() = default;
     EventTargetInfo(EventMessage aEventMessage, nsIFrame* aFrame,
@@ -3232,18 +3165,6 @@ class PresShell final : public nsStubDocumentObserver,
   // The `performance.now()` value when we last started to process reflows.
   DOMHighResTimeStamp mLastReflowStart{0.0};
 
-#ifdef DEBUG
-  // We track allocated pointers in a diagnostic hash set, to assert against
-  // missing/double frees. This set is allocated infallibly in the PresShell
-  // constructor's initialization list. The set can get quite large, so we use
-  // fallible allocation when inserting into it; and if these operations ever
-  // fail, then we just get rid of the set and stop using this diagnostic from
-  // that point on.  (There's not much else we can do, when the set grows
-  // larger than the available memory.)
-  UniquePtr<nsTHashSet<void*>> mAllocatedPointers{
-      MakeUnique<nsTHashSet<void*>>()};
-#endif
-
   // A list of stack weak frames. This is a pointer to the last item in the
   // list.
   AutoWeakFrame* mAutoWeakFrames = nullptr;
@@ -3356,9 +3277,6 @@ class PresShell final : public nsStubDocumentObserver,
 
   // Layout viewport size that we still haven't committed to the layout tree.
   Maybe<nsSize> mPendingLayoutViewportSize;
-
-  using Arena = nsPresArena<8192, ArenaObjectID, eArenaObjectID_COUNT>;
-  Arena mFrameArena;
 
   Maybe<nsPoint> mVisualViewportOffset;
 
