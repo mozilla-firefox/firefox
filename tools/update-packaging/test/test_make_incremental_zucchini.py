@@ -4,11 +4,14 @@
 
 import hashlib
 import importlib.util
+import lzma
+import random
 import sys
 import types
 from pathlib import Path
 from unittest import mock
 
+import pytest
 from mozunit import main
 
 # Pre-populate sys.modules with stub modules for mardor so the script's
@@ -460,6 +463,115 @@ def test_download_file_raises_after_exhausting_retries(tmp_path):
                 raise AssertionError("Expected DownloadError to be raised")
 
     assert urlretrieve.call_count == mz.DOWNLOAD_ATTEMPTS
+
+
+def test_package_member_ignores_a_change_of_xz_options(tmp_path):
+    contents = b"same contents" * 100
+    old_xz = tmp_path / "old.xz"
+    old_xz.write_bytes(lzma.compress(contents, preset=1))
+    new_xz = tmp_path / "new.xz"
+    new_xz.write_bytes(lzma.compress(contents, preset=6))
+    assert old_xz.read_bytes() != new_xz.read_bytes()
+    partials_dir = tmp_path / "partials"
+    partials_dir.mkdir()
+    manifest = tmp_path / "updatev3.manifest"
+
+    archive = mz.package_member(
+        "a.txt", str(old_xz), str(new_xz), str(partials_dir), str(manifest)
+    )
+
+    assert archive is None
+    assert not manifest.exists()
+    assert list(partials_dir.iterdir()) == []
+
+
+def test_package_member_does_not_decompress_identical_members(tmp_path):
+    xz_bytes = lzma.compress(b"same contents")
+    old_xz = tmp_path / "old.xz"
+    old_xz.write_bytes(xz_bytes)
+    new_xz = tmp_path / "new.xz"
+    new_xz.write_bytes(xz_bytes)
+    partials_dir = tmp_path / "partials"
+    partials_dir.mkdir()
+    manifest = tmp_path / "updatev3.manifest"
+
+    with mock.patch.object(mz, "xz_cmd") as xz_cmd:
+        archive = mz.package_member(
+            "a.txt", str(old_xz), str(new_xz), str(partials_dir), str(manifest)
+        )
+
+    assert archive is None
+    xz_cmd.assert_not_called()
+    assert not manifest.exists()
+    assert list(partials_dir.iterdir()) == []
+
+
+def test_package_member_packages_an_emptied_member_in_full(tmp_path):
+    old_xz = tmp_path / "old.xz"
+    old_xz.write_bytes(lzma.compress(b"contents"))
+    new_xz = tmp_path / "new.xz"
+    new_xz.write_bytes(lzma.compress(b""))
+    partials_dir = tmp_path / "partials"
+    partials_dir.mkdir()
+    manifest = tmp_path / "updatev3.manifest"
+
+    archive = mz.package_member(
+        "a.txt", str(old_xz), str(new_xz), str(partials_dir), str(manifest)
+    )
+
+    assert archive == "a.txt"
+    assert manifest.read_text().splitlines() == ['add "a.txt"']
+    assert (partials_dir / "a.txt").read_bytes() == new_xz.read_bytes()
+
+
+def _xz_of_size(size):
+    """Generate valid xz data of the given size, which must be a multiple of 4 and at least 60."""
+    # Use a deterministic seeded payload on every run. Random bytes don't compress,
+    # so the output grows steadily with the payload and hits every valid size.
+    payload = random.Random(0).randbytes(size)
+    for n in range(size):
+        xz_bytes = lzma.compress(payload[:n])
+        if len(xz_bytes) == size:
+            return xz_bytes
+    raise ValueError(f"No xz stream of {size} bytes")
+
+
+# xz file sizes are always multiples of 4.
+@pytest.mark.parametrize(
+    "size_delta, expected_archive, expected_instruction",
+    [
+        (-4, "a.txt.patch", 'patch "a.txt.patch" "a.txt"'),
+        (0, "a.txt", 'add "a.txt"'),
+        (4, "a.txt", 'add "a.txt"'),
+    ],
+)
+def test_package_member_packages_the_smaller_of_patch_and_full_file(
+    tmp_path, size_delta, expected_archive, expected_instruction
+):
+    old_xz = tmp_path / "old.xz"
+    old_xz.write_bytes(lzma.compress(b"old contents"))
+    new_xz = tmp_path / "new.xz"
+    new_xz.write_bytes(lzma.compress(b"new contents"))
+    partials_dir = tmp_path / "partials"
+    partials_dir.mkdir()
+    manifest = tmp_path / "updatev3.manifest"
+    patch_bytes = _xz_of_size(new_xz.stat().st_size + size_delta)
+
+    def fake_create_patch(old_raw, new_raw, scratch_dir):
+        patch_xz = Path(scratch_dir) / "patch.xz"
+        patch_xz.write_bytes(patch_bytes)
+        return str(patch_xz)
+
+    with mock.patch.object(mz, "create_patch", side_effect=fake_create_patch):
+        archive = mz.package_member(
+            "a.txt", str(old_xz), str(new_xz), str(partials_dir), str(manifest)
+        )
+
+    assert archive == expected_archive
+    assert manifest.read_text().splitlines() == [expected_instruction]
+    assert [p.name for p in partials_dir.iterdir()] == [expected_archive]
+    expected_bytes = patch_bytes if size_delta < 0 else new_xz.read_bytes()
+    assert (partials_dir / expected_archive).read_bytes() == expected_bytes
 
 
 def test_reorder_instructions_uses_safer_order(tmp_path):

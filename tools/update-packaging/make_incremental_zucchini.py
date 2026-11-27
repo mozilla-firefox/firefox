@@ -6,9 +6,6 @@
 #  as make_incremental_update.sh and funsize logic. There are many
 #  opportunities for refactoring and improving how this works.
 # Some improvement ideas:
-# - The script diffs xz-compressed files. This is not optimal,
-#      if we change XZ compression options, this will cause the
-#      partial to have unnecessary updates.
 # - Only decompress the target complete mar once
 # - Separate this script into a python module with multiple files (ie: download, validation, diffing)
 # - Implement caching of diffs. https://bugzilla.mozilla.org/show_bug.cgi?id=1842209
@@ -16,6 +13,7 @@
 
 import argparse
 import configparser
+import filecmp
 import functools
 import glob
 import hashlib
@@ -31,7 +29,7 @@ import traceback
 import urllib.error
 import urllib.request
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from tempfile import NamedTemporaryFile
+from tempfile import TemporaryDirectory
 
 from mardor.reader import MarReader
 from mardor.signing import get_keysize
@@ -399,31 +397,61 @@ def xz_cmd(cmd, source_file, destination_file):
             raise Exception(f"XZ exited with code {e.returncode}")
 
 
-def create_patch(from_file, to_file, destination_patch):
-    """Create a patch between 2 xz compressed files"""
-    log(f"{from_file} -> {destination_patch}", "create_patch")
+def xz_decompress(scratch_dir, *xz_files):
+    """Decompress xz_files into scratch_dir and return the decompressed paths."""
+    paths = [os.path.join(scratch_dir, str(i)) for i in range(len(xz_files))]
+    for xz_file, path in zip(xz_files, paths):
+        xz_cmd(("--decompress",), xz_file, path)
+    return paths
 
-    with NamedTemporaryFile() as from_fd, NamedTemporaryFile() as to_fd, NamedTemporaryFile() as patch_fd:
-        xz_cmd(("--decompress",), from_file, from_fd.name)
 
+def create_patch(old_raw, new_raw, scratch_dir):
+    """Create a patch between 2 non-empty decompressed files in scratch_dir and
+    return the path of its xz compressed version."""
+    patch_raw = os.path.join(scratch_dir, "patch")
+    args = ["zucchini", "-gen", old_raw, new_raw, patch_raw]
+    try:
+        subprocess.run(args, check=True)
+    except subprocess.CalledProcessError as e:
+        log(f"Zucchini failed to create patch:\n{e.stderr}", "create_patch")
+        raise Exception(f"Zucchini exited with code: {e.returncode}")
+    patch_xz = f"{patch_raw}.xz"
+    xz_cmd(("--compress", "-7", "-e", "-c"), patch_raw, patch_xz)
+    return patch_xz
+
+
+def package_member_in_full(rel_path, new_xz, partials_dir, manifest_file, reason):
+    log(f"{reason}, packaging {rel_path} in full", "package_member_in_full")
+    make_add_instruction(rel_path, manifest_file)
+    shutil.copy2(new_xz, os.path.join(partials_dir, rel_path))
+    return rel_path
+
+
+def package_member(rel_path, old_xz, new_xz, partials_dir, manifest_file):
+    """Package the smaller of a patch and the full file for a member that
+    differs between old_xz and new_xz. Return the archive file name, or None if
+    the decompressed contents are identical."""
+    if filecmp.cmp(old_xz, new_xz, shallow=False):
+        return None
+    with TemporaryDirectory() as scratch_dir:
         # TODO: Potentially don't decompress to_mar files once per thread?
-        xz_cmd(("--decompress",), to_file, to_fd.name)
-
+        old_raw, new_raw = xz_decompress(scratch_dir, old_xz, new_xz)
+        if filecmp.cmp(old_raw, new_raw, shallow=False):
+            return None
         # zucchini fails to generate a patch if either side is empty, by design
-        if os.path.getsize(from_fd.name) == 0 or os.path.getsize(to_fd.name) == 0:
-            log(f"Empty member, packaging {to_file} in full", "create_patch")
-            return False
-
-        args = ["zucchini", "-gen", from_fd.name, to_fd.name, patch_fd.name]
-        try:
-            subprocess.run(args, check=True)
-        except subprocess.CalledProcessError as e:
-            log(f"Zucchini failed to create patch:\n{e.stderr}", "create_patch")
-            raise Exception(f"Zucchini exited with code: {e.returncode}")
-
-        xz_cmd(("--compress", "-7", "-e", "-c"), patch_fd.name, destination_patch)
-
-    return True
+        if os.path.getsize(old_raw) == 0 or os.path.getsize(new_raw) == 0:
+            return package_member_in_full(
+                rel_path, new_xz, partials_dir, manifest_file, "Empty member"
+            )
+        log(f"{old_xz} -> {rel_path}.patch", "package_member")
+        patch_xz = create_patch(old_raw, new_raw, scratch_dir)
+        if os.path.getsize(patch_xz) >= os.path.getsize(new_xz):
+            return package_member_in_full(
+                rel_path, new_xz, partials_dir, manifest_file, "Patch is not smaller"
+            )
+        shutil.move(patch_xz, os.path.join(partials_dir, f"{rel_path}.patch"))
+        make_patch_instruction(rel_path, manifest_file)
+        return f"{rel_path}.patch"
 
 
 def make_partial(
@@ -516,9 +544,9 @@ def make_partial(
                 shutil.copy2(new_file_abs, patch_file)
                 archivefiles.append(rel_path)
             else:
-                cache_archive = None
+                archive = None
                 if cache_extracted_dir is not None and cache_entry is not None:
-                    cache_archive = _maybe_use_cached_file(
+                    archive = _maybe_use_cached_file(
                         cache_entry,
                         rel_path,
                         from_hashes[rel_path],
@@ -527,30 +555,16 @@ def make_partial(
                         partials_dir,
                         manifest_file,
                     )
-                if cache_archive is not None:
-                    archivefiles.append(cache_archive)
-                elif (
-                    # TODO: !!! This check will always trigger if we switch XZ options!
-                    subprocess.run(
-                        ("diff", old_file_abs, new_file_abs),
-                        check=False,
-                    ).returncode
-                    != 0
-                ):
-                    patch_path = f"{patch_file}.patch"
-                    created = create_patch(old_file_abs, new_file_abs, patch_path)
-                    # Package the smaller between patch and full file
-                    patch_size = os.path.getsize(patch_path) if created else None
-                    new_file_size = os.path.getsize(new_file_abs)
-                    if created and patch_size <= new_file_size:
-                        make_patch_instruction(rel_path, manifest_file)
-                        archivefiles.append(f"{rel_path}.patch")
-                    else:
-                        if created:
-                            os.unlink(patch_path)
-                        make_add_instruction(rel_path, manifest_file)
-                        shutil.copy2(new_file_abs, patch_file)
-                        archivefiles.append(rel_path)
+                if archive is None:
+                    archive = package_member(
+                        rel_path,
+                        old_file_abs,
+                        new_file_abs,
+                        partials_dir,
+                        manifest_file,
+                    )
+                if archive is not None:
+                    archivefiles.append(archive)
 
         else:
             remove_array.append(rel_path)
