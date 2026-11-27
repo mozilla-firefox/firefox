@@ -3038,6 +3038,7 @@ void gfxFont::ColorGlyphCache::SetPalette(FontPalette* aPalette) {
   if (aPalette != mPalette) {
     mCache.clear();
     mOldCache.clear();
+    mCacheBytes = 0;
     mPalette = aPalette;
   }
 }
@@ -3078,16 +3079,27 @@ already_AddRefed<SourceSurface> gfxFont::ColorGlyphCache::LookupKey(
 
 void gfxFont::ColorGlyphCache::PutKey(Map::AddPtr& aPtr, uint64_t aKey,
                                       SourceSurface* aSurface) {
-  // We ignore potential failure here, and just paint the snapshot without
-  // caching it.
-  if (mCache.count() < kMaxEntries) {
-    (void)mCache.add(aPtr, aKey, aSurface);
+  IntSize size = aSurface->GetSize();
+  size_t bytes = size_t(size.width) * size_t(size.height) *
+                 BytesPerPixel(aSurface->GetFormat());
+  if (bytes > kMaxBytes) {
     return;
   }
-  // Starting a new generation invalidates aPtr.
-  mOldCache.swap(mCache);
-  mCache.clear();
-  (void)mCache.putNew(aKey, aSurface);
+  // We ignore potential failure here, and just paint the snapshot without
+  // caching it.
+  bool added;
+  if (mCacheBytes + bytes <= kMaxBytes) {
+    added = mCache.add(aPtr, aKey, aSurface);
+  } else {
+    // Starting a new generation invalidates aPtr.
+    mOldCache.swap(mCache);
+    mCache.clear();
+    mCacheBytes = 0;
+    added = mCache.putNew(aKey, aSurface);
+  }
+  if (added) {
+    mCacheBytes += bytes;
+  }
 }
 
 bool gfxFont::HasColorGlyphFor(uint32_t aCh, uint32_t aNextCh) {

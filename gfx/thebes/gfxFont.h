@@ -2499,11 +2499,12 @@ class gfxFont {
       return kUsesCurrentColor | Key(aGlyphId) | aCurrentColor.ToABGR();
     }
 
-    // Entries live in two generations of up to this many each: when the
-    // current one fills it becomes the old one, and a hit in the old one moves
-    // the entry back. A working set that fits in one generation is therefore
-    // never evicted, unlike with a single map that is cleared.
-    static constexpr uint32_t kMaxEntries = 512;
+    // Entries live in two generations, each limited to this many bytes of
+    // surface data: when the current one fills it becomes the old one, and a
+    // hit in the old one moves the entry back. A working set that fits in one
+    // generation is therefore never evicted, unlike with a single map that is
+    // cleared. A surface that does not fit in a generation is not cached.
+    static constexpr size_t kMaxBytes = 16 * 1024 * 1024;
 
     // DefaultHasher<uint64_t> drops the upper 32 bits, which hold the glyph ID.
     struct KeyHasher : mozilla::DefaultHasher<uint64_t> {
@@ -2521,6 +2522,8 @@ class gfxFont {
 
     Map mCache;
     Map mOldCache;
+    // Bytes of surface data in mCache.
+    size_t mCacheBytes = 0;
     RefPtr<mozilla::gfx::FontPalette> mPalette;
   };
   mozilla::UniquePtr<ColorGlyphCache> mColorGlyphCache;
