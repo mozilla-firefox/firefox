@@ -92,7 +92,9 @@ xpcshell:
             default:
                 by-test-platform:
                     android.*: built-projects
-                    .*-wayland.*: []
+                    linux.*-wayland/debug: ['autoland', 'mozilla-central']
+                    linux.*-wayland/opt: ['autoland']
+                    linux.*-wayland-shippable/opt: ['mozilla-central']
                     windows.*-asan/opt: []  # No XPCShell on ASAN yet
                     default: built-projects
     chunks: dynamic

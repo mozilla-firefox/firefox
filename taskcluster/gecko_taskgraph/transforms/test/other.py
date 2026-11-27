@@ -795,6 +795,23 @@ def apply_bug2043540_optimization(config, tasks):
 
 
 @transforms.add
+def run_wayland_on_backstop(config, tasks):
+    """Linux Wayland tasks scheduled only on autoland and mozilla-central are
+    tier 2 and only run on backstop pushes, until they are green enough to
+    run on every push."""
+    for task in tasks:
+        run_on_projects = set(task["run-on-projects"])
+        if (
+            "-wayland" in task["test-platform"]
+            and run_on_projects
+            and run_on_projects <= {"autoland", "mozilla-central"}
+        ):
+            task["tier"] = 2
+            task["optimization"] = {"test-backstop": None}
+        yield task
+
+
+@transforms.add
 def disable_try_only_platforms(config, tasks):
     """Turns off platforms that should only run on try."""
     try_only_platforms = ()
