@@ -37,6 +37,7 @@ import org.mozilla.fenix.onboarding.view.OnboardingPageUiData
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.utils.Settings
 
+// Remove this file when ContinuousOnboardingFeature is retired, see Continuous-onboarding-via-messaging.md.
 /**
  * Dependencies required to observe IP Protection eligibility and show its onboarding prompt.
  *
@@ -432,9 +433,10 @@ class ContinuousOnboardingFeature(
     }
 
     companion object {
-        private const val CONTINUOUS_ONBOARDING_DIALOG_TAG = "continuous_onboarding_dialog"
-        private const val NOTIFICATION_SEQUENCE_ID = "notification"
-        private const val IP_PROTECTION_SEQUENCE_ID = "ip_protection"
+        // Move these into ContinuousOnboardingMessagingBinding before removing this file.
+        internal const val CONTINUOUS_ONBOARDING_DIALOG_TAG = "continuous_onboarding_dialog"
+        internal const val NOTIFICATION_SEQUENCE_ID = "notification"
+        internal const val IP_PROTECTION_SEQUENCE_ID = "ip_protection"
 
         /**
          * Convenience method to register [ContinuousOnboardingFeature] with a [Fragment]. Upon destruction of the
@@ -457,6 +459,7 @@ class ContinuousOnboardingFeature(
         ) {
             val components = fragment.requireContext().components
             val settings = components.settings
+            if (settings.continuousOnboardingViaMessaging) return
 
             binding.set(
                 feature =

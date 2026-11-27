@@ -24,6 +24,7 @@ import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.Evaluate
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.MessageClicked
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.MessageDismissed
+import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.MessageDisplayed
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.MicrosurveyAction
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.MicrosurveyAction.Dismissed
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.Restore
@@ -93,6 +94,48 @@ class MessagingMiddlewareTest {
         store.dispatch(Evaluate(FenixMessageSurfaceId.HOMESCREEN, triggerContext))
 
         verify { controller.getNextMessage(FenixMessageSurfaceId.HOMESCREEN, listOf(message), triggerContext) }
+    }
+
+    @Test
+    fun `GIVEN a surface displayed on presentation WHEN Evaluate THEN the message is not recorded as displayed`() =
+        runTest {
+            val message = createMessage()
+            val store =
+                AppStore(
+                    AppState(messaging = MessagingState(messages = listOf(message))),
+                    listOf(
+                        MessagingMiddleware(
+                            controller,
+                            this,
+                            surfacesDisplayedOnPresentation = setOf(FenixMessageSurfaceId.CONTINUOUS_ONBOARDING),
+                        )
+                    ),
+                )
+            every { controller.getNextMessage(FenixMessageSurfaceId.CONTINUOUS_ONBOARDING, any(), any()) } returns message
+
+            store.dispatch(Evaluate(FenixMessageSurfaceId.CONTINUOUS_ONBOARDING))
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(1, store.state.messaging.messageToShow.size)
+            coVerify(exactly = 0) { controller.onMessageDisplayed(any(), any()) }
+        }
+
+    @Test
+    fun `WHEN MessageDisplayed THEN update storage and the available messages`() = runTest {
+        val message = createMessage()
+        val displayedMessage = incrementDisplayCount(message)
+        val store =
+            AppStore(
+                AppState(messaging = MessagingState(messages = listOf(message))),
+                listOf(MessagingMiddleware(controller, this)),
+            )
+        coEvery { controller.onMessageDisplayed(eq(message), any()) } returns displayedMessage
+
+        store.dispatch(MessageDisplayed(message))
+        testScheduler.advanceUntilIdle()
+
+        coVerify { controller.onMessageDisplayed(eq(message), any()) }
+        assertEquals(listOf(displayedMessage), store.state.messaging.messages)
     }
 
     @Test

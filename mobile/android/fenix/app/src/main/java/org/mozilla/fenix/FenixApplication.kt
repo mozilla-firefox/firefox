@@ -807,7 +807,10 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
 
     @VisibleForTesting
     internal fun restoreMessaging() {
-        if (components.settings.isExperimentationEnabled) {
+        val settings = components.settings
+        // `|| continuousOnboardingViaMessaging`: once ContinuousOnboardingFeature is retired, restore whenever continuous
+        // onboarding is enabled instead, see Continuous-onboarding-via-messaging.md.
+        if (settings.isExperimentationEnabled || settings.continuousOnboardingViaMessaging) {
             components.appStore.dispatch(AppAction.MessagingAction.Restore)
         }
     }

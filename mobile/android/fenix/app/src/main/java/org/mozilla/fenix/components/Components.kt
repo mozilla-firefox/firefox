@@ -99,9 +99,11 @@ import org.mozilla.fenix.home.setup.store.SetupChecklistTelemetryMiddleware
 import org.mozilla.fenix.home.sports.SportsWidgetRefreshMiddleware
 import org.mozilla.fenix.ipprotection.store.DefaultIPProtectionPromptRepository
 import org.mozilla.fenix.listentopage.ListenToPageAIControlFeature
+import org.mozilla.fenix.messaging.FenixMessageSurfaceId
 import org.mozilla.fenix.messaging.state.MessagingMiddleware
 import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.onboarding.FenixOnboarding
+import org.mozilla.fenix.onboarding.continuous.isContinuousOnboardingInProgress
 import org.mozilla.fenix.perf.AppLinkIntentLaunchTypeProvider
 import org.mozilla.fenix.perf.AppStartReasonProvider
 import org.mozilla.fenix.perf.StartupActivityLog
@@ -354,7 +356,10 @@ class Components(
                             SettingsBackedPocketSettings(settings),
                             performance.visualCompletenessQueue,
                         ),
-                        MessagingMiddleware(controller = nimbus.messaging),
+                        MessagingMiddleware(
+                            controller = nimbus.messaging,
+                            surfacesDisplayedOnPresentation = setOf(FenixMessageSurfaceId.CONTINUOUS_ONBOARDING),
+                        ),
                         MetricsMiddleware(
                             metrics = analytics.metrics,
                             nimbusEventStore = nimbus.events,
@@ -371,8 +376,7 @@ class Components(
                         SetupChecklistTelemetryMiddleware(),
                         ReviewPromptMiddleware(
                                 continuousOnboardingInProgress = {
-                                    settings.continuousOnboardingFeatureEnabled &&
-                                        !settings.continuousOnboardingCompleted
+                                    settings.isContinuousOnboardingInProgress(nimbus::createJexlHelper)
                                 },
                                 shouldShowCustomPrompt = {
                                     settings.customReviewPromptUiEnabled && settings.isTelemetryEnabled

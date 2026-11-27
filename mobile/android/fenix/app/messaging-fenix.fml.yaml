@@ -66,6 +66,75 @@ import:
                 triggerContext.vpn.usage_reset_prompt_pending == true &&
                 triggerContext.vpn.is_enabled == false
 
+              # Continuous onboarding triggers, for the `co-*` messages in messaging-evergreen-messages.fml.yaml.
+              CO_ENABLED: "triggerContext.continuous_onboarding.enabled == true"
+
+              # When each stage is due: a number of days after the previous stage ended.
+              CO_DAY_2_DUE: >-
+                'onboarding_completed'|eventSum('Years', 4, 0) >= 1 &&
+                'onboarding_completed'|eventLastSeen('Days') >= 1
+              CO_DAY_3_DUE: >-
+                'onboarding.co-day-2-complete.displayed'|eventSum('Years', 4, 0) >= 1 &&
+                'onboarding.co-day-2-complete.displayed'|eventLastSeen('Days') >= 1
+              CO_DAY_5_DUE: >-
+                'onboarding.co-day-3-complete.displayed'|eventSum('Years', 4, 0) >= 1 &&
+                'onboarding.co-day-3-complete.displayed'|eventLastSeen('Days') >= 2
+              CO_DAY_7_DUE: >-
+                ('onboarding.co-sync.dismissed'|eventSum('Years', 4, 0) >= 1 &&
+                'onboarding.co-sync.dismissed'|eventLastSeen('Days') >= 2) ||
+                ('onboarding.co-day-5-skipped.displayed'|eventSum('Years', 4, 0) >= 1 &&
+                'onboarding.co-day-5-skipped.displayed'|eventLastSeen('Days') >= 2)
+
+              # When each stage has ended.
+              CO_DAY_2_DONE: "'onboarding.co-day-2-complete.displayed'|eventSum('Years', 4, 0) >= 1"
+              CO_DAY_3_DONE: "'onboarding.co-day-3-complete.displayed'|eventSum('Years', 4, 0) >= 1"
+              CO_DAY_5_DONE: >-
+                'onboarding.co-sync.dismissed'|eventSum('Years', 4, 0) >= 1 ||
+                'onboarding.co-day-5-skipped.displayed'|eventSum('Years', 4, 0) >= 1
+              CO_DAY_7_DONE: >-
+                'onboarding.co-vpn.displayed'|eventSum('Years', 4, 0) >= 1 ||
+                'onboarding.co-day-7-ineligible.displayed'|eventSum('Years', 4, 0) >= 1 ||
+                'onboarding.co-day-7-satisfied.displayed'|eventSum('Years', 4, 0) >= 1
+              # Read by `isContinuousOnboardingInProgress`, for the prompts that wait for continuous onboarding.
+              CO_FINISHED: >-
+                'onboarding.co-vpn.displayed'|eventSum('Years', 4, 0) >= 1 ||
+                'onboarding.co-day-7-ineligible.displayed'|eventSum('Years', 4, 0) >= 1 ||
+                'onboarding.co-day-7-satisfied.displayed'|eventSum('Years', 4, 0) >= 1
+
+              # Whether a message has been shown or, for the notification card, answered, or has nothing to ask for.
+              CO_DEFAULT_BROWSER_1_DISPLAYED: "'onboarding.co-default-browser-1.displayed'|eventSum('Years', 4, 0) >= 1"
+              CO_DEFAULT_BROWSER_2_DISPLAYED: "'onboarding.co-default-browser-2.displayed'|eventSum('Years', 4, 0) >= 1"
+              CO_NOTIFICATIONS_1_ANSWERED: >-
+                'onboarding.co-notifications-1.clicked'|eventSum('Years', 4, 0) >= 1 ||
+                'onboarding.co-notifications-1.dismissed'|eventSum('Years', 4, 0) >= 1
+              CO_NOTIFICATIONS_2_ANSWERED: >-
+                'onboarding.co-notifications-2.clicked'|eventSum('Years', 4, 0) >= 1 ||
+                'onboarding.co-notifications-2.dismissed'|eventSum('Years', 4, 0) >= 1
+              CO_DEFAULT_BROWSER_1_RESOLVED: >-
+                'onboarding.co-default-browser-1.displayed'|eventSum('Years', 4, 0) >= 1 ||
+                triggerContext.continuous_onboarding.default_browser_role_requestable == false
+              CO_DEFAULT_BROWSER_2_RESOLVED: >-
+                'onboarding.co-default-browser-2.displayed'|eventSum('Years', 4, 0) >= 1 ||
+                triggerContext.continuous_onboarding.default_browser_role_requestable == false
+              CO_NOTIFICATIONS_1_RESOLVED: >-
+                'onboarding.co-notifications-1.clicked'|eventSum('Years', 4, 0) >= 1 ||
+                'onboarding.co-notifications-1.dismissed'|eventSum('Years', 4, 0) >= 1 ||
+                triggerContext.continuous_onboarding.notification_permission_requestable == false
+              CO_NOTIFICATIONS_2_RESOLVED: >-
+                'onboarding.co-notifications-2.clicked'|eventSum('Years', 4, 0) >= 1 ||
+                'onboarding.co-notifications-2.dismissed'|eventSum('Years', 4, 0) >= 1 ||
+                triggerContext.continuous_onboarding.notification_permission_requestable == false
+
+              # The state each message asks about.
+              CO_DEFAULT_BROWSER_REQUESTABLE: "triggerContext.continuous_onboarding.default_browser_role_requestable == true"
+              CO_NOTIFICATIONS_REQUESTABLE: "triggerContext.continuous_onboarding.notification_permission_requestable == true"
+              CO_NOT_SIGNED_IN: "is_fxa_signed_in == false"
+              CO_SIGNED_IN: "is_fxa_signed_in == true"
+              CO_VPN_ELIGIBLE: "triggerContext.continuous_onboarding.vpn_eligible == true"
+              CO_VPN_INELIGIBLE: "triggerContext.continuous_onboarding.vpn_ineligible == true"
+              CO_VPN_PROMPT_ALLOWED: "triggerContext.continuous_onboarding.vpn_prompt_allowed == true"
+              CO_VPN_PROMPT_NOT_ALLOWED: "triggerContext.continuous_onboarding.vpn_prompt_allowed == false"
+
               # Has the user signed in the last 4 years
               FXA_SIGNED_IN: "'sync_auth.sign_in'|eventLastSeen('Years', 0) <= 4"
               FXA_NOT_SIGNED_IN: "'sync_auth.sign_in'|eventLastSeen('Years', 0) > 4"
@@ -103,6 +172,11 @@ import:
               OPEN_SHARE_SHEET: ://share_sheet
               OPEN_PROTECTIONS_DASHBOARD: ://protections_dashboard
               TURN_ON_SYNC: ://turn_on_sync
+              REQUEST_NOTIFICATION_PERMISSION: ://request_notification_permission
+              OPEN_SETTINGS_IP_PROTECTION: ://settings_ip_protection
+              # Not a deep link the app handles: on the `continuous_onboarding` surface, a message with this action shows
+              # nothing and records that a continuous onboarding stage is over.
+              CONTINUOUS_ONBOARDING_STAGE_COMPLETED: ://continuous_onboarding_stage_completed
             styles:
               DEFAULT:
                 priority: 50
@@ -134,7 +208,14 @@ import:
               SETTINGS_CARD_HIGH_PRIORITY:
                 priority: 60
                 max-display-count: 1
+              CONTINUOUS_ONBOARDING:
+                priority: 50
+                max-display-count: 1
+              CONTINUOUS_ONBOARDING_REPEATING:
+                priority: 50
+                max-display-count: 10000
             $$surfaces:
+              - continuous_onboarding
               - homescreen
               - notification
               - survey

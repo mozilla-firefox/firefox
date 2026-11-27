@@ -18,6 +18,7 @@ import org.robolectric.RobolectricTestRunner
 
 private val ONE_DAY_MILLIS = TimeUnit.DAYS.toMillis(1)
 
+// Remove this file when ContinuousOnboardingFeature is retired, see Continuous-onboarding-via-messaging.md.
 @RunWith(RobolectricTestRunner::class)
 class ContinuousOnboardingStageProviderTest {
 

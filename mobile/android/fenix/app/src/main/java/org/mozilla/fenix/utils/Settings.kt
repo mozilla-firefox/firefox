@@ -2570,6 +2570,19 @@ class Settings(
     val continuousOnboardingCompleted: Boolean
         get() = seventhDayOnboardingCompletedTimestamp != -1L
 
+    // Remove when ContinuousOnboardingFeature is retired, see Continuous-onboarding-via-messaging.md.
+    /**
+     * Indicates if continuous onboarding is driven by the Messaging System instead of `ContinuousOnboardingFeature`.
+     *
+     * Decided once, when initial onboarding completes, so users who onboarded before the switch finish their continuous
+     * onboarding with `ContinuousOnboardingFeature`.
+     */
+    var continuousOnboardingViaMessaging by
+        booleanPreference(
+            key = appContext.getPreferenceKey(R.string.pref_key_continuous_onboarding_via_messaging),
+            default = false,
+        )
+
     /** Indicates if the migrate onboarding state feature is enabled. */
     var migrateOnboardingStateFeatureEnabled by
         booleanPreference(
@@ -3147,11 +3160,12 @@ class Settings(
 
     /** Indicates if the Set as default Browser prompt should be displayed to the user. */
     fun shouldShowSetAsDefaultPrompt(
-        nimbusFeature: DefaultBrowserPrompt = FxNimbus.features.defaultBrowserPrompt.value()
+        nimbusFeature: DefaultBrowserPrompt = FxNimbus.features.defaultBrowserPrompt.value(),
+        continuousOnboardingInProgress: Boolean = continuousOnboardingFeatureEnabled && !continuousOnboardingCompleted,
     ): Boolean {
         if (!nimbusFeature.enabled) return false
 
-        if (continuousOnboardingFeatureEnabled && !continuousOnboardingCompleted) return false
+        if (continuousOnboardingInProgress) return false
 
         val now = currentTimeMillis()
 

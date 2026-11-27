@@ -184,6 +184,7 @@ import org.mozilla.fenix.onboarding.OnboardingFragmentDirections
 import org.mozilla.fenix.onboarding.OnboardingReason
 import org.mozilla.fenix.onboarding.OnboardingTelemetryRecorder
 import org.mozilla.fenix.onboarding.continuous.ContinuousOnboardingFeature
+import org.mozilla.fenix.onboarding.continuous.ContinuousOnboardingMessagingBinding
 import org.mozilla.fenix.pbmlock.NavigationOrigin
 import org.mozilla.fenix.pbmlock.observePrivateModeLock
 import org.mozilla.fenix.perf.MarkersFragmentLifecycleCallbacks
@@ -305,7 +306,9 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
     private val topSitesBinding = ViewBoundFeatureWrapper<TopSitesBinding>()
     private val trackersBlockedFeature = ViewBoundFeatureWrapper<TrackersBlockedFeature>()
     private val ipProtectionWarningBinding = ViewBoundFeatureWrapper<IPProtectionWarningBinding>()
+    // Remove when ContinuousOnboardingFeature is retired, see Continuous-onboarding-via-messaging.md.
     private val continuousOnboardingFeature = ViewBoundFeatureWrapper<ContinuousOnboardingFeature>()
+    private val continuousOnboardingMessagingBinding = ViewBoundFeatureWrapper<ContinuousOnboardingMessagingBinding>()
 
     private var qrScanFenixFeature: ViewBoundFeatureWrapper<QrScanFenixFeature>? = ViewBoundFeatureWrapper()
     private val qrScanLauncher: ActivityResultLauncher<Intent> =
@@ -355,7 +358,9 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
 
     private val continuousOnboardingDefaultBrowserLauncher: ActivityResultLauncher<Intent> =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            // Remove when ContinuousOnboardingFeature is retired, see Continuous-onboarding-via-messaging.md.
             continuousOnboardingFeature.get()?.onDefaultBrowserStepCompleted(result.resultCode)
+            continuousOnboardingMessagingBinding.get()?.onSystemPromptResult(result.resultCode)
         }
 
     private val telemetryRecorder by lazy {
@@ -1643,9 +1648,33 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
     }
 
     private fun initContinuousOnboardingFeature() {
+        // Remove when ContinuousOnboardingFeature is retired, see Continuous-onboarding-via-messaging.md.
         ContinuousOnboardingFeature.register(
             fragment = this,
             binding = continuousOnboardingFeature,
+            launcher = continuousOnboardingDefaultBrowserLauncher,
+            telemetryRecorder = telemetryRecorder,
+            navigateToSyncSignIn = {
+                findNavController()
+                    .nav(
+                        id = R.id.homeFragment,
+                        directions =
+                            OnboardingFragmentDirections.actionGlobalTurnOnSync(
+                                entrypoint = FenixFxAEntryPoint.NewUserOnboarding
+                            ),
+                    )
+            },
+            navigateToIpProtection = { promptDetails ->
+                IPProtectionBottomSheetFragment.showPrompt(
+                    fragment = this,
+                    surface = IPProtectionSurface.HOMEPAGE,
+                    promptDetails = promptDetails,
+                )
+            },
+        )
+        ContinuousOnboardingMessagingBinding.register(
+            fragment = this,
+            wrapper = continuousOnboardingMessagingBinding,
             launcher = continuousOnboardingDefaultBrowserLauncher,
             telemetryRecorder = telemetryRecorder,
             navigateToSyncSignIn = {

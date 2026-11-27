@@ -50,6 +50,7 @@ import org.mozilla.fenix.ext.nav
 import org.mozilla.fenix.ext.openSetDefaultBrowserOption
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.nimbus.FxNimbus
+import org.mozilla.fenix.onboarding.continuous.startContinuousOnboarding
 import org.mozilla.fenix.onboarding.view.ManagePrivacyPreferencesDialogFragment
 import org.mozilla.fenix.onboarding.view.OnboardingPageUiData
 import org.mozilla.fenix.onboarding.view.OnboardingScreen
@@ -409,6 +410,7 @@ class OnboardingFragment : Fragment() {
         requireComponents.fenixOnboarding.finish()
 
         settings.recordOnboardingCompleted()
+        settings.startContinuousOnboarding(requireComponents.nimbus.events)
         settings.onboardingCurrentPageIndex = 0
 
         val downloadUrl = settings.rtamoAddonDownloadUrl

@@ -483,7 +483,7 @@ class OnboardingTelemetryRecorder(
         private const val ACTION_CLICK = "click"
         private const val ET_ONBOARDING_CARD = "onboarding_card"
         private const val ET_PRIMARY_BUTTON = "primary_button"
-        private const val ET_SECONDARY_BUTTON = "secondary_button"
+        const val ET_SECONDARY_BUTTON = "secondary_button"
         const val ET_CARD_CLOSE_BUTTON = "card_close_button"
         private const val ET_SKIP_BUTTON = "skip_button"
     }
