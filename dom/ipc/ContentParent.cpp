@@ -2938,6 +2938,20 @@ bool ContentParent::InitInternal(ProcessPriority aInitialPriority) {
 
   ScriptPreloader::InitContentChild(*this);
 
+  // Send down { Parent, Window }ActorOptions at startup to content process.
+  // This needs to happen before loading the delayed process scripts, so that
+  // these scripts can use the actors.
+  RefPtr<JSActorService> actorSvc = JSActorService::GetSingleton();
+  if (actorSvc) {
+    nsTArray<JSProcessActorInfo> contentInfos;
+    actorSvc->GetJSProcessActorInfos(contentInfos);
+
+    nsTArray<JSWindowActorInfo> windowInfos;
+    actorSvc->GetJSWindowActorInfos(windowInfos);
+
+    (void)SendInitJSActorInfos(contentInfos, windowInfos);
+  }
+
   // Initialize the message manager (and load delayed scripts) now that we
   // have established communications with the child.
   mMessageManager->InitWithCallback(this);
@@ -3090,18 +3104,6 @@ bool ContentParent::InitInternal(ProcessPriority aInitialPriority) {
     if (!registrations.IsEmpty()) {
       (void)SendInitBlobURLs(registrations);
     }
-  }
-
-  // Send down { Parent, Window }ActorOptions at startup to content process.
-  RefPtr<JSActorService> actorSvc = JSActorService::GetSingleton();
-  if (actorSvc) {
-    nsTArray<JSProcessActorInfo> contentInfos;
-    actorSvc->GetJSProcessActorInfos(contentInfos);
-
-    nsTArray<JSWindowActorInfo> windowInfos;
-    actorSvc->GetJSWindowActorInfos(windowInfos);
-
-    (void)SendInitJSActorInfos(contentInfos, windowInfos);
   }
 
   // Begin subscribing to any BrowsingContextGroups which were hosted by this
