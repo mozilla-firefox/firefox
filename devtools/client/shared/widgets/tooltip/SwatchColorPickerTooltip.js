@@ -298,6 +298,11 @@ class SwatchColorPickerTooltip extends SwatchBasedEditorTooltip {
     this.eyedropperOpen = true;
 
     inspectorFront.pickColorFromPage({ copyOnSelect: false }).then(() => {
+      // Bail if the eyedropper was canceled early.
+      if (!this.eyedropperOpen) {
+        return;
+      }
+
       // close the colorpicker tooltip so that only the eyedropper is open.
       this.hide();
 

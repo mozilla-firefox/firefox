@@ -330,10 +330,10 @@ class InspectorActor extends Actor {
    */
   async pickColorFromPage(options) {
     await this.createEyeDropper();
-    this._eyeDropper.show(this.window.document.documentElement, options);
     this._eyeDropper.once("selected", this._onColorPicked);
     this._eyeDropper.once("canceled", this._onColorPickCanceled);
     this.targetActor.once("will-navigate", this.destroyEyeDropper);
+    await this._eyeDropper.show(this.window.document.documentElement, options);
   }
 
   /**

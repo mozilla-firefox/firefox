@@ -90,6 +90,10 @@ class EyeDropper extends EventEmitter {
     return this.highlighterEnv.window;
   }
 
+  get #isShown() {
+    return !!this.#pageEventListenersAbortController;
+  }
+
   _buildMarkup() {
     // Highlighter main container.
     const container = this.markup.createNode({
@@ -126,7 +130,7 @@ class EyeDropper extends EventEmitter {
    *                 the eyedropper will use `drawWindow` to get the the screenshot
    *                 (⚠️ but it won't handle remote frames).
    */
-  show(node, options = {}) {
+  async show(node, options = {}) {
     if (this.highlighterEnv.isXUL) {
       return false;
     }
@@ -138,7 +142,7 @@ class EyeDropper extends EventEmitter {
 
     // Take a screenshot of the viewport.
     // Once the screenshot is ready, the magnified area will be drawn.
-    this.updateScreenshot(options.screenshot);
+    const onScreenshotUpdated = this.updateScreenshot(options.screenshot);
 
     // Start listening for user events.
     const { pageListenerTarget } = this.highlighterEnv;
@@ -172,6 +176,7 @@ class EyeDropper extends EventEmitter {
     // in the page.
     this.win.document.setSuppressedEventListener(this);
 
+    await onScreenshotUpdated;
     return true;
   }
 
@@ -181,7 +186,7 @@ class EyeDropper extends EventEmitter {
   hide() {
     this.pageImage = null;
 
-    if (this.#pageEventListenersAbortController) {
+    if (this.#isShown) {
       this.#pageEventListenersAbortController.abort();
       this.#pageEventListenersAbortController = null;
 
@@ -236,6 +241,9 @@ class EyeDropper extends EventEmitter {
     // An ImageBitmap works well. We could have used an Image, but doing so results
     // in errors if the page defines CSP headers.
     const image = await this.win.createImageBitmap(imageSource);
+    if (!this.#isShown) {
+      return;
+    }
 
     this.pageImage = image;
     // We likely haven't drawn anything yet (no mousemove events yet), so start now.
