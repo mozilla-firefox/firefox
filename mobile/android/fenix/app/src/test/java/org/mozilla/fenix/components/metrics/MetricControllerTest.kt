@@ -11,6 +11,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyAll
 import kotlin.test.assertNotNull
+import mozilla.components.browser.session.storage.facts.SessionStorageFacts
 import mozilla.components.browser.thumbnails.facts.BrowserThumbnailsFacts
 import mozilla.components.compose.browser.awesomebar.AwesomeBarFacts as ComposeAwesomeBarFacts
 import mozilla.components.feature.autofill.facts.AutofillFacts
@@ -60,6 +61,7 @@ import org.mozilla.fenix.GleanMetrics.MediaNotification
 import org.mozilla.fenix.GleanMetrics.NativeShareSheet
 import org.mozilla.fenix.GleanMetrics.PerfAwesomebar
 import org.mozilla.fenix.GleanMetrics.ProgressiveWebApp
+import org.mozilla.fenix.GleanMetrics.SessionStorage
 import org.mozilla.fenix.GleanMetrics.ShareSheet
 import org.mozilla.fenix.GleanMetrics.SitePermissions
 import org.mozilla.fenix.GleanMetrics.SyncedTabs
@@ -1387,6 +1389,92 @@ class MetricControllerTest {
         }
 
         assertNull(BrowserThumbnails.captureDuration.testGetValue())
+    }
+
+    @Test
+    fun `WHEN session storage restore fact is processed THEN the restore event is recorded`() {
+        val controller = createReleaseMetricController()
+
+        controller.run {
+            Fact(
+                    component = Component.BROWSER_SESSION_STORAGE,
+                    action = Action.IMPLEMENTATION_DETAIL,
+                    item = SessionStorageFacts.Items.RESTORE,
+                    metadata =
+                        mapOf(
+                            SessionStorageFacts.Metadata.DURATION_MS to 42L,
+                            SessionStorageFacts.Metadata.FILE_BYTES to 1000L,
+                            SessionStorageFacts.Metadata.TABS_IN_FILE to 4,
+                            SessionStorageFacts.Metadata.TABS_RESTORED to 3,
+                        ),
+                )
+                .process()
+        }
+
+        assertEquals(
+            mapOf("duration_ms" to "42", "file_bytes" to "1000", "tabs_in_file" to "4", "tabs_restored" to "3"),
+            SessionStorage.restoreCompleted.testGetValue()?.single()?.extra,
+        )
+    }
+
+    @Test
+    fun `WHEN session storage restore fact has missing metadata THEN no restore event is recorded`() {
+        val controller = createReleaseMetricController()
+
+        controller.run {
+            Fact(
+                    component = Component.BROWSER_SESSION_STORAGE,
+                    action = Action.IMPLEMENTATION_DETAIL,
+                    item = SessionStorageFacts.Items.RESTORE,
+                    metadata = null,
+                )
+                .process()
+        }
+
+        assertNull(SessionStorage.restoreCompleted.testGetValue())
+    }
+
+    @Test
+    fun `WHEN session storage save fact is processed THEN duration, file size and bytes per tab are recorded`() {
+        val controller = createReleaseMetricController()
+
+        controller.run {
+            Fact(
+                    component = Component.BROWSER_SESSION_STORAGE,
+                    action = Action.IMPLEMENTATION_DETAIL,
+                    item = SessionStorageFacts.Items.SAVE,
+                    metadata =
+                        mapOf(
+                            SessionStorageFacts.Metadata.DURATION_MS to 5L,
+                            SessionStorageFacts.Metadata.FILE_BYTES to 900L,
+                            SessionStorageFacts.Metadata.TABS_IN_FILE to 3,
+                        ),
+                )
+                .process()
+        }
+
+        assertEquals(1L, SessionStorage.saveDuration.testGetValue()?.count)
+        assertEquals(900L, SessionStorage.saveFileSize.testGetValue()?.sum)
+        assertEquals(300L, SessionStorage.saveBytesPerTab.testGetValue()?.sum)
+    }
+
+    @Test
+    fun `WHEN session storage save fact has missing metadata THEN nothing is recorded`() {
+        val controller = createReleaseMetricController()
+
+        controller.run {
+            Fact(
+                    component = Component.BROWSER_SESSION_STORAGE,
+                    action = Action.IMPLEMENTATION_DETAIL,
+                    item = SessionStorageFacts.Items.SAVE,
+                    metadata = mapOf(SessionStorageFacts.Metadata.DURATION_MS to 5L),
+                )
+                .process()
+        }
+
+        assertNull(SessionStorage.saveDuration.testGetValue())
+        assertNull(SessionStorage.saveFileSize.testGetValue())
+        assertNull(SessionStorage.saveBytesPerTab.testGetValue())
     }
 
     @Test

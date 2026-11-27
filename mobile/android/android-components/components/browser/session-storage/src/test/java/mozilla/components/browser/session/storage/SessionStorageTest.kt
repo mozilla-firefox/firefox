@@ -4,10 +4,13 @@
 
 package mozilla.components.browser.session.storage
 
+import android.util.JsonWriter
 import androidx.core.net.toUri
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import java.io.IOException
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.test.runTest
+import mozilla.components.browser.session.storage.facts.SessionStorageFacts
 import mozilla.components.browser.state.ext.getUrl
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.EngineState
@@ -15,6 +18,9 @@ import mozilla.components.browser.state.state.ReaderState
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.state.recover.RecoverableTab
+import mozilla.components.concept.engine.EngineSessionState
+import mozilla.components.support.base.Component
+import mozilla.components.support.base.facts.processor.CollectionProcessor
 import mozilla.components.support.ktx.util.writeString
 import mozilla.components.support.test.fakes.engine.FakeEngine
 import mozilla.components.support.test.fakes.engine.FakeEngineSessionState
@@ -170,6 +176,181 @@ class SessionStorageTest {
         verify(storage).clear()
 
         assertNull(storage.restore())
+    }
+
+    @Test
+    fun `Restore emits a fact with the duration, file size and tab counts`() = runTest {
+        val state =
+            BrowserState(
+                tabs =
+                    listOf(
+                        createTab("https://www.mozilla.org", id = "tab1"),
+                        createTab("https://getpocket.com", id = "tab2"),
+                    ),
+                selectedTabId = "tab1",
+            )
+        val engine = FakeEngine()
+        val storage = SessionStorage(testContext, engine, applicationScope = this)
+        assertTrue(storage.save(state))
+
+        CollectionProcessor.withFactCollection { facts ->
+            assertNotNull(storage.restore())
+
+            val fact = facts.single { it.item == SessionStorageFacts.Items.RESTORE }
+            assertEquals(Component.BROWSER_SESSION_STORAGE, fact.component)
+            assertEquals(2, fact.metadata?.get(SessionStorageFacts.Metadata.TABS_IN_FILE))
+            assertEquals(2, fact.metadata?.get(SessionStorageFacts.Metadata.TABS_RESTORED))
+            assertEquals(
+                getFileForEngine(testContext, engine).baseFile.length(),
+                fact.metadata?.get(SessionStorageFacts.Metadata.FILE_BYTES),
+            )
+            assertTrue((fact.metadata?.get(SessionStorageFacts.Metadata.DURATION_MS) as Long) >= 0)
+        }
+    }
+
+    @Test
+    fun `Restore counts discarded tabs as tabs in the file but not as restored tabs`() = runTest {
+        val state =
+            BrowserState(
+                tabs =
+                    listOf(
+                        createTab("https://www.mozilla.org", id = "tab1"),
+                        createTab("https://getpocket.com", id = "tab2"),
+                        createTab("https://www.firefox.com", id = "tab3"),
+                    ),
+                selectedTabId = "tab1",
+            )
+        val storage = SessionStorage(testContext, FakeEngine(), applicationScope = this)
+        assertTrue(storage.save(state))
+
+        CollectionProcessor.withFactCollection { facts ->
+            val restored = storage.restore { it.state.id == "tab1" }
+            assertEquals(1, restored?.tabs?.size)
+
+            val fact = facts.single { it.item == SessionStorageFacts.Items.RESTORE }
+            assertEquals(3, fact.metadata?.get(SessionStorageFacts.Metadata.TABS_IN_FILE))
+            assertEquals(1, fact.metadata?.get(SessionStorageFacts.Metadata.TABS_RESTORED))
+        }
+    }
+
+    @Test
+    fun `Restore of a broken file emits no fact`() = runTest {
+        val engine = FakeEngine()
+        val storage = SessionStorage(testContext, engine, applicationScope = this)
+        getFileForEngine(testContext, engine).writeString { "{" }
+
+        CollectionProcessor.withFactCollection { facts ->
+            assertNull(storage.restore())
+
+            assertTrue(facts.isEmpty())
+        }
+    }
+
+    @Test
+    fun `Save emits a fact with the duration, file size and number of tabs without private tabs`() = runTest {
+        val engine = FakeEngine()
+        val storage = SessionStorage(testContext, engine, applicationScope = this)
+        val state =
+            BrowserState(
+                tabs =
+                    listOf(
+                        createTab("https://www.mozilla.org", id = "tab1"),
+                        createTab("https://getpocket.com", id = "tab2"),
+                        createTab("https://www.firefox.com", id = "private", private = true),
+                    )
+            )
+
+        CollectionProcessor.withFactCollection { facts ->
+            assertTrue(storage.save(state))
+
+            val fact = facts.single()
+            assertEquals(SessionStorageFacts.Items.SAVE, fact.item)
+            assertEquals(2, fact.metadata?.get(SessionStorageFacts.Metadata.TABS_IN_FILE))
+            assertEquals(
+                getFileForEngine(testContext, engine).baseFile.length(),
+                fact.metadata?.get(SessionStorageFacts.Metadata.FILE_BYTES),
+            )
+            assertTrue((fact.metadata?.get(SessionStorageFacts.Metadata.DURATION_MS) as Long) >= 0)
+        }
+    }
+
+    @Test
+    fun `Saving an empty state emits no fact`() = runTest {
+        val storage = SessionStorage(testContext, FakeEngine(), applicationScope = this)
+
+        CollectionProcessor.withFactCollection { facts ->
+            assertTrue(storage.save(BrowserState()))
+
+            assertTrue(facts.isEmpty())
+        }
+    }
+
+    @Test
+    fun `Restore emits no fact when there is no saved session`() = runTest {
+        val storage = SessionStorage(testContext, FakeEngine(), applicationScope = this)
+        storage.clear()
+
+        CollectionProcessor.withFactCollection { facts ->
+            assertNull(storage.restore())
+
+            assertTrue(facts.isEmpty())
+        }
+    }
+
+    @Test
+    fun `Restore emits no fact when every tab is discarded`() = runTest {
+        val state =
+            BrowserState(
+                tabs =
+                    listOf(
+                        createTab("https://www.mozilla.org", id = "tab1"),
+                        createTab("https://getpocket.com", id = "tab2"),
+                    ),
+                selectedTabId = "tab1",
+            )
+        val storage = SessionStorage(testContext, FakeEngine(), applicationScope = this)
+        assertTrue(storage.save(state))
+
+        CollectionProcessor.withFactCollection { facts ->
+            assertNull(storage.restore { false })
+
+            assertTrue(facts.isEmpty())
+        }
+    }
+
+    @Test
+    fun `Save emits no fact when the write fails`() = runTest {
+        val storage = SessionStorage(testContext, FakeEngine(), applicationScope = this)
+        val tab = createTabWithEngineStateThatThrows(IOException("Write failed"))
+
+        CollectionProcessor.withFactCollection { facts ->
+            assertFalse(storage.save(BrowserState(tabs = listOf(tab))))
+
+            assertTrue(facts.isEmpty())
+        }
+    }
+
+    @Test
+    fun `Save emits no fact when it runs out of memory`() = runTest {
+        val storage = SessionStorage(testContext, FakeEngine(), applicationScope = this)
+        val tab = createTabWithEngineStateThatThrows(OutOfMemoryError())
+
+        CollectionProcessor.withFactCollection { facts ->
+            assertFalse(storage.save(BrowserState(tabs = listOf(tab))))
+
+            assertTrue(facts.isEmpty())
+        }
+    }
+
+    private fun createTabWithEngineStateThatThrows(throwable: Throwable): TabSessionState {
+        val engineState =
+            object : EngineSessionState {
+                override fun writeTo(writer: JsonWriter) {
+                    throw throwable
+                }
+            }
+        return createTab("https://www.mozilla.org", id = "tab1")
+            .copy(engineState = EngineState(engineSessionState = engineState))
     }
 
     @Test

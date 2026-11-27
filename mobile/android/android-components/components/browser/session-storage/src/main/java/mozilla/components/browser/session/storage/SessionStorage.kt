@@ -6,6 +6,7 @@ package mozilla.components.browser.session.storage
 
 import android.content.Context
 import android.net.Uri
+import android.os.SystemClock
 import android.util.AtomicFile
 import androidx.annotation.CheckResult
 import androidx.annotation.VisibleForTesting
@@ -15,6 +16,8 @@ import java.io.File
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
+import mozilla.components.browser.session.storage.facts.emitRestoreFact
+import mozilla.components.browser.session.storage.facts.emitSaveFact
 import mozilla.components.browser.session.storage.serialize.BrowserStateReader
 import mozilla.components.browser.session.storage.serialize.BrowserStateWriter
 import mozilla.components.browser.state.selector.normalTabs
@@ -42,6 +45,7 @@ class SessionStorage(
     private val logger = Logger("SessionStorage")
     private val stateWriter = BrowserStateWriter()
     private val stateReader = BrowserStateReader()
+    private val currentTimeInMillis: () -> Long = { SystemClock.elapsedRealtime() }
 
     /**
      * Reads the saved state from disk. Returns null if no state was found on disk or if reading the file failed.
@@ -52,13 +56,27 @@ class SessionStorage(
     fun restore(predicate: (RecoverableTab) -> Boolean = { true }): RecoverableBrowserState? {
         synchronized(sessionFileLock) {
             val file = getFileForEngine(context, engine)
+            val start = currentTimeInMillis()
+            var tabsInFile = 0
 
-            return stateReader.read(engine, file) { tab ->
-                // Tab whose url is a contentUri which is not readable won't be restored
-                // e.g. Pdfs opened from a different app that only provided transient permission for
-                // a specific session, that has already expired
-                predicate(tab) && (!tab.isContentUri() || isUriReadable(tab.state.url.toUri()))
+            val state =
+                stateReader.read(engine, file) { tab ->
+                    tabsInFile++
+                    // Tab whose url is a contentUri which is not readable won't be restored
+                    // e.g. Pdfs opened from a different app that only provided transient permission for
+                    // a specific session, that has already expired
+                    predicate(tab) && (!tab.isContentUri() || isUriReadable(tab.state.url.toUri()))
+                }
+
+            if (state != null) {
+                emitRestoreFact(
+                    durationMs = currentTimeInMillis() - start,
+                    fileBytes = file.baseFile.length(),
+                    tabsInFile = tabsInFile,
+                    tabsRestored = state.tabs.size,
+                )
             }
+            return state
         }
     }
 
@@ -96,7 +114,18 @@ class SessionStorage(
         return synchronized(sessionFileLock) {
             try {
                 val file = getFileForEngine(context, engine)
-                stateWriter.write(stateToPersist, file)
+                val start = currentTimeInMillis()
+                val written = stateWriter.write(stateToPersist, file)
+                if (written) {
+                    emitSaveFact(
+                        durationMs = currentTimeInMillis() - start,
+                        fileBytes = file.baseFile.length(),
+                        // Matches the tabs that BrowserStateWriter writes (no private tabs). Update this count if
+                        // the writer starts skipping other tabs.
+                        tabsInFile = stateToPersist.normalTabs.size,
+                    )
+                }
+                written
             } catch (e: OutOfMemoryError) {
                 crashReporting?.submitCaughtException(e)
                 logger.error("Failed to save state to disk due to OutOfMemoryError", e)

@@ -20,6 +20,7 @@ dependencies {
     api project(':components:browser-state')
 
     implementation project(':components:concept-engine')
+    implementation project(':components:support-base')
     implementation project(':components:support-ktx')
     implementation project(':components:support-utils')
 

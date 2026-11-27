@@ -7,6 +7,7 @@ package org.mozilla.fenix.components.metrics
 import androidx.annotation.VisibleForTesting
 import java.util.UUID
 import mozilla.components.browser.engine.gecko.facts.GeckoEngineViewFacts
+import mozilla.components.browser.session.storage.facts.SessionStorageFacts
 import mozilla.components.browser.thumbnails.facts.BrowserThumbnailsFacts
 import mozilla.components.browser.toolbar.facts.ToolbarFacts
 import mozilla.components.compose.browser.awesomebar.AwesomeBarFacts as ComposeAwesomeBarFacts
@@ -66,6 +67,7 @@ import org.mozilla.fenix.GleanMetrics.NativeShareSheet
 import org.mozilla.fenix.GleanMetrics.PerfAwesomebar
 import org.mozilla.fenix.GleanMetrics.Pings
 import org.mozilla.fenix.GleanMetrics.ProgressiveWebApp
+import org.mozilla.fenix.GleanMetrics.SessionStorage
 import org.mozilla.fenix.GleanMetrics.ShareSheet
 import org.mozilla.fenix.GleanMetrics.SitePermissions
 import org.mozilla.fenix.GleanMetrics.Sync
@@ -518,6 +520,14 @@ internal class ReleaseMetricController(
                 value?.let { BrowserEngine.fullPageCaptureResult[it].add() } ?: Unit
             }
 
+            Component.BROWSER_SESSION_STORAGE to SessionStorageFacts.Items.RESTORE -> {
+                recordSessionRestore(metadata)
+            }
+
+            Component.BROWSER_SESSION_STORAGE to SessionStorageFacts.Items.SAVE -> {
+                recordSessionSave(metadata)
+            }
+
             Component.BROWSER_THUMBNAILS to BrowserThumbnailsFacts.Items.CAPTURE_ATTEMPTED -> {
                 value?.let { BrowserThumbnails.captureAttempted[it].add() } ?: Unit
             }
@@ -601,6 +611,37 @@ internal class ReleaseMetricController(
 
                 it.track(event)
             }
+    }
+
+    private fun recordSessionRestore(metadata: Map<String, Any>?) {
+        val durationMs = metadata?.get(SessionStorageFacts.Metadata.DURATION_MS) as? Long
+        val bytes = metadata?.get(SessionStorageFacts.Metadata.FILE_BYTES) as? Long
+        val tabsInFile = (metadata?.get(SessionStorageFacts.Metadata.TABS_IN_FILE) as? Number)?.toInt()
+        val tabsRestored = (metadata?.get(SessionStorageFacts.Metadata.TABS_RESTORED) as? Number)?.toInt()
+        if (durationMs == null || bytes == null) return
+        if (tabsInFile == null || tabsRestored == null) return
+
+        SessionStorage.restoreCompleted.record(
+            SessionStorage.RestoreCompletedExtra(
+                durationMs = durationMs.toInt(),
+                fileBytes = bytes.toInt(),
+                tabsInFile = tabsInFile,
+                tabsRestored = tabsRestored,
+            )
+        )
+    }
+
+    private fun recordSessionSave(metadata: Map<String, Any>?) {
+        val durationMs = metadata?.get(SessionStorageFacts.Metadata.DURATION_MS) as? Long
+        val bytes = metadata?.get(SessionStorageFacts.Metadata.FILE_BYTES) as? Long
+        val tabsInFile = (metadata?.get(SessionStorageFacts.Metadata.TABS_IN_FILE) as? Number)?.toInt()
+        if (durationMs == null || bytes == null || tabsInFile == null) return
+
+        SessionStorage.saveDuration.accumulateSamples(listOf(durationMs))
+        SessionStorage.saveFileSize.accumulate(bytes)
+        if (tabsInFile > 0) {
+            SessionStorage.saveBytesPerTab.accumulate(bytes / tabsInFile)
+        }
     }
 
     private fun recordFxSuggestImpression(metadata: Map<String, Any>?) {

@@ -18622,3 +18622,100 @@ power_saving_mode:
     metadata:
       tags:
         - Battery
+
+session_storage:
+  restore_completed:
+    type: event
+    description: |
+      The saved browsing session was read at startup, also when the app starts
+      in the background. Recorded once per restore that restores at least one
+      tab, with all the values of that restore, so that the duration can be
+      compared with the size of the same restore.
+    extra_keys:
+      duration_ms:
+        type: quantity
+        description: |
+          Time to read the session file, in milliseconds, including creating
+          the engine state of each tab in the file, even tabs then discarded
+          (for example by closing inactive tabs automatically).
+      file_bytes:
+        type: quantity
+        description: Size of the session file, in bytes.
+      tabs_in_file:
+        type: quantity
+        description: Number of tabs in the file, including discarded tabs.
+      tabs_restored:
+        type: quantity
+        description: Number of tabs that were restored.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2075223
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D341793
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Tabs
+        - Performance
+  save_duration:
+    type: timing_distribution
+    time_unit: millisecond
+    description: |
+      Time to write the browsing session to disk. Recorded for each successful
+      save, so the sample count is the number of saves.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2075223
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D341793
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Tabs
+        - Performance
+  save_file_size:
+    type: memory_distribution
+    memory_unit: byte
+    description: |
+      Size of the saved browsing session file after a write. One sample per
+      successful save, so sessions that stay open for a long time give more
+      samples.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2075223
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D341793
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Tabs
+        - Performance
+  save_bytes_per_tab:
+    type: memory_distribution
+    memory_unit: byte
+    description: |
+      Size of the saved browsing session file after a write, divided by the
+      number of tabs written to it. Private tabs are not written. One sample per
+      successful save.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2075223
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D341793
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Tabs
+        - Performance
