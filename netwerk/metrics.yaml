@@ -599,6 +599,88 @@ networking:
       - https_regular
       - https_private
 
+  doh_ddr_discovery:
+    type: labeled_counter
+    description: >
+      RFC 9462 DDR (Discovery of Designated Resolvers) funnel. Each label counts
+      how many DDR discovery attempts reached that stage:
+        total - a DDR discovery attempt was started
+        svcb_result - a native SVCB record for _dns.resolver.arpa was returned
+        dohpath - the record advertised a usable DoH designated resolver
+                  (an HTTP ALPN, a valid RFC 9461 dohpath and a usable
+                  TargetName)
+        connection - the test query connected to the designated resolver,
+                     including connections whose TLS handshake then failed
+        cert_match - the resolver's TLS certificate covered one of the
+                     configured unencrypted resolver IPs
+      The stages are nested (total >= svcb_result >= dohpath >= connection >=
+      cert_match), so ratios between labels give the per-stage success rate.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2055993
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2055993
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - vgosu@mozilla.com
+      - necko@mozilla.com
+    expires: never
+    labels:
+      - total
+      - svcb_result
+      - dohpath
+      - connection
+      - cert_match
+
+  doh_ddr_result:
+    type: labeled_counter
+    description: >
+      RFC 9462 DDR (Discovery of Designated Resolvers) outcome. Unlike
+      doh_ddr_discovery (a cumulative funnel), each DDR attempt increments
+      exactly one label here - the last stage it reached:
+        no_native_support - SVCB records can't be resolved with the native
+                            resolver on this platform or configuration
+        no_svcb - no native SVCB record for _dns.resolver.arpa was returned
+        no_dohpath - got an SVCB record but no usable DoH designated resolver
+        no_resolver_addrs - found a designated resolver but the addresses of
+                            the unencrypted resolvers could not be determined,
+                            so it could not be verified
+        no_connection - found a designated resolver but the test query failed
+                        to connect
+        tls_failed - connected but the TLS handshake failed, e.g. because the
+                     certificate is untrusted, expired or doesn't cover the
+                     resolver's name
+        no_cert_match - connected but the resolver's certificate did not cover
+                        any configured unencrypted resolver IP
+        query_failed - the certificate matched but the test query failed
+                       (e.g. an HTTP error or an undecodable response)
+        success - the certificate matched and the resolver answered the test
+                  query
+        network_changed - found a designated resolver but the network changed
+                          before it could be verified
+      So this gives the distribution of where DDR attempts stop.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2055993
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2055993
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - vgosu@mozilla.com
+      - necko@mozilla.com
+    expires: never
+    labels:
+      - no_native_support
+      - no_svcb
+      - no_dohpath
+      - no_resolver_addrs
+      - no_connection
+      - tls_failed
+      - no_cert_match
+      - query_failed
+      - success
+      - network_changed
+
   http_onstart_suspend_total_time:
     type: timing_distribution
     time_unit: millisecond

@@ -61,6 +61,18 @@ function isDNSAnswer(aChannel, aStatus, aBody) {
   );
 }
 
+// Whether aStatus is a TLS handshake or certificate validation failure.
+function isTLSError(aStatus) {
+  try {
+    Cc["@mozilla.org/nss_errors_service;1"]
+      .getService(Ci.nsINSSErrorsService)
+      .getErrorClass(aStatus);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 // RFC 9462: the special-use name queried with the SVCB (64) type.
 const DDR_QNAME = "_dns.resolver.arpa";
 
@@ -177,15 +189,25 @@ export const DoHDiscovery = {
    * priority usable designated DoH resolver, or null if none was found.
    */
   async discover() {
-    let record = await this._resolveSVCB(DDR_QNAME);
-    if (!record) {
+    Glean.networking.dohDdrDiscovery.total.add(1);
+
+    if (!Services.dns.nativeHTTPSEnabled) {
+      Glean.networking.dohDdrResult.no_native_support.add(1);
       return null;
     }
+
+    let record = await this._resolveSVCB(DDR_QNAME);
+    if (!record) {
+      Glean.networking.dohDdrResult.no_svcb.add(1);
+      return null;
+    }
+    Glean.networking.dohDdrDiscovery.svcb_result.add(1);
 
     let httpsRec;
     try {
       httpsRec = record.QueryInterface(Ci.nsIDNSHTTPSSVCRecord);
     } catch (e) {
+      Glean.networking.dohDdrResult.no_dohpath.add(1);
       return null;
     }
 
@@ -216,16 +238,21 @@ export const DoHDiscovery = {
         continue;
       }
 
+      Glean.networking.dohDdrDiscovery.dohpath.add(1);
+      // The terminal outcome for this attempt is recorded by verify(), or by
+      // the caller if it doesn't run it.
       return { uri, resolverAddrs };
     }
 
+    Glean.networking.dohDdrResult.no_dohpath.add(1);
     return null;
   },
 
   /**
    * Verifies a resolver returned by discover() (RFC 9462 section 4.2): its
    * TLS certificate must cover one of resolverAddrs, and it must answer a test
-   * query. Resolves to true if the resolver can be used.
+   * query. Records the outcome of the DDR attempt and resolves to true if the
+   * resolver can be used.
    *
    * @param {object} discovered
    *   The result of discover().
@@ -237,17 +264,24 @@ export const DoHDiscovery = {
    */
   async verify({ uri, resolverAddrs }) {
     if (!resolverAddrs?.length) {
+      Glean.networking.dohDdrResult.no_resolver_addrs.add(1);
       return false;
     }
 
     let outcome = await this._testQuery(uri, resolverAddrs);
+    if (outcome != "no_connection") {
+      Glean.networking.dohDdrDiscovery.connection.add(1);
+    }
+    if (outcome == "query_failed" || outcome == "success") {
+      Glean.networking.dohDdrDiscovery.cert_match.add(1);
+    }
+    Glean.networking.dohDdrResult[outcome].add(1);
     return outcome == "success";
   },
 
   // Sends an RFC 8484 GET query for VERIFY_HOST to the designated resolver at
   // aURI, checking its certificate against aResolverAddrs before reading the
-  // answer. Resolves to "no_connection", "no_cert_match", "query_failed" or
-  // "success".
+  // answer. Resolves to the doh_ddr_result label of the outcome.
   _testQuery(aURI, aResolverAddrs) {
     return new Promise(resolve => {
       let separator = aURI.includes("?") ? "&" : "?";
@@ -283,7 +317,12 @@ export const DoHDiscovery = {
 
       let listener = {
         onStartRequest(request) {
-          if (!Components.isSuccessCode(request.status)) {
+          // A refused redirect still comes from the designated resolver, so
+          // check its certificate to classify the attempt.
+          if (
+            !Components.isSuccessCode(request.status) &&
+            request.status != Cr.NS_ERROR_REDIRECT_LOOP
+          ) {
             return;
           }
           let cert = request.QueryInterface(Ci.nsIChannel).securityInfo
@@ -312,7 +351,7 @@ export const DoHDiscovery = {
           if (certRejected) {
             resolve("no_cert_match");
           } else if (!certMatched) {
-            resolve("no_connection");
+            resolve(isTLSError(status) ? "tls_failed" : "no_connection");
           } else if (isDNSAnswer(chan, status, body)) {
             resolve("success");
           } else {

@@ -1456,6 +1456,12 @@ nsDNSService::GetCurrentTrrURI(nsACString& aURI) {
 }
 
 NS_IMETHODIMP
+nsDNSService::GetNativeHTTPSEnabled(bool* aEnabled) {
+  *aEnabled = nsHostResolver::IsNativeHTTPSEnabled();
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 nsDNSService::IsDesignatedResolverCert(
     nsIX509Cert* aCert, const nsTArray<nsCString>& aResolverAddrs,
     bool* aResult) {
