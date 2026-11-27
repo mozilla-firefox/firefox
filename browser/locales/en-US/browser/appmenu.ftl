@@ -284,6 +284,10 @@ profiler-popup-presets-firefox-description = Recommended preset for profiling { 
 profiler-popup-presets-firefox-label =
   .label = { -brand-shorter-name }
 
+profiler-popup-presets-benchmark-description = Preset for investigating { -brand-shorter-name } performance on benchmarks such as Speedometer, with low overhead.
+profiler-popup-presets-benchmark-label =
+  .label = Benchmark
+
 profiler-popup-presets-graphics-description = Preset for investigating graphics bugs in { -brand-shorter-name }.
 profiler-popup-presets-graphics-label =
   .label = Graphics

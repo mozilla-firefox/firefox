@@ -167,6 +167,9 @@ perftools-presets-web-developer-description = Recommended preset for most web ap
 perftools-presets-firefox-label = { -brand-shorter-name }
 perftools-presets-firefox-description = Recommended preset for profiling { -brand-shorter-name }.
 
+perftools-presets-benchmark-label = Benchmark
+perftools-presets-benchmark-description = Preset for investigating { -brand-shorter-name } performance on benchmarks such as Speedometer, with low overhead.
+
 perftools-presets-graphics-label = Graphics
 perftools-presets-graphics-description = Preset for investigating graphics bugs in { -brand-shorter-name }.
 

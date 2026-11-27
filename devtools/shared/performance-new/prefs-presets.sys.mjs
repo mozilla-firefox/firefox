@@ -103,6 +103,37 @@ export const presets = {
       },
     },
   },
+  benchmark: {
+    entries: 128 * 1024 * 1024,
+    interval: 1,
+    // Marker stacks, memory tracking and screenshots are left out on purpose
+    // because of their overhead.
+    features: [
+      "js",
+      "stackwalk",
+      "nomarkerstacks",
+      "ipcmessages",
+      "processcpu",
+    ],
+    threads: [
+      "GeckoMain",
+      "Compositor",
+      "Renderer",
+      "StyleThread",
+      "TaskController",
+    ],
+    duration: 0,
+    l10nIds: {
+      popup: {
+        label: "profiler-popup-presets-benchmark-label",
+        description: "profiler-popup-presets-benchmark-description",
+      },
+      devtools: {
+        label: "perftools-presets-benchmark-label",
+        description: "perftools-presets-benchmark-description",
+      },
+    },
+  },
   graphics: {
     entries: 128 * 1024 * 1024,
     interval: 1,
