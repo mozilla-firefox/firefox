@@ -17,6 +17,8 @@ subsuite = "try"
 
 ["test_perfcomparators.py"]
 
+["test_perfutils.py"]
+
 ["test_presets.py"]
 # Modifies "task_duration_history.json" in .mozbuild. Since other tests depend on this file, this test
 # shouldn't be run in parallel with those other tests.
