@@ -299,6 +299,23 @@ def test_removed_files_entries_are_classified(tmp_path):
     assert not [line for line in lines if "a comment line" in line]
 
 
+def test_append_remove_instructions_reverse_sorts_entries(tmp_path):
+    to_dir = tmp_path / "to"
+    _write(to_dir / "removed-files", b"a.txt\nb/\nc.txt\n")
+    manifest = tmp_path / "updatev3.manifest"
+
+    with mock.patch.object(
+        mz, "get_text_from_compressed", lambda p: Path(p).read_text()
+    ):
+        mz.append_remove_instructions(str(to_dir), str(manifest))
+
+    assert manifest.read_text().splitlines() == [
+        'remove "c.txt"',
+        'rmdir "b/"',
+        'remove "a.txt"',
+    ]
+
+
 def test_append_remove_instructions_reads_bundle_relative_removed_files(tmp_path):
     """<to>/Contents/Resources/removed-files is used when
     <to>/removed-files is absent, which is the only location on mac."""
@@ -378,13 +395,23 @@ def test_check_for_add_if_not_update_rejects_other_files():
         assert not mz.check_for_add_if_not_update(path), path
 
 
-def test_list_files_and_dirs_returns_posix_paths(tmp_path):
-    _write(tmp_path / "sub/nested/a.txt", b"a")
+def test_list_files_and_dirs_is_reverse_sorted(tmp_path):
+    _write(tmp_path / "added.txt", b"a")
+    _write(tmp_path / "addFeedPrefs.js", b"b")
+    _write(tmp_path / "sub/nested/deep/a.txt", b"c")
+    _write(tmp_path / "sub/b.txt", b"d")
 
     files, dirs = mz.list_files_and_dirs(str(tmp_path))
 
-    assert files == ["sub/nested/a.txt"]
-    assert sorted(dirs) == ["sub", "sub/nested"]
+    # Byte-wise, so "added.txt" sorts above "addFeedPrefs.js" as under LC_ALL=C.
+    assert files == [
+        "sub/nested/deep/a.txt",
+        "sub/b.txt",
+        "added.txt",
+        "addFeedPrefs.js",
+    ]
+    # Every directory follows all of its children, which RemoveDir requires.
+    assert dirs == ["sub/nested/deep", "sub/nested", "sub"]
 
 
 def test_download_file_succeeds_first_try(tmp_path):
@@ -433,6 +460,76 @@ def test_download_file_raises_after_exhausting_retries(tmp_path):
                 raise AssertionError("Expected DownloadError to be raised")
 
     assert urlretrieve.call_count == mz.DOWNLOAD_ATTEMPTS
+
+
+def test_reorder_instructions_uses_safer_order(tmp_path):
+    manifest = tmp_path / "updatev3.manifest"
+    manifest.write_text(
+        "\n".join([
+            'type "partial"',
+            'add "omni.ja"',
+            'patch "firefox.exe.patch" "firefox.exe"',
+            'add "mozglue.dll"',
+            'add "zz.txt"',
+            'patch "xul.dll.patch" "xul.dll"',
+            'add "dependentlibs.list"',
+            'add "aa.txt"',
+            'add "browser/omni.ja"',
+            'remove "gone.txt"',
+        ])
+        + "\n"
+    )
+
+    mz.reorder_instructions(str(manifest), "firefox")
+
+    assert manifest.read_text().splitlines() == [
+        'type "partial"',
+        'add "dependentlibs.list"',
+        'add "zz.txt"',
+        'add "aa.txt"',
+        'remove "gone.txt"',
+        'patch "xul.dll.patch" "xul.dll"',
+        'add "browser/omni.ja"',
+        'add "omni.ja"',
+        'add "mozglue.dll"',
+        'patch "firefox.exe.patch" "firefox.exe"',
+    ]
+
+
+def test_reorder_instructions_buckets_by_path_not_verb(tmp_path):
+    """Bash greps on the member path, so a removal of one of the big members
+    moves with it and can land after later add instructions. Reproduced
+    deliberately."""
+    manifest = tmp_path / "updatev3.manifest"
+    manifest.write_text('type "partial"\nremove "omni.ja"\nadd "aa.txt"\n')
+
+    mz.reorder_instructions(str(manifest), "firefox")
+
+    assert manifest.read_text().splitlines() == [
+        'type "partial"',
+        'add "aa.txt"',
+        'remove "omni.ja"',
+    ]
+
+
+def test_reorder_instructions_uses_the_app_name(tmp_path):
+    manifest = tmp_path / "updatev3.manifest"
+    manifest.write_text('type "partial"\nadd "thunderbird.exe"\nadd "zz.txt"\n')
+
+    mz.reorder_instructions(str(manifest), "thunderbird")
+
+    assert manifest.read_text().splitlines() == [
+        'type "partial"',
+        'add "zz.txt"',
+        'add "thunderbird.exe"',
+    ]
+
+
+def test_get_app_name_is_lowercased(tmp_path):
+    with mock.patch.object(
+        mz, "get_text_from_compressed", lambda p: Path(p).read_text()
+    ):
+        assert mz.get_app_name(str(FIXTURE_DIR / "to")) == "martest"
 
 
 def _process_single(tmp_path, make_partial, valid_channel_id=True, **kwargs):

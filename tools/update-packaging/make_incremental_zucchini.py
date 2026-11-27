@@ -245,7 +245,10 @@ def list_files_and_dirs(dir_path):
             dirs.append(_rel_posix(os.path.join(root, directory), dir_path))
         for filename in filenames:
             files.append(_rel_posix(os.path.join(root, filename), dir_path))
-    return files, dirs
+    # Reverse code-point order, matching "sort -r" under LC_ALL=C. It makes the
+    # manifest reproducible and puts a directory after each of its children,
+    # which RemoveDir needs since it only removes empty directories.
+    return sorted(files, reverse=True), sorted(dirs, reverse=True)
 
 
 def extension_root_dir(filename):
@@ -304,7 +307,9 @@ def append_remove_instructions(newdir, manifest):
             newdir, "Contents", "Resources", "removed-files"
         )
     if os.path.isfile(removed_files_path):
-        removed_files = get_text_from_compressed(removed_files_path).splitlines()
+        removed_files = sorted(
+            get_text_from_compressed(removed_files_path).splitlines(), reverse=True
+        )
         with open(manifest, "a") as manifest_file:
             for line in removed_files:
                 entry = line.strip()
@@ -316,6 +321,39 @@ def append_remove_instructions(newdir, manifest):
                     manifest_file.write(f'rmrfdir "{entry[:-1]}"\n')
                 else:
                     manifest_file.write(f'remove "{entry}"\n')
+
+
+def get_app_name(mar_dir):
+    return get_option_from_compressed(mar_dir, "application.ini", "App", "Name").lower()
+
+
+def _instruction_member(line):
+    """The member path an instruction acts on, which is always its last quoted
+    argument."""
+    return line.rsplit('"', 2)[-2]
+
+
+def reorder_instructions(manifest, appname):
+    with open(manifest) as manifest_file:
+        lines = manifest_file.read().splitlines()
+
+    rank = {
+        "dependentlibs.list": -1,
+        # Any other member gets 0.
+        "xul.dll": 1,
+        "browser/omni.ja": 2,
+        "omni.ja": 3,
+        "mozglue.dll": 4,
+        f"{appname}.exe": 5,
+    }
+
+    # The sort is stable, so the other instructions keep their order.
+    lines[1:] = sorted(
+        lines[1:], key=lambda line: rank.get(_instruction_member(line), 0)
+    )
+
+    with open(manifest, "w") as manifest_file:
+        manifest_file.write("\n".join(lines) + "\n")
 
 
 def validate_mar_channel_id(mar_path, mar_channel_id):
@@ -410,6 +448,7 @@ def make_partial(
     requested_forced_updates = force or []
     # MacOS firefox binary is always forced update
     requested_forced_updates.append("Contents/MacOS/firefox")
+    appname = get_app_name(to_mar_dir)
     manifest_file = os.path.join(workdir, "updatev3.manifest")
 
     # Holds the relative path to all archive files to be added to the partial
@@ -533,6 +572,8 @@ def make_partial(
 
     # Add directory removal instructions from removed-files
     append_remove_instructions(to_mar_dir, manifest_file)
+
+    reorder_instructions(manifest_file, appname)
 
     # Compress manifest file and add to list of archived files
     compressed_manifest = os.path.join(partials_dir, "updatev3.manifest")
