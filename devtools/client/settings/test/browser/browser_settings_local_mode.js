@@ -12,8 +12,11 @@ const TEST_FOLDER = PathUtils.join(
   "devtools-local-mode-" + Services.uuid.generateUUID()
 );
 const MISSING_FOLDER = PathUtils.join(TEST_FOLDER, "missing");
+const MockFilePicker = SpecialPowers.MockFilePicker;
 
+MockFilePicker.init(window.browsingContext);
 registerCleanupFunction(async () => {
+  MockFilePicker.cleanup();
   clearMappings();
   await IOUtils.remove(TEST_FOLDER, { recursive: true });
 });
@@ -25,6 +28,8 @@ add_setup(async function () {
 add_task(test_local_mode_mappings_listed);
 add_task(test_local_mode_mappings_refresh);
 add_task(test_local_mode_remote_notice);
+add_task(test_local_mode_add_mapping);
+add_task(test_local_mode_add_mapping_cancelled);
 
 async function test_local_mode_mappings_listed() {
   setMapping(0, { origin: "firefox.localhost", path: TEST_FOLDER });
@@ -111,6 +116,92 @@ async function test_local_mode_remote_notice() {
 
   await toolbox.destroy();
   await closeTabAndToolbox(tab);
+}
+
+async function test_local_mode_add_mapping() {
+  Services.fog.testResetFOG();
+  const { root } = await openSettings();
+  const editor = await getLocalModeEditor(root);
+  MockFilePicker.setFiles([new FileUtils.File(TEST_FOLDER)]);
+  MockFilePicker.returnValue = MockFilePicker.returnOK;
+
+  const onMappingsUpdated = LocalModeMappings.once("updated");
+  getAddButton(editor).click();
+  await waitFor(
+    () => getMappingItems(editor).length == 1,
+    "Adding a mapping lists it"
+  );
+  const [item] = getMappingItems(editor);
+  const origin = item.querySelector(".origin");
+  is(origin.value, "firefox.localhost", "The mapping uses the first origin");
+  is(
+    item.querySelector(".folder").textContent,
+    TEST_FOLDER,
+    "The mapping uses the chosen folder"
+  );
+  await waitFor(
+    () => editor.shadowRoot.activeElement == origin,
+    "The new mapping's origin is focused"
+  );
+  is(
+    Glean.devtoolsLocalmodeMappings.addPermanentFromOptions.testGetValue(),
+    1,
+    "Adding a mapping is counted"
+  );
+
+  getAddButton(editor).click();
+  await waitFor(
+    () => getMappingItems(editor).length == 2,
+    "Adding another mapping lists it"
+  );
+  is(
+    getMappingItems(editor)[1].querySelector(".origin").value,
+    "firefox1.localhost",
+    "The second mapping uses the next origin"
+  );
+
+  await onMappingsUpdated;
+  await closeTabAndToolbox();
+  clearMappings();
+}
+
+async function test_local_mode_add_mapping_cancelled() {
+  Services.fog.testResetFOG();
+  const { root } = await openSettings();
+  const editor = await getLocalModeEditor(root);
+  MockFilePicker.returnValue = MockFilePicker.returnCancel;
+  const onPickerShown = new Promise(resolve => {
+    MockFilePicker.showCallback = resolve;
+  });
+
+  getAddButton(editor).click();
+  await onPickerShown;
+  await waitForTick();
+  is(
+    LocalModeMappings.getAllMappings().length,
+    0,
+    "Cancelling the folder picker adds no mapping"
+  );
+  is(
+    Glean.devtoolsLocalmodeMappings.addPermanentFromOptions.testGetValue(),
+    null,
+    "Cancelling the folder picker isn't counted"
+  );
+
+  MockFilePicker.showCallback = null;
+  await closeTabAndToolbox();
+}
+
+/**
+ * Get the add-mapping button from the Local Mode editor.
+ *
+ * @param {DevToolsSettingsLocalMode} editor The Local Mode editor.
+ * @returns {MozButton} The button that opens the folder picker.
+ */
+function getAddButton(editor) {
+  return editor.shadowRoot.querySelector(
+    "moz-button[data-l10n-id=devtools-settings-local-mode-add]"
+  );
 }
 
 /**

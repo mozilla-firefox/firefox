@@ -90,6 +90,9 @@ export const LocalModeMappings = {
       LOCAL_MODE_MAPPINGS_PREF_PREFIX,
       prefObserver
     );
+    // Clear any pending debounce timeout, which would otherwise call
+    // updateMappings with the destroyed toolbox.
+    prefObserver.cancel();
   },
 
   getAllMappings,

@@ -239,6 +239,14 @@ devtools-settings-local-mode-origin =
 # Label for the folder whose files are served at the custom domain.
 devtools-settings-local-mode-folder = Local folder:
 
+devtools-settings-local-mode-add =
+    .label = Add a new local mapping
+
+# Title of the dialog for picking a mapping's local folder.
+# Variables:
+#   $url (String): The URL of the mapping being configured.
+devtools-settings-local-mode-folder-picker-title = Choose local mode folder for: { $url }
+
 # Error shown when a mapping's local folder is missing or invalid.
 devtools-settings-local-mode-folder-invalid = This folder doesn’t exist, or is invalid.
 

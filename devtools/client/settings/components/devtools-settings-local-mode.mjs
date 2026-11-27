@@ -10,12 +10,15 @@ import {
   repeat,
 } from "chrome://global/content/vendor/lit.all.mjs";
 import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
+import { MozInputText } from "chrome://global/content/elements/moz-input-text.mjs";
 
 /**
  * @import { PropertyDeclarations } from "chrome://global/content/vendor/lit.all.mjs"
  * @import { Toolbox } from "../types/toolbox.d.ts"
  * @import { Mapping, LocalModeMappingsModule } from "../types/local-mode.d.ts"
  */
+
+const l10n = new Localization(["devtools/preview/settings.ftl"]);
 
 const { FileUtils } = ChromeUtils.importESModule(
   "resource://gre/modules/FileUtils.sys.mjs"
@@ -62,6 +65,52 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
   #readMappings = () => {
     this._mappings = LocalModeMappings.getAllMappings();
   };
+
+  #addMapping = async () => {
+    const mappingOrigin = LocalModeMappings.getNextAvailableOrigin();
+    const path = await this.#chooseFolder(mappingOrigin);
+    if (!path) {
+      return;
+    }
+    LocalModeMappings.createNewMapping(mappingOrigin, path);
+    Glean.devtoolsLocalmodeMappings.addPermanentFromOptions.add(1);
+    this.#readMappings();
+    await this.updateComplete;
+    const input = this.shadowRoot?.querySelector("li:last-of-type .origin");
+    if (input instanceof MozInputText) {
+      await input.updateComplete;
+      input.focus();
+      input.inputEl.select();
+    }
+  };
+
+  /**
+   * @param {string} mappingOrigin The mapping's hostname.
+   * @returns {Promise<string | null>} The chosen path, or null if cancelled.
+   */
+  async #chooseFolder(mappingOrigin) {
+    const title = await l10n.formatValue(
+      "devtools-settings-local-mode-folder-picker-title",
+      { url: "https://" + mappingOrigin }
+    );
+    const filePicker = Cc["@mozilla.org/filepicker;1"].createInstance(
+      Ci.nsIFilePicker
+    );
+    filePicker.init(
+      window.browsingContext,
+      title ?? "",
+      Ci.nsIFilePicker.modeGetFolder
+    );
+    return new Promise(resolve => {
+      filePicker.open(result => {
+        if (result == Ci.nsIFilePicker.returnOK) {
+          resolve(filePicker.file.path);
+        } else {
+          resolve(null);
+        }
+      });
+    });
+  }
 
   /** @param {Mapping} mapping */
   #renderFolder(mapping) {
@@ -119,6 +168,10 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
           mapping => this.#renderMapping(mapping)
         )}
       </ul>
+      <moz-button
+        data-l10n-id="devtools-settings-local-mode-add"
+        @click=${this.#addMapping}
+      ></moz-button>
     `;
   }
 }
