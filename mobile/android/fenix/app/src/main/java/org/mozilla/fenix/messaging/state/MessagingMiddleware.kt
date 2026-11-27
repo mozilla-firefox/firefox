@@ -10,12 +10,14 @@ import kotlinx.coroutines.launch
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import mozilla.components.service.nimbus.messaging.Message
+import mozilla.components.service.nimbus.messaging.MessageSurfaceId
 import mozilla.components.service.nimbus.messaging.NimbusMessagingControllerInterface
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.ConsumeMessageToShow
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.Evaluate
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.MessageClicked
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.MessageDismissed
+import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.MessageDisplayed
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.MicrosurveyAction
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.Restore
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.UpdateMessageToShow
@@ -24,9 +26,18 @@ import org.mozilla.fenix.components.appstate.AppState
 
 typealias AppStoreMiddlewareContext = Store<AppState, AppAction>
 
+/**
+ * Middleware for the Messaging System.
+ *
+ * @param controller The controller for the message interactions.
+ * @param coroutineScope The scope in which the storage is updated.
+ * @param surfacesDisplayedOnPresentation Surfaces whose messages are recorded as displayed when [MessageDisplayed] is
+ *   dispatched, once they are actually presented, instead of when they are selected by [Evaluate].
+ */
 class MessagingMiddleware(
     private val controller: NimbusMessagingControllerInterface,
     private val coroutineScope: CoroutineScope = CoroutineScope(Dispatchers.IO),
+    private val surfacesDisplayedOnPresentation: Set<MessageSurfaceId> = emptySet(),
 ) : Middleware<AppState, AppAction> {
 
     override fun invoke(
@@ -51,11 +62,15 @@ class MessagingMiddleware(
                     )
                 if (message != null) {
                     store.dispatch(UpdateMessageToShow(message))
-                    onMessagedDisplayed(message, store)
+                    if (action.surface !in surfacesDisplayedOnPresentation) {
+                        onMessagedDisplayed(message, store)
+                    }
                 } else {
                     store.dispatch(ConsumeMessageToShow(action.surface))
                 }
             }
+
+            is MessageDisplayed -> onMessagedDisplayed(action.message, store)
 
             is MessageClicked -> onMessageClicked(action.message, store)
 

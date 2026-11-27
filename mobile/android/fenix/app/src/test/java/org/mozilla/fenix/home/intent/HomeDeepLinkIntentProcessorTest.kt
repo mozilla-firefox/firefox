@@ -19,6 +19,7 @@ import io.mockk.verify
 import mozilla.appservices.places.BookmarkRoot
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.prompt.ShareData
+import mozilla.components.support.base.android.NotificationsDelegate
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -28,6 +29,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mozilla.fenix.FenixApplication
 import org.mozilla.fenix.BrowserDirection
 import org.mozilla.fenix.BuildConfig.DEEP_LINK_SCHEME
 import org.mozilla.fenix.GleanMetrics.TrackingProtection
@@ -363,6 +365,22 @@ class HomeDeepLinkIntentProcessorTest {
         verify { out wasNot Called }
         assertEquals(AndroidSettings.ACTION_APP_NOTIFICATION_SETTINGS, captured.captured.action)
         assertNull(captured.captured.getStringExtra(AndroidSettings.EXTRA_CHANNEL_ID))
+    }
+
+    @Test
+    fun `process request_notification_permission deep link`() {
+        val notificationsDelegate: NotificationsDelegate = mockk(relaxed = true)
+        val application: FenixApplication = mockk()
+        every { application.components.notificationsDelegate } returns notificationsDelegate
+        every { activity.applicationContext } returns application
+
+        assertTrue(
+            processorHome.process(testIntent("request_notification_permission"), navController, out, settings)
+        )
+
+        verify { notificationsDelegate.requestNotificationPermission() }
+        verify { navController wasNot Called }
+        verify { out wasNot Called }
     }
 
     @Test

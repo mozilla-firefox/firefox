@@ -181,6 +181,7 @@ import org.mozilla.fenix.ipprotection.store.IPProtectionInfoPrompter
 import org.mozilla.fenix.messaging.FenixMessageSurfaceId
 import org.mozilla.fenix.messaging.MessageNotificationWorker
 import org.mozilla.fenix.nimbus.FxNimbus
+import org.mozilla.fenix.onboarding.continuous.isContinuousOnboardingInProgress
 import org.mozilla.fenix.onboarding.ensureMarketingChannelExists
 import org.mozilla.fenix.onboarding.seedOnboardingCompletedTimestampForDebugIfNeeded
 import org.mozilla.fenix.pbmlock.DefaultPrivateBrowsingLockStorage
@@ -810,7 +811,11 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
 
     @VisibleForTesting
     internal fun maybeShowSetAsDefaultBrowserPrompt(
-        shouldShowSetAsDefaultPrompt: Boolean = components.settings.shouldShowSetAsDefaultPrompt(),
+        shouldShowSetAsDefaultPrompt: Boolean =
+            components.settings.shouldShowSetAsDefaultPrompt(
+                continuousOnboardingInProgress =
+                    components.settings.isContinuousOnboardingInProgress(components.nimbus::createJexlHelper)
+            ),
         isDefaultBrowser: Boolean = Browsers.isDefaultBrowser(applicationContext),
         isTheCorrectBuildVersion: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q,
     ) {

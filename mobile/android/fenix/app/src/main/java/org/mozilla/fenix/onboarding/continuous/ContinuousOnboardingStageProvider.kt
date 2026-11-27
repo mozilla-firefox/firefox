@@ -13,6 +13,7 @@ import mozilla.components.support.utils.DateTimeProvider
 import mozilla.components.support.utils.DefaultDateTimeProvider
 import org.mozilla.fenix.utils.Settings
 
+// Remove this file when ContinuousOnboardingFeature is retired, see Continuous-onboarding-via-messaging.md.
 /** Determines the [ContinuousOnboardingStage] for the current user onboarding journey. */
 interface ContinuousOnboardingStageProvider {
     /** Returns the [ContinuousOnboardingStage] for the current user onboarding journey. */

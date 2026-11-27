@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.onboarding.continuous
 
+// Remove this file when ContinuousOnboardingFeature is retired, see Continuous-onboarding-via-messaging.md.
 /** Stages of the continuous onboarding flow. */
 enum class ContinuousOnboardingStage {
     DAY_2,

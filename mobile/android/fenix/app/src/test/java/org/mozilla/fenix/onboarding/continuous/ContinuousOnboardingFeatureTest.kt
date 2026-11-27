@@ -54,6 +54,7 @@ import org.robolectric.RobolectricTestRunner
 
 private const val CONTINUOUS_ONBOARDING_DIALOG_TAG = "continuous_onboarding_dialog"
 
+// Remove this file when ContinuousOnboardingFeature is retired, see Continuous-onboarding-via-messaging.md.
 @RunWith(RobolectricTestRunner::class)
 class ContinuousOnboardingFeatureTest {
     @get:Rule val gleanTestRule = FenixGleanTestRule(testContext)

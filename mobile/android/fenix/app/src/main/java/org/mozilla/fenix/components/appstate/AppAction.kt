@@ -206,6 +206,12 @@ sealed class AppAction : Action {
         /** Updates [MessagingState.messages] with the given [messages]. */
         data class UpdateMessages(val messages: List<Message>) : MessagingAction()
 
+        /**
+         * Indicates the given [message] was displayed, for surfaces that record displays when the message is presented
+         * rather than when it is selected, see [org.mozilla.fenix.messaging.state.MessagingMiddleware].
+         */
+        data class MessageDisplayed(val message: Message) : MessagingAction()
+
         /** Indicates the given [message] was clicked. */
         data class MessageClicked(val message: Message) : MessagingAction()
 

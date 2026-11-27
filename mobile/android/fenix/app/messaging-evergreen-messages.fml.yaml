@@ -95,6 +95,185 @@ import:
                   - VPN_AUTH_PROVIDER_GPI
                   - VPN_RESET_PROMPT_PENDING
 
+        # Continuous onboarding, driven by the Messaging System instead of `ContinuousOnboardingFeature`, for installs
+        # that completed initial onboarding with `continuous-onboarding.messaging-system-enabled` set.
+        # See `onboarding/continuous/Continuous-onboarding-via-messaging.md`.
+        #
+        # All the messages are on the `continuous_onboarding` surface, which selects at most one of them at a time.
+        # A message's action decides how `ContinuousOnboardingMessagingBinding` presents it:
+        # - MAKE_DEFAULT_BROWSER: the system's default browser role request,
+        # - REQUEST_NOTIFICATION_PERMISSION, TURN_ON_SYNC: an onboarding card,
+        # - OPEN_SETTINGS_IP_PROTECTION: the IP Protection onboarding prompt,
+        # - CONTINUOUS_ONBOARDING_STAGE_COMPLETED: nothing, the message only records that a stage is over.
+        #
+        # The triggers, `CO_*` in messaging-fenix.fml.yaml, do the sequencing. The binding records
+        # `onboarding.<message-id>.displayed` when it presents a message, `.clicked` when a card's primary button is
+        # used, and `.dismissed` when a message is dismissed.
+        #
+        # Each stage ends with an event that later stages are timed from, exactly as `ContinuousOnboardingFeature`
+        # times each stage from the previous stage's completion:
+        # - days 2 and 3: a stage-completed message, displayed (silently) once the role request has been shown and the
+        #   notification card has been answered, or they have nothing to ask for,
+        # - day 5: the sync card being dismissed, or a stage-completed message when the user is already signed in,
+        # - day 7: the VPN prompt, or a stage-completed message when the user is ineligible or the prompt is no longer
+        #   allowed.
+        - value:
+            messages:
+              # Day 2: the default browser role request, then the notification card. As in
+              # `ContinuousOnboardingFeature`, the card comes back until one of its buttons is used.
+              co-default-browser-1:
+                text: CONTINUOUS_ONBOARDING_MESSAGE_EMPTY_BODY
+                surface: continuous_onboarding
+                action: MAKE_DEFAULT_BROWSER
+                style: CONTINUOUS_ONBOARDING
+                trigger-if-all:
+                  - CO_ENABLED
+                  - CO_DAY_2_DUE
+                  - CO_DEFAULT_BROWSER_REQUESTABLE
+                exclude-if-any:
+                  - CO_DAY_2_DONE
+                  - CO_DEFAULT_BROWSER_1_DISPLAYED
+
+              co-notifications-1:
+                title: nova_onboarding_notifications_title
+                text: nova_onboarding_notifications_subtitle
+                button-label: nova_onboarding_notifications_button
+                surface: continuous_onboarding
+                action: REQUEST_NOTIFICATION_PERMISSION
+                style: CONTINUOUS_ONBOARDING_REPEATING
+                trigger-if-all:
+                  - CO_ENABLED
+                  - CO_DAY_2_DUE
+                  - CO_DEFAULT_BROWSER_1_RESOLVED
+                  - CO_NOTIFICATIONS_REQUESTABLE
+                exclude-if-any:
+                  - CO_DAY_2_DONE
+                  - CO_NOTIFICATIONS_1_ANSWERED
+
+              co-day-2-complete:
+                text: CONTINUOUS_ONBOARDING_MESSAGE_EMPTY_BODY
+                surface: continuous_onboarding
+                action: CONTINUOUS_ONBOARDING_STAGE_COMPLETED
+                style: CONTINUOUS_ONBOARDING
+                trigger-if-all:
+                  - CO_ENABLED
+                  - CO_DAY_2_DUE
+                  - CO_DEFAULT_BROWSER_1_RESOLVED
+                  - CO_NOTIFICATIONS_1_RESOLVED
+                exclude-if-any:
+                  - CO_DAY_2_DONE
+
+              # Day 3: a retry of day 2, at least a day after it.
+              co-default-browser-2:
+                text: CONTINUOUS_ONBOARDING_MESSAGE_EMPTY_BODY
+                surface: continuous_onboarding
+                action: MAKE_DEFAULT_BROWSER
+                style: CONTINUOUS_ONBOARDING
+                trigger-if-all:
+                  - CO_ENABLED
+                  - CO_DAY_3_DUE
+                  - CO_DEFAULT_BROWSER_REQUESTABLE
+                exclude-if-any:
+                  - CO_DAY_3_DONE
+                  - CO_DEFAULT_BROWSER_2_DISPLAYED
+
+              co-notifications-2:
+                title: nova_onboarding_notifications_title
+                text: nova_onboarding_notifications_subtitle
+                button-label: nova_onboarding_notifications_button
+                surface: continuous_onboarding
+                action: REQUEST_NOTIFICATION_PERMISSION
+                style: CONTINUOUS_ONBOARDING_REPEATING
+                trigger-if-all:
+                  - CO_ENABLED
+                  - CO_DAY_3_DUE
+                  - CO_DEFAULT_BROWSER_2_RESOLVED
+                  - CO_NOTIFICATIONS_REQUESTABLE
+                exclude-if-any:
+                  - CO_DAY_3_DONE
+                  - CO_NOTIFICATIONS_2_ANSWERED
+
+              co-day-3-complete:
+                text: CONTINUOUS_ONBOARDING_MESSAGE_EMPTY_BODY
+                surface: continuous_onboarding
+                action: CONTINUOUS_ONBOARDING_STAGE_COMPLETED
+                style: CONTINUOUS_ONBOARDING
+                trigger-if-all:
+                  - CO_ENABLED
+                  - CO_DAY_3_DUE
+                  - CO_DEFAULT_BROWSER_2_RESOLVED
+                  - CO_NOTIFICATIONS_2_RESOLVED
+                exclude-if-any:
+                  - CO_DAY_3_DONE
+
+              # Day 5: the sync card. As in `ContinuousOnboardingFeature`, "Start syncing" does not end the stage:
+              # the card comes back until it is dismissed, or the user is signed in.
+              co-sync:
+                title: nova_onboarding_sync_title
+                text: nova_onboarding_sync_subtitle
+                button-label: nova_onboarding_sync_button
+                surface: continuous_onboarding
+                action: TURN_ON_SYNC
+                style: CONTINUOUS_ONBOARDING_REPEATING
+                trigger-if-all:
+                  - CO_ENABLED
+                  - CO_DAY_5_DUE
+                  - CO_NOT_SIGNED_IN
+                exclude-if-any:
+                  - CO_DAY_5_DONE
+
+              co-day-5-skipped:
+                text: CONTINUOUS_ONBOARDING_MESSAGE_EMPTY_BODY
+                surface: continuous_onboarding
+                action: CONTINUOUS_ONBOARDING_STAGE_COMPLETED
+                style: CONTINUOUS_ONBOARDING
+                trigger-if-all:
+                  - CO_ENABLED
+                  - CO_DAY_5_DUE
+                  - CO_SIGNED_IN
+                exclude-if-any:
+                  - CO_DAY_5_DONE
+
+              # Day 7: the IP Protection prompt. Its content is chosen by the IP Protection feature. While eligibility
+              # is unknown, none of these messages is eligible, so the stage waits, as in `ContinuousOnboardingFeature`.
+              co-vpn:
+                text: CONTINUOUS_ONBOARDING_MESSAGE_EMPTY_BODY
+                surface: continuous_onboarding
+                action: OPEN_SETTINGS_IP_PROTECTION
+                style: CONTINUOUS_ONBOARDING
+                trigger-if-all:
+                  - CO_ENABLED
+                  - CO_DAY_7_DUE
+                  - CO_VPN_ELIGIBLE
+                  - CO_VPN_PROMPT_ALLOWED
+                exclude-if-any:
+                  - CO_DAY_7_DONE
+
+              co-day-7-ineligible:
+                text: CONTINUOUS_ONBOARDING_MESSAGE_EMPTY_BODY
+                surface: continuous_onboarding
+                action: CONTINUOUS_ONBOARDING_STAGE_COMPLETED
+                style: CONTINUOUS_ONBOARDING
+                trigger-if-all:
+                  - CO_ENABLED
+                  - CO_DAY_7_DUE
+                  - CO_VPN_INELIGIBLE
+                exclude-if-any:
+                  - CO_DAY_7_DONE
+
+              co-day-7-satisfied:
+                text: CONTINUOUS_ONBOARDING_MESSAGE_EMPTY_BODY
+                surface: continuous_onboarding
+                action: CONTINUOUS_ONBOARDING_STAGE_COMPLETED
+                style: CONTINUOUS_ONBOARDING
+                trigger-if-all:
+                  - CO_ENABLED
+                  - CO_DAY_7_DUE
+                  - CO_VPN_ELIGIBLE
+                  - CO_VPN_PROMPT_NOT_ALLOWED
+                exclude-if-any:
+                  - CO_DAY_7_DONE
+
         # This message displays as a microsurvey prompt after the user taps on the `Print` menu.
         - channel: developer
           value:

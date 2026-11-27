@@ -81,6 +81,7 @@ import org.mozilla.fenix.onboarding.OnboardingFragmentDirections
 import org.mozilla.fenix.onboarding.OnboardingReason
 import org.mozilla.fenix.onboarding.OnboardingTelemetryRecorder
 import org.mozilla.fenix.onboarding.continuous.ContinuousOnboardingFeature
+import org.mozilla.fenix.onboarding.continuous.ContinuousOnboardingMessagingBinding
 import org.mozilla.fenix.settings.downloads.DownloadLocationManager
 import org.mozilla.fenix.summarization.SummarizationNavigator
 import org.mozilla.fenix.termsofuse.store.Surface
@@ -95,7 +96,9 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
     private val translationsBannerIntegration = ViewBoundFeatureWrapper<TranslationsBannerIntegration>()
     private val listenSheetIntegration = ViewBoundFeatureWrapper<ListenSheetIntegration>()
     private val powerSavingModeReaderViewBinding = ViewBoundFeatureWrapper<PowerSavingModeReaderViewBinding>()
+    // Remove when ContinuousOnboardingFeature is retired, see Continuous-onboarding-via-messaging.md.
     private val continuousOnboardingFeature = ViewBoundFeatureWrapper<ContinuousOnboardingFeature>()
+    private val continuousOnboardingMessagingBinding = ViewBoundFeatureWrapper<ContinuousOnboardingMessagingBinding>()
     private var qrScanFenixFeature: ViewBoundFeatureWrapper<QrScanFenixFeature>? =
         ViewBoundFeatureWrapper<QrScanFenixFeature>()
     private val qrScanLauncher: ActivityResultLauncher<Intent> =
@@ -126,7 +129,9 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
 
     private val continuousOnboardingDefaultBrowserLauncher: ActivityResultLauncher<Intent> =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            // Remove when ContinuousOnboardingFeature is retired, see Continuous-onboarding-via-messaging.md.
             continuousOnboardingFeature.get()?.onDefaultBrowserStepCompleted(result.resultCode)
+            continuousOnboardingMessagingBinding.get()?.onSystemPromptResult(result.resultCode)
         }
 
     private val summarizationNavigator by lazy {
@@ -381,9 +386,33 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
     }
 
     private fun initContinuousOnboardingFeature() {
+        // Remove when ContinuousOnboardingFeature is retired, see Continuous-onboarding-via-messaging.md.
         ContinuousOnboardingFeature.register(
             fragment = this,
             binding = continuousOnboardingFeature,
+            launcher = continuousOnboardingDefaultBrowserLauncher,
+            telemetryRecorder = telemetryRecorder,
+            navigateToSyncSignIn = {
+                findNavController()
+                    .nav(
+                        id = R.id.browserFragment,
+                        directions =
+                            OnboardingFragmentDirections.actionGlobalTurnOnSync(
+                                entrypoint = FenixFxAEntryPoint.NewUserOnboarding
+                            ),
+                    )
+            },
+            navigateToIpProtection = { promptDetails ->
+                IPProtectionBottomSheetFragment.showPrompt(
+                    fragment = this,
+                    surface = IPProtectionSurface.BROWSER,
+                    promptDetails = promptDetails,
+                )
+            },
+        )
+        ContinuousOnboardingMessagingBinding.register(
+            fragment = this,
+            wrapper = continuousOnboardingMessagingBinding,
             launcher = continuousOnboardingDefaultBrowserLauncher,
             telemetryRecorder = telemetryRecorder,
             navigateToSyncSignIn = {

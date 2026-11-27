@@ -20,4 +20,10 @@ object FenixMessageSurfaceId {
 
     /** An informational card in VPN settings. */
     const val SETTINGS_VPN = "settings_vpn"
+
+    /**
+     * The continuous onboarding flow, which presents one message at a time. The message's action decides how it is
+     * presented: as a system prompt, as an onboarding card, as the IP Protection prompt, or not at all.
+     */
+    const val CONTINUOUS_ONBOARDING = "continuous_onboarding"
 }

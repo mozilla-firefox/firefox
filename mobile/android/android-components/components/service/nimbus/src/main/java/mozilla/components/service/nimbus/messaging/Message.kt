@@ -25,7 +25,7 @@ import androidx.annotation.VisibleForTesting
 data class Message(
     val id: String,
     internal val data: MessageData,
-    internal val action: String,
+    val action: String,
     internal val style: StyleData,
     internal val triggerIfAll: List<String>,
     internal val excludeIfAny: List<String> = listOf(),
