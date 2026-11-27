@@ -22,6 +22,8 @@ import mozilla.components.lib.state.Store
 import org.mozilla.fenix.GleanMetrics.CustomizeMenu
 
 private const val ITEMS_SEPARATOR = ","
+private const val REASON_INSIDE_ITEM = "inside_item"
+private const val REASON_LAST_SHOWN_ITEM = "last_shown_item"
 
 /**
  * [CustomizableMenuItemsStore] middleware recording telemetry for how users interact with the screen customizing the
@@ -48,11 +50,25 @@ class EditMenuItemsTelemetryMiddleware(private val sectionId: String) :
                 )
             is BackPressed ->
                 CustomizeMenu.editItemsBackPressed.record(CustomizeMenu.EditItemsBackPressedExtra(section = sectionId))
+            is AttemptedMoveAsSubItem ->
+                CustomizeMenu.editItemsMoveRefused.record(
+                    CustomizeMenu.EditItemsMoveRefusedExtra(
+                        section = sectionId,
+                        item = action.itemId,
+                        reason = REASON_INSIDE_ITEM,
+                    )
+                )
+            is AttemptedEmptySection ->
+                CustomizeMenu.editItemsMoveRefused.record(
+                    CustomizeMenu.EditItemsMoveRefusedExtra(
+                        section = sectionId,
+                        item = action.itemId,
+                        reason = REASON_LAST_SHOWN_ITEM,
+                    )
+                )
             is Init,
             is ItemsChanged,
-            is ExpansionToggled,
-            is AttemptedMoveAsSubItem,
-            is AttemptedEmptySection -> Unit
+            is ExpansionToggled -> Unit
         }
     }
 

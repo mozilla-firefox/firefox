@@ -12,6 +12,8 @@ import mozilla.components.compose.menu.data.CustomizableMenuItem
 import mozilla.components.compose.menu.data.ExpandableMenuItem
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.StandardMenuItem
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedEmptySection
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedMoveAsSubItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Update
@@ -231,6 +233,26 @@ class EditMenuItemsTelemetryMiddlewareTest {
         assertEquals(TOOLS_GROUP_ID, events.single().extra?.getValue("section"))
     }
 
+    @Test
+    fun `WHEN the user tries to move an item inside another item it cannot be in THEN record the refusal`() {
+        val store = createStore()
+        assertNull(CustomizeMenu.editItemsMoveRefused.testGetValue())
+
+        store.dispatch(AttemptedMoveAsSubItem(Extensions.id))
+
+        assertMoveRefusedRecorded(section = TOOLS_GROUP_ID, item = Extensions.id, reason = "inside_item")
+    }
+
+    @Test
+    fun `WHEN the user tries to hide the last shown item THEN record the refusal`() {
+        val store = createStore()
+        assertNull(CustomizeMenu.editItemsMoveRefused.testGetValue())
+
+        store.dispatch(AttemptedEmptySection(DesktopSite.id))
+
+        assertMoveRefusedRecorded(section = TOOLS_GROUP_ID, item = DesktopSite.id, reason = "last_shown_item")
+    }
+
     private fun createStore(
         sectionId: String = TOOLS_GROUP_ID,
         initialState: CustomizableMenuItemsState = CustomizableMenuItemsState(),
@@ -269,5 +291,15 @@ class EditMenuItemsTelemetryMiddlewareTest {
         assertEquals(shownItems.joinToString(","), extras?.getValue("shown_items"))
         assertEquals(hiddenItems.joinToString(","), extras?.getValue("hidden_items"))
         assertEquals(moreItems.joinToString(","), extras?.getValue("more_items"))
+    }
+
+    private fun assertMoveRefusedRecorded(section: String, item: String, reason: String) {
+        val events = CustomizeMenu.editItemsMoveRefused.testGetValue()
+        assertNotNull(events)
+
+        val extras = events.single().extra
+        assertEquals(section, extras?.getValue("section"))
+        assertEquals(item, extras?.getValue("item"))
+        assertEquals(reason, extras?.getValue("reason"))
     }
 }
