@@ -5,10 +5,14 @@
 package org.mozilla.fenix.components.menu
 
 import androidx.datastore.core.DataStore
+import io.mockk.every
+import io.mockk.mockk
 import java.io.IOException
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -545,6 +549,208 @@ class MenuCustomizationRepositoryTest {
 
             assertEquals(CustomizedMenuRecord.getDefaultInstance(), dataStore.record)
         }
+
+    @Test
+    fun `GIVEN no repository WHEN checking whether the customization is read THEN return true`() {
+        val repository: MenuCustomizationRepository? = null
+
+        assertTrue(
+            repository.isMenuHighlightCustomizationRead(
+                isMenuCustomizationScreenEnabled = false,
+                isToolsCustomizationEnabled = false,
+            )
+        )
+        assertTrue(
+            repository.isMenuHighlightCustomizationRead(
+                isMenuCustomizationScreenEnabled = true,
+                isToolsCustomizationEnabled = false,
+            )
+        )
+        assertTrue(
+            repository.isMenuHighlightCustomizationRead(
+                isMenuCustomizationScreenEnabled = false,
+                isToolsCustomizationEnabled = true,
+            )
+        )
+        assertTrue(
+            repository.isMenuHighlightCustomizationRead(
+                isMenuCustomizationScreenEnabled = true,
+                isToolsCustomizationEnabled = true,
+            )
+        )
+    }
+
+    @Test
+    fun `GIVEN the menu customization screen is off WHEN the menu customization is not read yet THEN return true`() {
+        val repository = mockRepository(customizedMenuInfo = MutableStateFlow(null))
+
+        assertTrue(
+            repository.isMenuHighlightCustomizationRead(
+                isMenuCustomizationScreenEnabled = false,
+                isToolsCustomizationEnabled = false,
+            )
+        )
+    }
+
+    @Test
+    fun `GIVEN the menu customization screen is on WHEN the menu customization is not read yet THEN return false`() {
+        val repository = mockRepository(customizedMenuInfo = MutableStateFlow(null))
+
+        assertFalse(
+            repository.isMenuHighlightCustomizationRead(
+                isMenuCustomizationScreenEnabled = true,
+                isToolsCustomizationEnabled = false,
+            )
+        )
+        assertFalse(
+            repository.isMenuHighlightCustomizationRead(
+                isMenuCustomizationScreenEnabled = true,
+                isToolsCustomizationEnabled = true,
+            )
+        )
+    }
+
+    @Test
+    fun `GIVEN the menu customization is read and tools customization is off WHEN the sections customization is not read THEN return true`() {
+        val repository =
+            mockRepository(
+                customizedMenuInfo = MutableStateFlow(defaultMenuInfo),
+                customizedSectionsInfo = MutableStateFlow(null),
+            )
+
+        assertTrue(
+            repository.isMenuHighlightCustomizationRead(
+                isMenuCustomizationScreenEnabled = true,
+                isToolsCustomizationEnabled = false,
+            )
+        )
+    }
+
+    @Test
+    fun `GIVEN the menu customization is read and tools customization is on WHEN the sections customization is not read THEN return false`() {
+        val repository =
+            mockRepository(
+                customizedMenuInfo = MutableStateFlow(defaultMenuInfo),
+                customizedSectionsInfo = MutableStateFlow(null),
+            )
+
+        assertFalse(
+            repository.isMenuHighlightCustomizationRead(
+                isMenuCustomizationScreenEnabled = false,
+                isToolsCustomizationEnabled = true,
+            )
+        )
+        assertFalse(
+            repository.isMenuHighlightCustomizationRead(
+                isMenuCustomizationScreenEnabled = true,
+                isToolsCustomizationEnabled = true,
+            )
+        )
+    }
+
+    @Test
+    fun `GIVEN both customizations are read and both settings are on WHEN checking whether it is read THEN return true`() {
+        val repository =
+            mockRepository(
+                customizedMenuInfo = MutableStateFlow(defaultMenuInfo),
+                customizedSectionsInfo = MutableStateFlow(emptyMap()),
+            )
+
+        assertTrue(
+            repository.isMenuHighlightCustomizationRead(
+                isMenuCustomizationScreenEnabled = true,
+                isToolsCustomizationEnabled = true,
+            )
+        )
+    }
+
+    @Test
+    fun `GIVEN no repository WHEN observing the menu customization THEN emit null right away`() = runTest {
+        val repository: MenuCustomizationRepository? = null
+        val emissions = mutableListOf<CustomizedMenuInfo?>()
+        repository
+            .customizedMenuInfoFlow(enabled = true)
+            .onEach(emissions::add)
+            .launchIn(backgroundScope + UnconfinedTestDispatcher(testScheduler))
+
+        assertEquals(listOf<CustomizedMenuInfo?>(null), emissions)
+    }
+
+    @Test
+    fun `GIVEN the menu customization screen is off WHEN observing the menu customization THEN emit null until it is read`() =
+        runTest {
+            val menuInfoFlow = MutableStateFlow<CustomizedMenuInfo?>(null)
+            val repository = mockRepository(customizedMenuInfo = menuInfoFlow)
+            val emissions = mutableListOf<CustomizedMenuInfo?>()
+            repository
+                .customizedMenuInfoFlow(enabled = false)
+                .onEach(emissions::add)
+                .launchIn(backgroundScope + UnconfinedTestDispatcher(testScheduler))
+
+            assertEquals(listOf<CustomizedMenuInfo?>(null), emissions)
+
+            menuInfoFlow.value = defaultMenuInfo
+
+            assertEquals(listOf(null, defaultMenuInfo), emissions)
+        }
+
+    @Test
+    fun `GIVEN the menu customization screen is on WHEN observing the menu customization THEN emit nothing until it is read`() =
+        runTest {
+            val menuInfoFlow = MutableStateFlow<CustomizedMenuInfo?>(null)
+            val repository = mockRepository(customizedMenuInfo = menuInfoFlow)
+            val emissions = mutableListOf<CustomizedMenuInfo?>()
+            repository
+                .customizedMenuInfoFlow(enabled = true)
+                .onEach(emissions::add)
+                .launchIn(backgroundScope + UnconfinedTestDispatcher(testScheduler))
+
+            assertEquals(emptyList(), emissions)
+
+            menuInfoFlow.value = defaultMenuInfo
+
+            assertEquals(listOf<CustomizedMenuInfo?>(defaultMenuInfo), emissions)
+        }
+
+    @Test
+    fun `GIVEN tools customization is off WHEN observing the sections customization THEN emit an empty map right away`() =
+        runTest {
+            val repository = mockRepository(customizedSectionsInfo = MutableStateFlow(null))
+            val emissions = mutableListOf<Map<String, CustomizedSectionInfo>>()
+            repository
+                .customizedSectionsInfoFlow(enabled = false)
+                .onEach(emissions::add)
+                .launchIn(backgroundScope + UnconfinedTestDispatcher(testScheduler))
+
+            assertEquals(listOf(emptyMap()), emissions)
+        }
+
+    @Test
+    fun `GIVEN tools customization is on WHEN observing the sections customization THEN emit nothing until it is read`() =
+        runTest {
+            val sectionsInfoFlow = MutableStateFlow<Map<String, CustomizedSectionInfo>?>(null)
+            val repository = mockRepository(customizedSectionsInfo = sectionsInfoFlow)
+            val emissions = mutableListOf<Map<String, CustomizedSectionInfo>>()
+            repository
+                .customizedSectionsInfoFlow(enabled = true)
+                .onEach(emissions::add)
+                .launchIn(backgroundScope + UnconfinedTestDispatcher(testScheduler))
+
+            assertEquals(emptyList(), emissions)
+
+            val sections = mapOf("tools" to toolsInfo())
+            sectionsInfoFlow.value = sections
+
+            assertEquals(listOf(sections), emissions)
+        }
+
+    private fun mockRepository(
+        customizedMenuInfo: MutableStateFlow<CustomizedMenuInfo?> = MutableStateFlow(null),
+        customizedSectionsInfo: MutableStateFlow<Map<String, CustomizedSectionInfo>?> = MutableStateFlow(null),
+    ): MenuCustomizationRepository = mockk {
+        every { this@mockk.customizedMenuInfo } returns customizedMenuInfo
+        every { this@mockk.customizedSectionsInfo } returns customizedSectionsInfo
+    }
 
     // The customization is read on a scope that runTest cancels at the end of each test.
     private fun TestScope.repository(

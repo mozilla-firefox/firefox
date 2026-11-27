@@ -95,6 +95,7 @@ import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.CustomizedSectionInfo
 import org.mozilla.fenix.components.menu.MenuAccessPoint
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.ACCOUNTS_AND_SETTINGS_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.LIBRARY_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.TOOLS_GROUP_ID
@@ -153,6 +154,7 @@ class BrowserToolbarMiddlewareTest {
         every { testContext.components.settings.toolbarExpandedShortcutKey } returns ShortcutType.BOOKMARK.value
         every { testContext.components.settings.showVoiceSearchInDisplayToolbar } returns false
         every { testContext.components.settings.shouldShowVoiceSearch } returns true
+        every { testContext.components.settings.isMenuCustomizationScreenEnabled } returns false
         every { testContext.components.settings.isToolsMenuCustomizationEnabled } returns false
     }
 
@@ -1821,8 +1823,96 @@ class BrowserToolbarMiddlewareTest {
             assertTrue((middleware.buildHomeAction(HomeToolbarAction.Menu) as ActionButtonRes).highlighted)
         }
 
+    @Test
+    fun `GIVEN a downloads notification WHEN the menu customization is not read yet THEN the menu button is not highlighted until it is read`() =
+        runTest {
+            every { testContext.components.settings.isMenuCustomizationScreenEnabled } returns true
+            val appStore =
+                AppStore(
+                    initialState = AppState(supportedMenuNotifications = setOf(SupportedMenuNotifications.Downloads))
+                )
+            val customizedMenuInfoFlow = MutableStateFlow<CustomizedMenuInfo?>(null)
+            val (_, toolbarStore) =
+                buildMiddlewareAndAddToStore(
+                    appStore = appStore,
+                    menuCustomizationRepository =
+                        menuCustomizationRepository(customizedMenuInfo = customizedMenuInfoFlow),
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(
+                expected = expectedMenuButton(false),
+                actual = toolbarStore.state.displayState.browserActionsEnd[1] as ActionButtonRes,
+            )
+
+            customizedMenuInfoFlow.value =
+                CustomizedMenuInfo(
+                    visibleSectionIds = listOf(LIBRARY_GROUP_ID, ACCOUNTS_AND_SETTINGS_GROUP_ID),
+                    hiddenSectionIds = emptyList(),
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(
+                expected = expectedMenuButton(true),
+                actual = toolbarStore.state.displayState.browserActionsEnd[1] as ActionButtonRes,
+            )
+        }
+
+    @Test
+    fun `GIVEN tools customization is on and an extension update notification WHEN the menu customization is read before the tools items THEN the menu button is highlighted only after both are read`() =
+        runTest {
+            every { testContext.components.settings.isMenuCustomizationScreenEnabled } returns true
+            every { testContext.components.settings.isToolsMenuCustomizationEnabled } returns true
+            val appStore =
+                AppStore(
+                    initialState =
+                        AppState(supportedMenuNotifications = setOf(SupportedMenuNotifications.ExtensionUpdate))
+                )
+            val customizedMenuInfoFlow = MutableStateFlow<CustomizedMenuInfo?>(null)
+            val sectionsInfoFlow = MutableStateFlow<Map<String, CustomizedSectionInfo>?>(null)
+            val (_, toolbarStore) =
+                buildMiddlewareAndAddToStore(
+                    appStore = appStore,
+                    menuCustomizationRepository =
+                        menuCustomizationRepository(
+                            customizedMenuInfo = customizedMenuInfoFlow,
+                            customizedSectionsInfo = sectionsInfoFlow,
+                        ),
+                )
+
+            customizedMenuInfoFlow.value =
+                BrowserMenuConfiguration.defaultMenuInfo(isToolbarAtBottom = false, isExpandedToolbarEnabled = false)
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(
+                expected = expectedMenuButton(false),
+                actual = toolbarStore.state.displayState.browserActionsEnd[1] as ActionButtonRes,
+            )
+
+            sectionsInfoFlow.value =
+                mapOf(
+                    TOOLS_GROUP_ID to
+                        CustomizedSectionInfo(
+                            sectionId = TOOLS_GROUP_ID,
+                            items =
+                                listOf(
+                                    CustomizedItemInfo(FenixMenuItem.FindInPage.id),
+                                    CustomizedItemInfo(FenixMenuItem.Extensions.id),
+                                ),
+                            hiddenItems = emptyList(),
+                        )
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(
+                expected = expectedMenuButton(true),
+                actual = toolbarStore.state.displayState.browserActionsEnd[1] as ActionButtonRes,
+            )
+        }
+
     private fun menuCustomizationRepository(
-        customizedMenuInfo: MutableStateFlow<CustomizedMenuInfo?> = MutableStateFlow(null),
+        customizedMenuInfo: MutableStateFlow<CustomizedMenuInfo?> =
+            MutableStateFlow(
+                BrowserMenuConfiguration.defaultMenuInfo(isToolbarAtBottom = false, isExpandedToolbarEnabled = false)
+            ),
         customizedSectionsInfo: MutableStateFlow<Map<String, CustomizedSectionInfo>?> = MutableStateFlow(emptyMap()),
     ): MenuCustomizationRepository {
         val repository: MenuCustomizationRepository = mockk()

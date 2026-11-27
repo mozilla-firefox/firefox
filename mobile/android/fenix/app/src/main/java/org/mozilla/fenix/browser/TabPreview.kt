@@ -52,6 +52,7 @@ import org.mozilla.fenix.browser.browsingmode.BrowsingMode.Normal
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode.Private
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
 import org.mozilla.fenix.components.menu.customizedSectionsInfoIfEnabled
+import org.mozilla.fenix.components.menu.isMenuHighlightCustomizationRead
 import org.mozilla.fenix.components.toolbar.ToolbarPosition
 import org.mozilla.fenix.databinding.TabPreviewBinding
 import org.mozilla.fenix.ext.components
@@ -169,13 +170,17 @@ constructor(
                     drawableResId = iconsR.drawable.mozac_ic_more_vertical_round_24,
                     contentDescription = R.string.content_description_menu,
                     highlighted =
-                        BrowserMenuConfiguration.hasNotificationToShow(
-                            context.components.appStore.state.supportedMenuNotifications,
-                            context.components.menuCustomizationRepository.customizedMenuInfo.value,
-                            context.components.menuCustomizationRepository.customizedSectionsInfoIfEnabled(
-                                context.components.settings.isToolsMenuCustomizationEnabled
+                        context.components.menuCustomizationRepository.isMenuHighlightCustomizationRead(
+                            context.components.settings.isMenuCustomizationScreenEnabled,
+                            context.components.settings.isToolsMenuCustomizationEnabled,
+                        ) &&
+                            BrowserMenuConfiguration.hasNotificationToShow(
+                                context.components.appStore.state.supportedMenuNotifications,
+                                context.components.menuCustomizationRepository.customizedMenuInfo.value,
+                                context.components.menuCustomizationRepository.customizedSectionsInfoIfEnabled(
+                                    context.components.settings.isToolsMenuCustomizationEnabled
+                                ),
                             ),
-                        ),
                     onClick = object : BrowserToolbarEvent {},
                 )
 

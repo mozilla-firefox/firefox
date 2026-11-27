@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -124,8 +123,10 @@ import org.mozilla.fenix.components.appstate.snackbar.SnackbarState
 import org.mozilla.fenix.components.menu.MenuAccessPoint
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
+import org.mozilla.fenix.components.menu.customizedMenuInfoFlow
 import org.mozilla.fenix.components.menu.customizedSectionsInfoFlow
 import org.mozilla.fenix.components.menu.customizedSectionsInfoIfEnabled
+import org.mozilla.fenix.components.menu.isMenuHighlightCustomizationRead
 import org.mozilla.fenix.components.metrics.MetricsUtils
 import org.mozilla.fenix.components.metrics.toSearchAccessPoint
 import org.mozilla.fenix.components.share.ShareSource
@@ -1014,7 +1015,8 @@ class BrowserToolbarMiddleware(
     }
 
     private fun observeMenuHighlightChanges(store: Store<BrowserToolbarState, BrowserToolbarAction>) {
-        val customizationFlow = menuCustomizationRepository?.customizedMenuInfo ?: flowOf(null)
+        val customizationFlow =
+            menuCustomizationRepository.customizedMenuInfoFlow(settings.isMenuCustomizationScreenEnabled)
         val sectionsCustomizationFlow =
             menuCustomizationRepository.customizedSectionsInfoFlow(settings.isToolsMenuCustomizationEnabled)
         scope.launch {
@@ -1360,13 +1362,17 @@ class BrowserToolbarMiddleware(
                     drawableResId = iconsR.drawable.mozac_ic_more_vertical_round_24,
                     contentDescription = R.string.content_description_menu,
                     highlighted =
-                        BrowserMenuConfiguration.hasNotificationToShow(
-                            appStore.state.supportedMenuNotifications,
-                            menuCustomizationRepository?.customizedMenuInfo?.value,
-                            menuCustomizationRepository.customizedSectionsInfoIfEnabled(
-                                settings.isToolsMenuCustomizationEnabled
+                        menuCustomizationRepository.isMenuHighlightCustomizationRead(
+                            settings.isMenuCustomizationScreenEnabled,
+                            settings.isToolsMenuCustomizationEnabled,
+                        ) &&
+                            BrowserMenuConfiguration.hasNotificationToShow(
+                                appStore.state.supportedMenuNotifications,
+                                menuCustomizationRepository?.customizedMenuInfo?.value,
+                                menuCustomizationRepository.customizedSectionsInfoIfEnabled(
+                                    settings.isToolsMenuCustomizationEnabled
+                                ),
                             ),
-                        ),
                     onClick = MenuClicked(source),
                 )
 

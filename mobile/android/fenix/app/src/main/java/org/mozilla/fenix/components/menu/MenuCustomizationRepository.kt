@@ -12,9 +12,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import mozilla.components.support.base.log.logger.Logger
 import org.mozilla.fenix.datastore.CustomizedMenuRecord
@@ -220,6 +220,30 @@ class MenuCustomizationRepository(
 }
 
 /**
+ * Whether the customization the menu button highlight depends on was read. Only the customizations whose setting is on
+ * are waited for: the one of the sections if [isMenuCustomizationScreenEnabled], the one of their items if
+ * [isToolsCustomizationEnabled]. Always `true` without a repository.
+ */
+fun MenuCustomizationRepository?.isMenuHighlightCustomizationRead(
+    isMenuCustomizationScreenEnabled: Boolean,
+    isToolsCustomizationEnabled: Boolean,
+): Boolean =
+    this == null ||
+        ((!isMenuCustomizationScreenEnabled || customizedMenuInfo.value != null) &&
+            (!isToolsCustomizationEnabled || customizedSectionsInfo.value != null))
+
+/**
+ * Observe the structure of the menu, waiting for it to be read if [enabled], or `null`, meaning the default, if this
+ * repository is `null`.
+ */
+fun MenuCustomizationRepository?.customizedMenuInfoFlow(enabled: Boolean): Flow<CustomizedMenuInfo?> =
+    when {
+        this == null -> flowOf(null)
+        enabled -> customizedMenuInfo.filterNotNull()
+        else -> customizedMenuInfo
+    }
+
+/**
  * The items of each menu section as customized by the user, keyed by section id, or no customization if [enabled] is
  * `false`, this repository is `null` or the customization was not read yet.
  */
@@ -227,14 +251,14 @@ fun MenuCustomizationRepository?.customizedSectionsInfoIfEnabled(enabled: Boolea
     if (enabled) this?.customizedSectionsInfo?.value.orEmpty() else emptyMap()
 
 /**
- * Observe the items of each menu section as customized by the user, keyed by section id, with no customization if
- * [enabled] is `false`, this repository is `null` or the customization was not read yet.
+ * Observe the items of each menu section as customized by the user, keyed by section id, waiting for the customization
+ * to be read, with no customization if [enabled] is `false` or this repository is `null`.
  */
 fun MenuCustomizationRepository?.customizedSectionsInfoFlow(
     enabled: Boolean
 ): Flow<Map<String, CustomizedSectionInfo>> =
     if (enabled && this != null) {
-        customizedSectionsInfo.map { it.orEmpty() }
+        customizedSectionsInfo.filterNotNull()
     } else {
         flowOf(emptyMap())
     }

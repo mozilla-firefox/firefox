@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.search.SearchEngine
@@ -82,8 +81,10 @@ import org.mozilla.fenix.components.appstate.VoiceSearchAction.VoiceInputRequest
 import org.mozilla.fenix.components.menu.MenuAccessPoint
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
 import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration
+import org.mozilla.fenix.components.menu.customizedMenuInfoFlow
 import org.mozilla.fenix.components.menu.customizedSectionsInfoFlow
 import org.mozilla.fenix.components.menu.customizedSectionsInfoIfEnabled
+import org.mozilla.fenix.components.menu.isMenuHighlightCustomizationRead
 import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
 import org.mozilla.fenix.ext.nav
 import org.mozilla.fenix.home.HomeFragmentDirections
@@ -171,7 +172,7 @@ internal sealed class NavigationInteractions : BrowserToolbarEvent {
  * @param isTallScreen Callback for checking if the screen is tall.
  * @param scope [CoroutineScope] used for running long running operations in background.
  */
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LargeClass", "LongParameterList", "TooManyFunctions")
 class BrowserToolbarMiddleware(
     private val uiContext: Context,
     private val appStore: AppStore,
@@ -625,7 +626,7 @@ class BrowserToolbarMiddleware(
         scope.launch {
             combine(
                     appStore.flow().map { it.supportedMenuNotifications }.distinctUntilChanged(),
-                    menuCustomizationRepository?.customizedMenuInfo ?: flowOf(null),
+                    menuCustomizationRepository.customizedMenuInfoFlow(settings.isMenuCustomizationScreenEnabled),
                     menuCustomizationRepository.customizedSectionsInfoFlow(settings.isToolsMenuCustomizationEnabled),
                 ) { notifications, info, sectionsInfo ->
                     HomeMenuConfiguration.hasNotificationToShow(notifications, info, sectionsInfo)
@@ -753,13 +754,17 @@ class BrowserToolbarMiddleware(
                     drawableResId = iconsR.drawable.mozac_ic_more_vertical_round_24,
                     contentDescription = R.string.content_description_menu,
                     highlighted =
-                        HomeMenuConfiguration.hasNotificationToShow(
-                            appStore.state.supportedMenuNotifications,
-                            menuCustomizationRepository?.customizedMenuInfo?.value,
-                            menuCustomizationRepository.customizedSectionsInfoIfEnabled(
-                                settings.isToolsMenuCustomizationEnabled
+                        menuCustomizationRepository.isMenuHighlightCustomizationRead(
+                            settings.isMenuCustomizationScreenEnabled,
+                            settings.isToolsMenuCustomizationEnabled,
+                        ) &&
+                            HomeMenuConfiguration.hasNotificationToShow(
+                                appStore.state.supportedMenuNotifications,
+                                menuCustomizationRepository?.customizedMenuInfo?.value,
+                                menuCustomizationRepository.customizedSectionsInfoIfEnabled(
+                                    settings.isToolsMenuCustomizationEnabled
+                                ),
                             ),
-                        ),
                     onClick = MenuClicked(source),
                 )
 
