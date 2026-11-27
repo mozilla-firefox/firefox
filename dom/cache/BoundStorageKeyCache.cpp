@@ -212,8 +212,9 @@ auto BoundStorageKeyCache::Put(JSContext* aCx,
     return nullptr;
   }
 
-  if (NS_WARN_IF(aResponse.GetPrincipal() &&
-                 aResponse.GetPrincipal()->GetIsExpandedPrincipal())) {
+  if (NS_WARN_IF(aResponse.GetPrincipalInfo() &&
+                 aResponse.GetPrincipalInfo()->type() ==
+                     mozilla::ipc::PrincipalInfo::TExpandedPrincipalInfo)) {
     // WebExtensions Content Scripts can currently run fetch from their global
     // which will end up to have an expanded principal, but we require that the
     // contents of Cache storage for the content origin to be same-origin, and

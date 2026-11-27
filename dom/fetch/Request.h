@@ -126,7 +126,9 @@ class Request final : public FetchBody<Request>, public nsWrapperCache {
   already_AddRefed<nsIInputStream> TakeBodyForServiceWorker(JSContext* aCx,
                                                             ErrorResult& aRv);
 
-  nsIPrincipal* GetPrincipal() const { return mRequest->GetPrincipal(); }
+  const UniquePtr<mozilla::ipc::PrincipalInfo>& GetPrincipalInfo() const {
+    return mRequest->GetPrincipalInfo();
+  }
 
   AbortSignal* GetOrCreateSignal();
 

@@ -13,6 +13,7 @@
 #include "mozilla/dom/InternalHeaders.h"
 #include "mozilla/dom/cache/CacheTypes.h"
 #include "mozilla/ipc/IPCStreamUtils.h"
+#include "mozilla/ipc/PBackgroundSharedTypes.h"
 #include "nsIRandomGenerator.h"
 #include "nsStreamUtils.h"
 
@@ -82,7 +83,10 @@ template <typename T>
 
   response->InitChannelInfo(aIPCResponse.metadata().securityInfo());
 
-  response->SetPrincipal(aIPCResponse.metadata().principal());
+  if (aIPCResponse.metadata().principalInfo()) {
+    response->SetPrincipalInfo(std::make_unique<mozilla::ipc::PrincipalInfo>(
+        aIPCResponse.metadata().principalInfo().ref()));
+  }
 
   response->SetBodyBlobImpl(aIPCResponse.metadata().bodyBlobImpl());
   nsAutoString bodyLocalPath(aIPCResponse.metadata().bodyLocalPath());
@@ -121,6 +125,9 @@ InternalResponseMetadata InternalResponse::GetMetadata() {
   HeadersGuardEnum headersGuard;
   UnfilteredHeaders()->ToIPC(headers, headersGuard);
 
+  Maybe<mozilla::ipc::PrincipalInfo> principalInfo =
+      mPrincipalInfo ? Some(*mPrincipalInfo) : Nothing();
+
   RefPtr<BlobImpl> bodyBlobImpl(BodyBlobImpl());
   nsAutoString bodyLocalPath(BodyLocalPath());
 
@@ -130,7 +137,7 @@ InternalResponseMetadata InternalResponse::GetMetadata() {
   return InternalResponseMetadata(
       mType, GetUnfilteredURLList().Clone(), GetUnfilteredStatus(),
       GetUnfilteredStatusText(), headersGuard, headers, mErrorCode,
-      GetAlternativeDataType(), securityInfo, mPrincipal, bodyBlobImpl,
+      GetAlternativeDataType(), securityInfo, principalInfo, bodyBlobImpl,
       bodyLocalPath, GetCredentialsMode());
 }
 
@@ -334,6 +341,11 @@ void InternalResponse::SetPaddingSize(int64_t aPaddingSize) {
   mPaddingSize = aPaddingSize;
 }
 
+void InternalResponse::SetPrincipalInfo(
+    UniquePtr<mozilla::ipc::PrincipalInfo> aPrincipalInfo) {
+  mPrincipalInfo = std::move(aPrincipalInfo);
+}
+
 LoadTainting InternalResponse::GetTainting() const {
   switch (mType) {
     case ResponseType::Cors:
@@ -360,7 +372,10 @@ SafeRefPtr<InternalResponse> InternalResponse::OpaqueResponse() {
       MakeSafeRefPtr<InternalResponse>(0, ""_ns);
   response->mType = ResponseType::Opaque;
   response->mChannelInfo = mChannelInfo;
-  response->mPrincipal = mPrincipal;
+  if (mPrincipalInfo) {
+    response->mPrincipalInfo =
+        std::make_unique<mozilla::ipc::PrincipalInfo>(*mPrincipalInfo);
+  }
   response->mWrappedResponse = SafeRefPtrFromThis();
   return response;
 }
@@ -382,7 +397,10 @@ SafeRefPtr<InternalResponse> InternalResponse::CreateIncompleteCopy() {
   copy->mType = mType;
   copy->mURLList = mURLList.Clone();
   copy->mChannelInfo = mChannelInfo;
-  copy->mPrincipal = mPrincipal;
+  if (mPrincipalInfo) {
+    copy->mPrincipalInfo =
+        std::make_unique<mozilla::ipc::PrincipalInfo>(*mPrincipalInfo);
+  }
   return copy;
 }
 

@@ -28,6 +28,8 @@
 #include "nsIScriptError.h"
 #include "nsNetUtil.h"
 
+using mozilla::ipc::PrincipalInfo;
+
 namespace mozilla {
 namespace dom {
 
@@ -409,8 +411,11 @@ nsresult NetworkLoadHandler::PrepareForRequest(nsIRequest* aRequest) {
   nsCOMPtr<nsIPrincipal> channelPrincipal;
   MOZ_TRY(ssm->GetChannelResultPrincipal(channel,
                                          getter_AddRefs(channelPrincipal)));
-  ir->SetPrincipal(channelPrincipal);
 
+  auto principalInfo = std::make_unique<PrincipalInfo>();
+  MOZ_TRY(PrincipalToPrincipalInfo(channelPrincipal, principalInfo.get()));
+
+  ir->SetPrincipalInfo(std::move(principalInfo));
   ir->Headers()->FillResponseHeaders(channel);
 
   RefPtr<CacheCreator> cacheCreator = mRequestHandle->GetCacheCreator();

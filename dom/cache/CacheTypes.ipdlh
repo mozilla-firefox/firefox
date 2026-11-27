@@ -5,10 +5,10 @@
 include protocol PCache;
 include protocol PCacheStreamControl;
 include IPCStream;
+include PBackgroundSharedTypes;
 
 include "mozilla/dom/cache/IPCUtils.h";
 include "mozilla/dom/FetchIPCTypes.h";
-include "mozilla/dom/PermissionMessageUtils.h";
 include "mozilla/ipc/TransportSecurityInfoUtils.h";
 include "mozilla/ipc/URIUtils.h";
 
@@ -25,7 +25,6 @@ using mozilla::void_t from "mozilla/ipc/IPCCore.h";
 using nsContentPolicyType from "nsIContentPolicy.h";
 using struct nsID from "nsID.h";
 using nsILoadInfo::CrossOriginEmbedderPolicy from "nsILoadInfo.h";
-[RefCounted] using class nsIPrincipal from "nsIPrincipal.h";
 [RefCounted] using class nsITransportSecurityInfo from "nsITransportSecurityInfo.h";
 [RefCounted] using class nsIURI from "nsIURI.h";
 
@@ -73,7 +72,7 @@ struct CacheRequest
   RequestRedirect requestRedirect;
   nsString integrity;
   CrossOriginEmbedderPolicy loadingEmbedderPolicy;
-  nullable nsIPrincipal principal;
+  PrincipalInfo? principalInfo;
 };
 
 struct CacheResponse
@@ -87,7 +86,7 @@ struct CacheResponse
   CacheReadStream? body;
   int64_t bodyDiskSize;
   nullable nsITransportSecurityInfo securityInfo;
-  nullable nsIPrincipal principal;
+  PrincipalInfo? principalInfo;
   uint32_t paddingInfo;
   int64_t paddingSize;
   RequestCredentials credentials;

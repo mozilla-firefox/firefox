@@ -41,6 +41,7 @@
 #include "mozilla/ipc/BackgroundChild.h"
 #include "mozilla/ipc/IPCStreamUtils.h"
 #include "mozilla/ipc/PBackgroundChild.h"
+#include "mozilla/ipc/PBackgroundSharedTypes.h"
 #include "mozilla/net/CookieJarSettings.h"
 #include "nsDOMString.h"
 #include "nsIClassifiedChannel.h"
@@ -1473,9 +1474,10 @@ already_AddRefed<Promise> FetchBody<Derived>::ConsumeBody(
   nsCOMPtr<nsIInputStream> bodyStream;
   DerivedClass()->GetBody(getter_AddRefs(bodyStream));
   if (!bodyStream) {
-    RefPtr<EmptyBody> emptyBody = EmptyBody::Create(
-        DerivedClass()->GetParentObject(), DerivedClass()->GetPrincipal(),
-        signalImpl, mimeType, mixedCaseMimeType, aRv);
+    RefPtr<EmptyBody> emptyBody =
+        EmptyBody::Create(DerivedClass()->GetParentObject(),
+                          DerivedClass()->GetPrincipalInfo().get(), signalImpl,
+                          mimeType, mixedCaseMimeType, aRv);
     if (NS_WARN_IF(aRv.Failed())) {
       return nullptr;
     }
@@ -1492,12 +1494,18 @@ already_AddRefed<Promise> FetchBody<Derived>::ConsumeBody(
 
   MutableBlobStorage::MutableBlobStorageType blobStorageType =
       MutableBlobStorage::eOnlyInMemory;
+  const mozilla::UniquePtr<mozilla::ipc::PrincipalInfo>& principalInfo =
+      DerivedClass()->GetPrincipalInfo();
   // We support temporary file for blobs only if the principal is known and
   // it's system or content not in private Browsing.
-  nsIPrincipal* principal = DerivedClass()->GetPrincipal();
-  if (principal && (principal->IsSystemPrincipal() ||
-                    (principal->GetIsContentPrincipal() &&
-                     !principal->GetIsInPrivateBrowsing()))) {
+  if (principalInfo &&
+      (principalInfo->type() ==
+           mozilla::ipc::PrincipalInfo::TSystemPrincipalInfo ||
+       (principalInfo->type() ==
+            mozilla::ipc::PrincipalInfo::TContentPrincipalInfo &&
+        !principalInfo->get_ContentPrincipalInfo()
+             .attrs()
+             .IsPrivateBrowsing()))) {
     blobStorageType = MutableBlobStorage::eCouldBeInTemporaryFile;
   }
 
@@ -1841,23 +1849,28 @@ NS_IMPL_CYCLE_COLLECTION_TRACE_END
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(EmptyBody)
 NS_INTERFACE_MAP_END_INHERITING(FetchBody<EmptyBody>)
 
-EmptyBody::EmptyBody(nsIGlobalObject* aGlobal, nsIPrincipal* aPrincipal,
+EmptyBody::EmptyBody(nsIGlobalObject* aGlobal,
+                     mozilla::ipc::PrincipalInfo* aPrincipalInfo,
                      AbortSignalImpl* aAbortSignalImpl,
                      const nsACString& aMimeType,
                      const nsACString& aMixedCaseMimeType,
                      already_AddRefed<nsIInputStream> aBodyStream)
     : FetchBody<EmptyBody>(aGlobal),
-      mPrincipal(aPrincipal),
       mAbortSignalImpl(aAbortSignalImpl),
       mMimeType(aMimeType),
       mMixedCaseMimeType(aMixedCaseMimeType),
-      mBodyStream(std::move(aBodyStream)) {}
+      mBodyStream(std::move(aBodyStream)) {
+  if (aPrincipalInfo) {
+    mPrincipalInfo =
+        std::make_unique<mozilla::ipc::PrincipalInfo>(*aPrincipalInfo);
+  }
+}
 
 EmptyBody::~EmptyBody() = default;
 
 /* static */
 already_AddRefed<EmptyBody> EmptyBody::Create(
-    nsIGlobalObject* aGlobal, nsIPrincipal* aPrincipal,
+    nsIGlobalObject* aGlobal, mozilla::ipc::PrincipalInfo* aPrincipalInfo,
     AbortSignalImpl* aAbortSignalImpl, const nsACString& aMimeType,
     const nsACString& aMixedCaseMimeType, ErrorResult& aRv) {
   nsCOMPtr<nsIInputStream> bodyStream;
@@ -1867,7 +1880,7 @@ already_AddRefed<EmptyBody> EmptyBody::Create(
   }
 
   RefPtr<EmptyBody> emptyBody =
-      new EmptyBody(aGlobal, aPrincipal, aAbortSignalImpl, aMimeType,
+      new EmptyBody(aGlobal, aPrincipalInfo, aAbortSignalImpl, aMimeType,
                     aMixedCaseMimeType, bodyStream.forget());
   return emptyBody.forget();
 }
