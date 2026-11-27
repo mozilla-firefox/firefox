@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Negative end margin is applied again when a line moves below a float</title>
+<link rel="stylesheet" href="/fonts/ahem.css">
+<style>
+.container { font: 10px/1 Ahem; width: 300px; }
+.spacer { height: 20px; }
+.span { margin-right: -30px; }
+.box { display: inline-block; width: 90px; height: 10px; background: green; }
+</style>
+<div class="container">
+  <div class="spacer"></div><span class="span"><span>XXXXXXXXXXXXXXXXXXXXXX</span><span class="box"></span></span>
+</div>

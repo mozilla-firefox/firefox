@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Negative end margin balancing end padding on an inline does not cause wrapping in a shrink-to-fit inline-block</title>
+<link rel="help" href="https://drafts.csswg.org/css2/box.html#margin-properties">
+<link rel="match" href="negative-margin-end-inline-block-no-wrap-ref.html">
+<style>
+body { margin: 0; font: 20px/1 monospace; }
+.outer { display: inline-block; }
+.inner { padding-right: 10px; margin-right: -10px; }
+</style>
+<span class="outer"><span class="inner">Two words</span></span>

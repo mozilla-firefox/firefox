@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>min-content/fit-content with negative margins on inlines</title>
+<style>
+.outer {
+  display: inline-block;
+  font: 16px monospace;
+  border:1px solid gray;
+  margin: 1em;
+  white-space: pre;
+}
+.a {
+  margin-inline-start: -2ch;
+}
+.b {
+  margin-inline-end: -2ch;
+}
+.c {
+  margin-inline: -2ch;
+}
+u {
+  color: blue;
+}
+</style>
+
+<p>The <u>blue spans</u> should project by 2ch beyond the width of the enclosing block at the start/end:</p>
+
+<p>fit-content:</p>
+
+<span class="outer" style="width: 33ch"><span class="a"><u>supercalifragilistic</u> expialidocious</span></span>
+<br>
+<span class="outer" style="width: 33ch"><span class="b">supercalifragilistic <u>expialidocious</u></span></span>
+<br>
+<span class="outer" style="width: 31ch"><span class="c"><u>supercalifragilistic expialidocious</u></span></span>
+
+<p>min-content:</p>
+
+<span class="outer" style="width: 8ch"><span class="a"><u>supercali-</u><br>frag-i-<br>lis-tic-<br>ex-pi-a-<br>li-do-<br>cious</span></span>
+
+<span class="outer" style="width: 5ch"><span class="b">su-<br>per-<br>cal-<br>i-<br>frag-<br>i-<br>lis-<br>tic-<br>ex-<br>pi-a-<br>li-<br><u>docious</u></span></span>
+
+<span class="outer" style="width: 8ch"><span class="c"><u>supercali-</u><br>frag-i-<br>lis-tic-<br>ex-pi-a-<br>li-<u>docious</u></span></span>

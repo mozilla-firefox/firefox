@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Negative inline margins do not cause wrapped line to overflow</title>
+<link rel="help" href="https://drafts.csswg.org/css2/box.html#margin-properties">
+<link rel="match" href="negative-margin-inline-001-ref.html">
+<style>
+.outer {
+  display: inline-block;
+  font: 16px monospace;
+  width: 20ch;
+  border:1px solid gray;
+  margin: 2em;
+}
+.inner {
+  margin-inline: -3ch;
+}
+</style>
+<span class="outer"><span class="inner">the quick brown fox jumps over the lazy dog.</span></span>
