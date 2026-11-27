@@ -297,6 +297,14 @@ def make_add_if_not_instruction(filename, manifest):
         manifest_file.write(f'add-if-not "{filename}" "{filename}"\n')
 
 
+def append_rmdir_instructions(olddirs, newdirs, manifest):
+    newdirs = set(newdirs)
+    with open(manifest, "a") as manifest_file:
+        for rel_path in olddirs:
+            if rel_path not in newdirs:
+                manifest_file.write(f'rmdir "{rel_path}/"\n')
+
+
 def append_remove_instructions(newdir, manifest):
     removed_files_path = os.path.join(newdir, "removed-files")
     if not os.path.isfile(removed_files_path):
@@ -503,7 +511,7 @@ def make_partial(
     os.makedirs(partials_dir, exist_ok=True)
 
     # List files and directories
-    oldfiles, _ = list_files_and_dirs(from_mar_dir)
+    oldfiles, olddirs = list_files_and_dirs(from_mar_dir)
     newfiles, newdirs = list_files_and_dirs(to_mar_dir)
 
     for newdir in newdirs:
@@ -586,6 +594,8 @@ def make_partial(
 
     # Add directory removal instructions from removed-files
     append_remove_instructions(to_mar_dir, manifest_file)
+
+    append_rmdir_instructions(olddirs, newdirs, manifest_file)
 
     reorder_instructions(manifest_file, appname)
 

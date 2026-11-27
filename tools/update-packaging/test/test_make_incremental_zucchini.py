@@ -417,6 +417,23 @@ def test_list_files_and_dirs_is_reverse_sorted(tmp_path):
     assert dirs == ["sub/nested/deep", "sub/nested", "sub"]
 
 
+def test_append_rmdir_instructions_removes_dirs_no_longer_shipped(tmp_path):
+    _write(tmp_path / "from/kept/a.txt", b"a")
+    _write(tmp_path / "from/gone/nested/b.txt", b"b")
+    _write(tmp_path / "from/gone/c.txt", b"c")
+    _write(tmp_path / "to/kept/a.txt", b"a")
+    manifest = tmp_path / "updatev3.manifest"
+
+    _, olddirs = mz.list_files_and_dirs(str(tmp_path / "from"))
+    _, newdirs = mz.list_files_and_dirs(str(tmp_path / "to"))
+    mz.append_rmdir_instructions(olddirs, newdirs, str(manifest))
+
+    assert manifest.read_text().splitlines() == [
+        'rmdir "gone/nested/"',
+        'rmdir "gone/"',
+    ]
+
+
 def test_download_file_succeeds_first_try(tmp_path):
     url = "https://archive.mozilla.org/firefox.mar"
     dest = str(tmp_path / "out.mar")
