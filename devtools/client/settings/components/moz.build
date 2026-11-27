@@ -6,6 +6,8 @@ DevToolsModules(
     "devtools-settings-body-limit.css",
     "devtools-settings-body-limit.mjs",
     "devtools-settings-disable-javascript.mjs",
+    "devtools-settings-local-mode.css",
+    "devtools-settings-local-mode.mjs",
     "devtools-settings-pref.mjs",
     "devtools-settings-theme.mjs",
     "devtools-settings.css",
