@@ -8,7 +8,8 @@ description: Front-end CSS and markup issues and changes that move, size or clip
 Load `desktop-probing` before hand-rolling a probe; it defines the host's
 and the target's platform file that this skill cites by section. For a
 positioned box, a popover or an anchored box that lands wrong or grows the page,
-read [`references/positioning.md`](references/positioning.md): §1 for what the
+or a diff that adds or changes one, read
+[`references/positioning.md`](references/positioning.md): §1 for what the
 box resolves against, §2 for the top layer, §3 for anchors.
 
 Also load `desktop-theme-tokens` when a length comes from a design token, and
@@ -21,8 +22,8 @@ a reporter's screenshot by sampling it").
 **A document in the source tree backs this skill:
 `docs/code-quality/coding-style/css_guidelines.md`. It's kept up to date with
 how different parts of the code base interact in non-obvious ways; it may differ
-from what you remember. Before the sweep, read its "Chrome versus in-content"
-and "UI density" sections.** This skill builds on them and does not repeat them;
+from what you remember. Before the sweep, or before reviewing a diff without
+one, read its "Chrome versus in-content" and "UI density" sections.** This skill builds on them and does not repeat them;
 `desktop-theme-tokens` §5 covers rem-valued tokens.
 
 Sweep these from the chrome context and emit one row per cell:

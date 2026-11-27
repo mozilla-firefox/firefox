@@ -26,11 +26,13 @@ change touches a `(forced-colors)` or `(prefers-contrast)` layer,
 `toolkit/themes/shared/design-system/docs/README.design-tokens.stories.md`.
 They're kept up to date with how different parts of the code base interact in
 non-obvious ways; they may differ from what you remember. Before adding,
-renaming or removing a variable, read css_guidelines "Using CSS variables" and
-"Adding new variables".** This skill builds on them and does not repeat them.
+renaming or removing a variable, or reviewing a diff that does, read
+css_guidelines "Using CSS variables" and "Adding new variables".** This skill
+builds on them and does not repeat them.
 
-**Before editing a token, read the README's "JSON format deep dive"** (where the
-generator reads and writes, and where it writes a token's `comment`).
+**Before editing a token, or reviewing a token edit, read the README's "JSON
+format deep dive"** (where the generator reads and writes, and where it writes a
+token's `comment`).
 
 The generated sheets live in `toolkit/themes/shared/design-system/dist/` and
 beside the code they style. A hand edit to a generated sheet

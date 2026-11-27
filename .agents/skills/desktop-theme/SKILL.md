@@ -5,7 +5,9 @@ description: "A Firefox::Theme or Toolkit::Themes bug; investigating a CSS issue
 
 # Desktop theme
 
-Without a build, a browser or `./mach` (e.g. in a review that supplies these skills alongside the patch), skip only the steps that need what is missing and keep going from the diff and the source, which show which rule wins and which layer or token a declaration reads. Where a finding rests on a number only a skipped step can produce (e.g. a contrast ratio, a resolved color, a size), flag it and ask the author for that measurement rather than inferring it.
+Run every step you have the tools for, in a review too. Without a build, a browser or `./mach`, skip only the steps that need what is missing and keep going from the diff and the source, which show which rule wins and which layer or token a declaration reads. Where a finding rests on a number only a skipped step can produce (e.g. a contrast ratio, a resolved color, a size), flag it and ask the author for that measurement rather than inferring it.
+
+Skipping a step never skips the documents it points to. In a review, a subject skill's "before you probe, edit, add or remove X, read Y" also means "before reviewing a diff that does X, read Y": the documents hold the checks the diff is reviewed against.
 
 Whenever you write or review CSS, read `docs/code-quality/coding-style/css_guidelines.md` and treat it as a checklist: check the diff against each of its rules that a subject skill below doesn't already cover, and cite the heading of the section each rule comes from.
 

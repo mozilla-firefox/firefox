@@ -16,9 +16,10 @@ inconsistent. Load `desktop-probing` before the first live launch (a
 machine's and the target's) that this skill cites by section.
 
 **Read the used value off the live element** with the instruments in
-`desktop-probing` §1. Also apply the checks in
+`desktop-probing` §1. Whether or not you can, apply the checks in
 `accessible/docs/HCMCSSChecklist.md` on foreground/background pairs, matching
-interaction states, borders, visual effects and SVG colors.
+interaction states, borders, visual effects and SVG colors, to every color a
+change adds or modifies.
 
 Also load `desktop-theme-tokens` when the color comes from a design token, and
 `desktop-theme-screenshots` when the result needs showing on the bug.
@@ -29,8 +30,9 @@ Also load `desktop-theme-tokens` when the color comes from a design token, and
 `docs/code-quality/coding-style/css_guidelines.md` and
 `toolkit/themes/shared/design-system/docs/README.design-tokens.stories.md`.
 They're kept up to date with how different parts of the code base interact in
-non-obvious ways; they may differ from what you remember. Before the probe, read
-css_guidelines "Colors that resolve per realm" and "High contrast mode" with its
+non-obvious ways; they may differ from what you remember. Before the probe, or
+before reviewing a diff without one, read css_guidelines "Colors that resolve
+per realm" and "High contrast mode" with its
 "Content area" and "Chrome area" subsections, and the README's "Chrome native OS
 theme".** When the color comes from a theme, built-in or add-on, also read
 "Theme support": a WebExtension theme writes its mapped colors inline on the
