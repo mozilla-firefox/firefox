@@ -169,4 +169,16 @@ declare namespace BrowserWindow {
 
   // tabbrowser/content/tab-context-menu.mjs
   var TabContextMenu: typeof import("chrome://browser/content/tabbrowser/tab-context-menu.mjs").TabContextMenu;
+
+  // toolkit/content/viewZoomOverlay.js
+  var ZoomManager: {
+    readonly MIN: number;
+    readonly MAX: number;
+    useFullZoom: boolean;
+    zoom: number;
+    getZoomForBrowser(aBrowser: MozBrowser): number;
+    setZoomForBrowser(aBrowser: MozBrowser, aVal: number): void;
+    enlargeForBrowser(aBrowser: MozBrowser): void;
+    reduceForBrowser(aBrowser: MozBrowser): void;
+  };
 }

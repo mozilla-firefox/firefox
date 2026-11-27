@@ -46,6 +46,7 @@ declare var MousePosTracker: BrowserWindow["MousePosTracker"];
 declare var PanelUI: BrowserWindow["PanelUI"];
 declare var gTabsPanel: BrowserWindow["gTabsPanel"];
 declare var ctrlTab: BrowserWindow["ctrlTab"];
+declare var ZoomManager: BrowserWindow["ZoomManager"];
 declare var StatusPanel: BrowserWindow["StatusPanel"];
 declare var TabBarVisibility: BrowserWindow["TabBarVisibility"];
 declare var TabContextMenu: BrowserWindow["TabContextMenu"];
