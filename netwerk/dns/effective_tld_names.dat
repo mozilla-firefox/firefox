@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-11-26_11-38-20_UTC
-// COMMIT: 59540d8dd711a8e49b69eaf52c3e1b9f39b1035b
+// VERSION: 2026-11-24_16-45-31_UTC
+// COMMIT: cb637a7ba4c2bd119bcf19595731949988bdaf50
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -705,13 +705,10 @@ bv
 // bw : https://nic.net.bw/bw-name-structure
 bw
 ac.bw
-agric.bw
 co.bw
 gov.bw
-me.bw
 net.bw
 org.bw
-shop.bw
 
 // by : https://www.iana.org/domains/root/db/by.html
 // http://tld.by/rules_2006_en.html
@@ -12601,10 +12598,6 @@ square.site
 // Submitted by Joshua Weiss <admin.engineering@bluebite.com>
 bluebite.io
 
-// Bonto : https://bonto.dev
-// Submitted by Sidequest Ltd <bonto@sidequestvr.com>
-bonto.page
-
 // Boomla : https://boomla.com
 // Submitted by Tibor Halter <thalter@boomla.com>
 boomla.net
@@ -13546,10 +13539,6 @@ objects.lp.dev
 // Submitted by Marcel Daus <cloudops@encoway.de>
 eu.encoway.cloud
 
-// Entry : https://entry.fyi/
-// Submitted by Francis Luz <hello@entry.fyi>
-entrypages.net
-
 // EU.org : https://eu.org/
 // Submitted by Pierre Beyssac <hostmaster@eu.org>
 eu.org
@@ -13636,10 +13625,6 @@ expo.app
 on.expo.app
 staging.expo.app
 on.staging.expo.app
-
-// Faable : https://faable.com/
-// Submitted by Marc Pomar <support@faable.com>
-faable.link
 
 // fachschaften.org: https://fachschaften.org/
 // Submitted by Felix Schäfer <security@fachschaften.org>
@@ -13863,10 +13848,6 @@ wien.funkfeuer.at
 // FurryBox : https://www.furry.box
 // Submitted by Aether <furry@org.digital>
 xwx.me
-
-// FuseBase : https://thefusebase.com/
-// Submitted by FuseBase <contact@thefusebase.com>
-fusebase.site
 
 // Future Versatile Group. : https://www.fvg-on.net/
 // T.Kabu <webmaster@fvg-on.net>
@@ -14146,10 +14127,6 @@ grayjayleagues.com
 // Submitted by Catherine Zotova <admin@grebedoc.dev>
 grebedoc.dev
 
-// Greybull : https://greybull.cloud/
-// Submitted by Nick Bouwhuis <security@greybull.cloud>
-greybull.site
-
 // GünstigBestellen : https://günstigbestellen.de
 // Submitted by Furkan Akkoc <info@hendelzon.de>
 günstigbestellen.de
@@ -14276,11 +14253,6 @@ plc.ng
 // Submitted by Valentinas Cirba <domains@hostinger.com>
 hstgr.cloud
 
-// Hostney : https://www.hostney.com
-// Submitted by Gabor Leszlauer <hostmaster@hostney.com>
-hostney.app
-hostney.cloud
-
 // HostyHosting : https://hostyhosting.com
 hostyhosting.io
 
@@ -14347,10 +14319,6 @@ oninferno.net
 // info.cx : http://info.cx
 // Submitted by June Slater <whois@igloo.to>
 info.cx
-
-// Infusion : https://infusion.cloud
-// Submitted by Ana Pessoa <suporte@infusion.cloud>
-infusion-ai.cloud
 
 // Interlegis : http://www.interlegis.leg.br
 // Submitted by Gabriel Ferreira <registrobr@interlegis.leg.br>
@@ -14648,6 +14616,10 @@ leadpages.co
 lpages.co
 lpusercontent.com
 
+// Leapcell : https://leapcell.io/
+// Submitted by Leapcell Team <support@leapcell.io>
+leapcell.app
+
 // Liara : https://liara.ir
 // Submitted by Amirhossein Badinloo <info@liara.ir>
 liara.run
@@ -14867,11 +14839,6 @@ custom.metacentrum.cz
 flt.cloud.muni.cz
 usr.cloud.muni.cz
 
-// MetaGPT LLC : https://atoms.dev/
-// Submitted by Atoms IT <it@fuzhi.ai>
-atoms.world
-pub.atoms.world
-
 // Meteor Development Group : https://www.meteor.com/hosting
 // Submitted by Pierre Carrier <pierre@meteor.com>
 meteorapp.com
@@ -15053,10 +15020,6 @@ pp.ru
 // MyOwn srl : https://www.myown.eu/
 // Submitted by Stephane Bouvard <support@myown.eu>
 my.be
-
-// Mythex : https://mythex.ai
-// Submitted by Mythex Support <support@mythex.ai>
-mythex.app
 
 // Mythic Beasts : https://www.mythic-beasts.com
 // Submitted by Paul Cammish <kelduum@mythic-beasts.com>
@@ -15532,10 +15495,6 @@ mypep.link
 // Submitted by Alec Xiang <security@perplexity.ai>
 pplx.app
 
-// Phron : https://phron.net
-// Submitted by Phron Security <security@phron.net>
-phronusercontent.com
-
 // Ping Identity : https://www.pingidentity.com
 // Submitted by Ping Identity <security@pingidentity.com>
 forgeblocks.com
@@ -15632,12 +15591,6 @@ e.id
 chirurgiens-dentistes-en-france.fr
 byen.site
 
-// PublicFreeSuffix : https://publicfreesuffix.org
-// Submitted by Ethan Walker <contact@fs5.net>
-fs.kg
-bg5.net
-is-a.si
-
 // PublicZone : https://publiczone.org/
 // Submitted by PublicZone NOC Team <noc@publiczone.org>
 nyc.mn
@@ -15652,10 +15605,6 @@ pubtls.org
 puter.app
 puter.site
 puter.work
-
-// Pymaia : https://pymaia.com
-// Submitted by Martin <info@pymaia.com>
-pymaia.app
 
 // PythonAnywhere LLP : https://www.pythonanywhere.com
 // Submitted by Giles Thomas <giles@pythonanywhere.com>
@@ -15770,10 +15719,6 @@ instances.spawn.cc
 reliantlabs.dev
 sites.reliantlabs.dev
 reliantpreview.dev
-
-// Relume : https://www.relume.ai/
-// Submitted by Relume Security Team <security@relume.ai>
-relumesite.ai
 
 // Render : https://render.com
 // Submitted by Anurag Goel <dev@render.com>
@@ -16162,10 +16107,6 @@ streamlitapp.com
 // Submitted by Ian Streeter <ian@snowplowanalytics.com>
 try-snowplow.com
 
-// Softr : https://www.softr.io/
-// Submitted by Softr Support <support@softr.io>
-softr.app
-
 // Software Consulting Michal Zalewski : https://www.mafelo.com
 // Submitted by Michal Zalewski <security@mafelo.com>
 mafelo.net
@@ -16213,10 +16154,6 @@ spawnbase.app
 // SpeedPartner GmbH : https://www.speedpartner.de/
 // Submitted by Stefan Neufeind <info@speedpartner.de>
 customer.speedpartner.de
-
-// Spheron : https://www.spheron.ai
-// Submitted by Spheron Team <info@spheron.ai>
-spheron.live
 
 // Spreadshop (sprd.net AG) : https://www.spreadshop.com/
 // Submitted by Martin Breest <security@spreadshop.com>
@@ -16270,10 +16207,6 @@ indevs.in
 musician.io
 novecore.site
 
-// Static.run : https://static.run
-// Submitted by Static.run <security@static.run>
-staticrun.app
-
 // statichost.eu : https://www.statichost.eu
 // Submitted by Eric Selin <admin@statichost.eu>
 statichost.page
@@ -16311,10 +16244,6 @@ vps-host.net
 atl.jelastic.vps-host.net
 njs.jelastic.vps-host.net
 ric.jelastic.vps-host.net
-
-// Strawberry Browser Inc. : https://strawberrybrowser.com/
-// Submitted by Hannes Fant <security@strawberrybrowser.com>
-strw.app
 
 // Streak : https://streak.com
 // Submitted by Blake Kadatz <eng@streak.com>
@@ -16716,10 +16645,6 @@ localcert.net
 // Submitted by Douglas Chen <psl@windsurf.com>
 windsurf.app
 windsurf.build
-
-// Wirechunk, Inc. : https://wirechunk.com/
-// Submitted by Wirechunk Support <support@wirechunk.com>
-wirechunk.site
 
 // WirelessCar : https://wirelesscar.com
 // Submitted by Martin Lindberg <drive-platform@wirelesscar.com>
