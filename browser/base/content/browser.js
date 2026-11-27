@@ -201,11 +201,6 @@ XPCOMUtils.defineLazyScriptGetter(
 );
 XPCOMUtils.defineLazyScriptGetter(
   this,
-  ["CustomizationHandler", "AutoHideMenubar"],
-  "chrome://browser/content/browser-customization.js"
-);
-XPCOMUtils.defineLazyScriptGetter(
-  this,
   ["PointerLock", "FullScreen"],
   "chrome://browser/content/browser-fullScreenAndPointerLock.js"
 );
@@ -548,6 +543,13 @@ ChromeUtils.defineLazyGetter(this, "Win7Features", () => {
       }
     },
   };
+});
+
+ChromeUtils.defineLazyGetter(this, "CustomizationHandler", () => {
+  let { CustomizationHandler: Handler } = ChromeUtils.importESModule(
+    "moz-src:///browser/components/customizableui/BrowserCustomization.sys.mjs"
+  );
+  return new Handler(window);
 });
 
 ChromeUtils.defineLazyGetter(this, "gRestoreLastSessionObserver", () => {

@@ -284,7 +284,7 @@ export class CustomizeMode {
 
   /**
    * Returns the CustomizationHandler browser window global object. See
-   * browser-customization.js.
+   * BrowserCustomization.sys.mjs.
    *
    * @type {object}
    */

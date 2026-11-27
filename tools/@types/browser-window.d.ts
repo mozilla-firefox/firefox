@@ -13,6 +13,7 @@ type Tabbrowser = BrowserWindow.Tabbrowser;
 
 declare var gBrowser: BrowserWindow["gBrowser"];
 declare var gCustomizeMode: BrowserWindow["gCustomizeMode"];
+declare var CustomizationHandler: BrowserWindow["CustomizationHandler"];
 declare var gInitialPages: BrowserWindow["gInitialPages"];
 declare var gMultiProcessBrowser: BrowserWindow["gMultiProcessBrowser"];
 declare var gURLBar: BrowserWindow["gURLBar"];

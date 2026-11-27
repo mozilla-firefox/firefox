@@ -385,6 +385,7 @@ export interface Modules {
   "moz-src:///browser/components/backup/resources/SiteSettingsBackupResource.sys.mjs": typeof import("moz-src:///browser/components/backup/resources/SiteSettingsBackupResource.sys.mjs"),
   "moz-src:///browser/components/contentanalysis/content/ContentAnalysis.sys.mjs": typeof import("moz-src:///browser/components/contentanalysis/content/ContentAnalysis.sys.mjs"),
   "moz-src:///browser/components/controlcenter/TrustPanelTrackerLogs.sys.mjs": typeof import("moz-src:///browser/components/controlcenter/TrustPanelTrackerLogs.sys.mjs"),
+  "moz-src:///browser/components/customizableui/BrowserCustomization.sys.mjs": typeof import("moz-src:///browser/components/customizableui/BrowserCustomization.sys.mjs"),
   "moz-src:///browser/components/customizableui/CustomizableUI.sys.mjs": typeof import("moz-src:///browser/components/customizableui/CustomizableUI.sys.mjs"),
   "moz-src:///browser/components/customizableui/CustomizableWidgets.sys.mjs": typeof import("moz-src:///browser/components/customizableui/CustomizableWidgets.sys.mjs"),
   "moz-src:///browser/components/customizableui/CustomizeMode.sys.mjs": typeof import("moz-src:///browser/components/customizableui/CustomizeMode.sys.mjs"),

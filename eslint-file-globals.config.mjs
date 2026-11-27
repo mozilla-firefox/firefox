@@ -91,7 +91,6 @@ export default [
       "browser/base/content/browser-addons.js",
       "browser/base/content/browser-commands.js",
       "browser/base/content/browser-context.js",
-      "browser/base/content/browser-customization.js",
       "browser/base/content/browser-fullScreenAndPointerLock.js",
       "browser/base/content/browser-gestureSupport.js",
       "browser/base/content/browser-graphics-utils.js",

@@ -131,9 +131,6 @@ with Files("browser-unified-extensions.js"):
 with Files("*menu*"):
     BUG_COMPONENT = ("Firefox", "Menus")
 
-with Files("browser-customization.js"):
-    BUG_COMPONENT = ("Firefox", "Toolbars and Customization")
-
 with Files("browser-gestureSupport.js"):
     BUG_COMPONENT = ("Core", "Widget")
 

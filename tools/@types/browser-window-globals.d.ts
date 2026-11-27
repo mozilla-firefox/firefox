@@ -19,6 +19,7 @@ declare namespace BrowserWindow {
 
   var gBrowser: Tabbrowser;
   var gCustomizeMode: import("moz-src:///browser/components/customizableui/CustomizeMode.sys.mjs").CustomizeMode;
+  var CustomizationHandler: import("moz-src:///browser/components/customizableui/BrowserCustomization.sys.mjs").CustomizationHandler;
   var gInitialPages: string[];
   var gMultiProcessBrowser: boolean;
   var gURLBar: import("chrome://browser/content/urlbar/UrlbarInput.mjs").UrlbarInput;

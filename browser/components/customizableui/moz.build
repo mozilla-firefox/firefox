@@ -19,6 +19,7 @@ TESTING_JS_MODULES += [
 ]
 
 MOZ_SRC_FILES += [
+    "BrowserCustomization.sys.mjs",
     "CustomizableUI.sys.mjs",
     "CustomizableWidgets.sys.mjs",
     "CustomizeMode.sys.mjs",

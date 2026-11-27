@@ -40,7 +40,7 @@ category browser-quit-application-granted moz-src:///browser/modules/ASWebAuthSe
 #endif
 
 # Browser window lifecycle consumers
-category browser-window-before-initial-xul-layout-document-preparation chrome://browser/content/browser-customization.js AutoHideMenubar.init
+category browser-window-before-initial-xul-layout-document-preparation moz-src:///browser/components/customizableui/BrowserCustomization.sys.mjs AutoHideMenubar.init
 
 category browser-window-before-initial-xul-layout resource://gre/modules/LightweightThemeConsumer.sys.mjs LightweightThemeConsumer.init
 category browser-window-before-initial-xul-layout moz-src:///browser/themes/ToolbarIconColor.sys.mjs ToolbarIconColor.init
