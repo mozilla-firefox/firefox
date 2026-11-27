@@ -525,14 +525,14 @@ TEST(TArray, int_AssignmentOperatorSelfAssignment)
   array = *&array;
   ASSERT_EQ(DummyArray(), array);
 
-#if defined(__clang__)
-#  pragma clang diagnostic push
-#  pragma clang diagnostic ignored "-Wself-move"
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 13)
+#  pragma GCC diagnostic push
+#  pragma GCC diagnostic ignored "-Wself-move"
 #endif
   array = std::move(array);  // self-move
   ASSERT_EQ(DummyArray(), array);
-#if defined(__clang__)
-#  pragma clang diagnostic pop
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 13)
+#  pragma GCC diagnostic pop
 #endif
 }
 
