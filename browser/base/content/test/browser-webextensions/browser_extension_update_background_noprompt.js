@@ -60,6 +60,13 @@ async function testNoPrompt(origUrl, id) {
         "extensions.update.background.url",
         `${BASE}/browser_webext_update.json`,
       ],
+
+      // With updates enabled, the add-on update timer firing during the test
+      // would start a second update check, applying the update twice.
+      [
+        "app.update.lastUpdateTime.addon-background-update-timer",
+        Math.round(Date.now() / 1000),
+      ],
     ],
   });
   Services.fog.testResetFOG();

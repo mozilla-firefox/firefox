@@ -45,6 +45,13 @@ add_setup(async function () {
       // We don't have pre-pinned certificates for the local mochitest server
       ["extensions.install.requireBuiltInCerts", false],
       ["extensions.update.requireBuiltInCerts", false],
+
+      // With updates enabled, the add-on update timer firing during the test
+      // would start an update check of its own.
+      [
+        "app.update.lastUpdateTime.addon-background-update-timer",
+        Math.round(Date.now() / 1000),
+      ],
     ],
   });
 
