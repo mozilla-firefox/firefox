@@ -36,7 +36,7 @@ RESULT_POLL_INTERVAL = 0.2  # seconds
 
 # The projects bugbug can compute push schedules for. It pulls pushes from
 # hg.mozilla.org, so it can't handle projects only hosted on GitHub.
-SUPPORTED_PROJECTS = frozenset({"autoland", "try"})
+SUPPORTED_PROJECTS = frozenset({"autoland", "try", "try-comm-central"})
 
 # Preset confidence thresholds.
 CT_VERY_LOW = 0.3
