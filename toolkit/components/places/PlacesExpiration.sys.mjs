@@ -259,6 +259,8 @@ const EXPIRATION_QUERIES = {
   // We only remove relations whose expire_ms is at least six months older than
   // the page's last visit, indicating the relation has not been refreshed by
   // visits for a long time and is likely stale.
+  // That implies expire_ms is about a year old, a bound that lets us check
+  // only old relations, rather than all the pages visited long ago.
   // We also exclude bookmarked pages and root icons.
   // We proceed cautiously because these icons might still be in use;
   // they are only potentially stale.
@@ -267,15 +269,20 @@ const EXPIRATION_QUERIES = {
     sql: `
     DELETE FROM moz_icons_to_pages
     WHERE (page_id, icon_id) IN (
-     	SELECT page_id, icon_id
+      SELECT page_id, icon_id
       FROM moz_icons_to_pages ip
-      JOIN moz_pages_w_icons pi ON pi.id = page_id
-      JOIN moz_places ON url_hash = page_url_hash
+      CROSS JOIN moz_pages_w_icons pi ON pi.id = page_id
       WHERE
-        last_visit_date BETWEEN
-          strftime('%s', ip.expire_ms / 1000, 'unixepoch', '+6 months', 'localtime', 'utc') * 1000000
-          AND strftime('%s', 'now', 'localtime', '-6 months', 'utc') * 1000000
-        AND foreign_count = 0
+        ip.expire_ms < strftime('%s', 'now', '-360 days') * 1000
+        AND EXISTS (
+          SELECT 1 FROM moz_places
+          WHERE url_hash = pi.page_url_hash
+            AND url = pi.page_url
+            AND last_visit_date BETWEEN
+              strftime('%s', ip.expire_ms / 1000, 'unixepoch', '+6 months', 'localtime', 'utc') * 1000000
+              AND strftime('%s', 'now', 'localtime', '-6 months', 'utc') * 1000000
+            AND foreign_count = 0
+        )
         AND NOT EXISTS (SELECT 1 FROM moz_icons WHERE id = icon_id AND root = 1)
       LIMIT 50
     )
@@ -291,16 +298,16 @@ const EXPIRATION_QUERIES = {
   QUERY_EXPIRE_OLD_FAVICONS: {
     sql: `
     DELETE FROM moz_pages_w_icons WHERE id IN (
-      WITH pages_with_old_relations (page_id, page_url_hash) AS (
-        SELECT page_id, page_url_hash
-        FROM moz_icons_to_pages ip
-        JOIN moz_pages_w_icons p ON p.id = page_id
+      WITH pages_with_old_relations (page_id) AS (
+        SELECT page_id
+        FROM moz_icons_to_pages
         GROUP BY page_id
         HAVING max(expire_ms) < strftime('%s','now','localtime','start of day','-180 days','utc') * 1000
       )
       SELECT page_id
       FROM pages_with_old_relations
-      JOIN moz_places h ON h.url_hash = page_url_hash
+      JOIN moz_pages_w_icons p ON p.id = page_id
+      JOIN moz_places h ON h.url_hash = p.page_url_hash AND h.url = p.page_url
       JOIN moz_origins o ON h.origin_id = o.id
       WHERE foreign_count = 0
       AND EXISTS (

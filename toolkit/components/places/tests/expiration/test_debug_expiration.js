@@ -288,6 +288,12 @@ add_task(async function test_expire_icons() {
     "AAAA6fptVAAAACklEQVQI12NgAAAAAgAB4iG8MwAAAABJRU5ErkJggg==";
 
   const now = new Date();
+  const monthsAgo = (months, days = 0) => {
+    let date = new Date();
+    date.setMonth(date.getMonth() - months);
+    date.setDate(date.getDate() - days);
+    return date;
+  };
   const entries = [
     {
       desc: "Not expired because recent",
@@ -359,6 +365,22 @@ add_task(async function test_expire_icons() {
       bookmarked: true,
       visitDate: new Date(now.setMonth(now.getMonth() - 7)),
       relationDate: new Date(now.setMonth(now.getMonth() - 14)),
+    },
+    {
+      desc: "Not expired because visited soon after the relation was refreshed",
+      page: "https://oldrelation.visited.org/",
+      icon: "https://oldrelation.visited.org/test_icon.png",
+      removed: false,
+      visitDate: monthsAgo(9),
+      relationDate: monthsAgo(13),
+    },
+    {
+      desc: "Expired because old relation, even if just over a year old",
+      page: "https://oldrelation.yearold.org/",
+      icon: "https://oldrelation.yearold.org/test_icon.png",
+      removed: true,
+      visitDate: monthsAgo(6, 15),
+      relationDate: monthsAgo(13),
     },
   ];
 
