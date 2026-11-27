@@ -55,6 +55,8 @@ var gExceptionPaths = [
   "chrome://activity-stream/content/data/content/assets/kit-sit-look-up.svg",
   "chrome://activity-stream/content/data/content/assets/pic-cursor.svg",
   "chrome://activity-stream/content/data/content/assets/pic-shield.svg",
+  "chrome://activity-stream/content/data/content/assets/sparkles-ai.svg",
+  "chrome://activity-stream/content/data/content/assets/block.svg",
 
   // toolkit/components/pdfjs/content/build/pdf.js
   "resource://pdf.js/web/images/",

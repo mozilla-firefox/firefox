@@ -1131,7 +1131,7 @@ __webpack_require__.r(__webpack_exports__);
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 
-const CONFIGURABLE_STYLES = ["background", "color", "display", "fontSize", "fontWeight", "letterSpacing", "lineHeight", "marginBlock", "marginBlockStart", "marginBlockEnd", "marginInline", "paddingBlock", "paddingBlockStart", "paddingBlockEnd", "paddingInline", "paddingInlineStart", "paddingInlineEnd", "textAlign", "whiteSpace", "width", "height", "border", "borderBlockStart", "borderBlockEnd", "top", "bottom", "left", "right", "inset", "insetBlock", "insetInline", "minHeight", "minWidth", "maxWidth"];
+const CONFIGURABLE_STYLES = ["background", "color", "display", "fontSize", "fontWeight", "letterSpacing", "lineHeight", "marginBlock", "marginBlockStart", "marginBlockEnd", "marginInline", "paddingBlock", "paddingBlockStart", "paddingBlockEnd", "paddingInline", "paddingInlineStart", "paddingInlineEnd", "textAlign", "textWrap", "whiteSpace", "width", "height", "border", "borderBlockStart", "borderBlockEnd", "top", "bottom", "left", "right", "inset", "insetBlock", "insetInline", "minHeight", "minWidth", "maxWidth"];
 const ZAP_SIZE_THRESHOLD = 160;
 
 /**
@@ -5617,8 +5617,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _MSLocalized__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(5);
 /* harmony import */ var _TileButton__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(19);
 /* harmony import */ var _TileList__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(20);
-/* harmony import */ var _lib_multistage_utils_mjs__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(3);
-/* harmony import */ var _CarouselNav__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(21);
+/* harmony import */ var _LinkParagraph__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(14);
+/* harmony import */ var _lib_multistage_utils_mjs__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(3);
+/* harmony import */ var _CarouselNav__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(21);
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -5629,6 +5630,41 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
+
+/**
+ * A note shown under single select tiles when a tile with a `selectedNotice` is
+ * selected.
+ *
+ * The live region wrapper is always rendered, even when the notice is hidden,
+ * so that assistive technology announces the notice when it later appears.
+ *
+ * @param {object} [notice] the selected tile's `selectedNotice` config. `text`
+ *   is a LinkParagraph text value: a Localized object, or an array of segments
+ *   where a segment with an `href` renders as a link.
+ * @param {Function} handleAction the screen's action handler
+ */
+const SelectedNotice = ({
+  notice,
+  handleAction
+}) => /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+  className: "single-select-notice-region",
+  role: "status"
+}, notice?.text ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+  className: "single-select-notice"
+}, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+  className: "single-select-notice-icon-wrapper"
+}, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("img", {
+  className: "single-select-notice-icon",
+  src: notice.iconURL || "chrome://global/skin/icons/info-filled.svg",
+  alt: "",
+  role: "presentation"
+})), /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_LinkParagraph__WEBPACK_IMPORTED_MODULE_4__.LinkParagraph, {
+  text_content: {
+    text: notice.text
+  },
+  handleAction: handleAction
+})) : null);
 
 // This component was formerly "Themes" and continues to support theme
 const SingleSelect = ({
@@ -5648,10 +5684,10 @@ const SingleSelect = ({
     scrollerRef,
     registerCard,
     isSmallLayout
-  } = (0,_CarouselNav__WEBPACK_IMPORTED_MODULE_5__.useCarouselScroll)(activeSingleSelectSelections[singleSelectId], isCarousel);
+  } = (0,_CarouselNav__WEBPACK_IMPORTED_MODULE_6__.useCarouselScroll)(activeSingleSelectSelections[singleSelectId], isCarousel);
   const handlePillSelect = id => {
     setActiveSingleSelectSelection(id, singleSelectId);
-    _lib_multistage_utils_mjs__WEBPACK_IMPORTED_MODULE_4__.MultiStageUtils.sendActionTelemetry(messageId, `carousel-pill-${id}`, "CLICK_BUTTON");
+    _lib_multistage_utils_mjs__WEBPACK_IMPORTED_MODULE_5__.MultiStageUtils.sendActionTelemetry(messageId, `carousel-pill-${id}`, "CLICK_BUTTON");
   };
   const autoTriggerAllowed = itemAction => {
     // Currently only enabled for sidebar experiment prefs
@@ -5693,9 +5729,11 @@ const SingleSelect = ({
   }, [activeSingleSelectSelections]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const CONFIGURABLE_STYLES = ["background", "backgroundImage", "border", "borderRadius", "height", "marginBlock", "marginBlockStart", "marginBlockEnd", "marginInline", "paddingBlock", "paddingBlockStart", "paddingBlockEnd", "paddingInline", "paddingInlineStart", "paddingInlineEnd", "width"];
+  const hasSelectedNotice = isSingleSelect && content.tiles?.data.some(tile => tile.selectedNotice);
+  const selectedNotice = content.tiles?.data.find(tile => tile.id === activeSingleSelectSelections[singleSelectId])?.selectedNotice;
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
     className: `tiles-single-select-container ${isCarousel ? "carousel" : ""}`
-  }, isCarousel ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_CarouselNav__WEBPACK_IMPORTED_MODULE_5__.CarouselNav, {
+  }, isCarousel ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_CarouselNav__WEBPACK_IMPORTED_MODULE_6__.CarouselNav, {
     items: content.tiles?.data,
     activeId: activeSingleSelectSelections[singleSelectId],
     onSelect: handlePillSelect,
@@ -5732,7 +5770,7 @@ const SingleSelect = ({
     }
     const selected = theme && theme === activeTheme || isSingleSelect && activeSingleSelectSelections[singleSelectId] === value;
     const valOrObj = val => typeof val === "object" ? val : {};
-    const iconStyle = _lib_multistage_utils_mjs__WEBPACK_IMPORTED_MODULE_4__.MultiStageUtils.getValidStyle(icon, CONFIGURABLE_STYLES);
+    const iconStyle = _lib_multistage_utils_mjs__WEBPACK_IMPORTED_MODULE_5__.MultiStageUtils.getValidStyle(icon, CONFIGURABLE_STYLES);
     if (icon?.darkModeBackground) {
       iconStyle["--single-select-icon-background"] = icon.background;
       iconStyle["--single-select-icon-background-dark"] = icon.darkModeBackground;
@@ -5762,7 +5800,7 @@ const SingleSelect = ({
       ref: el => registerCard(value, el),
       onKeyDown: e => handleKeyDown(e),
       style: {
-        ..._lib_multistage_utils_mjs__WEBPACK_IMPORTED_MODULE_4__.MultiStageUtils.getValidStyle(style, CONFIGURABLE_STYLES),
+        ..._lib_multistage_utils_mjs__WEBPACK_IMPORTED_MODULE_5__.MultiStageUtils.getValidStyle(style, CONFIGURABLE_STYLES),
         ...(icon?.width ? {
           minWidth: icon.width
         } : {})
@@ -5776,7 +5814,7 @@ const SingleSelect = ({
     }, /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("input", {
       type: "radio",
       value: value,
-      name: inputName,
+      name: isSingleSelect ? `select-item-${singleSelectId}` : inputName,
       checked: selected,
       className: "sr-only input",
       disabled: inert,
@@ -5804,7 +5842,10 @@ const SingleSelect = ({
       inputName: inputName,
       inert: isCarousel && !selected
     }) : ""));
-  }))));
+  }))), hasSelectedNotice ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement(SelectedNotice, {
+    notice: selectedNotice,
+    handleAction: handleAction
+  }) : null);
 };
 
 /***/ }),

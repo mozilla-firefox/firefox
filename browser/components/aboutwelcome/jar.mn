@@ -45,3 +45,5 @@ browser.jar:
   content/activity-stream/data/content/assets/kit-sit-look-up.svg                           (./assets/kit-sit-look-up.svg)
   content/activity-stream/data/content/assets/pic-cursor.svg                                (./assets/pic-cursor.svg)
   content/activity-stream/data/content/assets/pic-shield.svg                                (./assets/pic-shield.svg)
+  content/activity-stream/data/content/assets/sparkles-ai.svg                               (./assets/sparkles-ai.svg)
+  content/activity-stream/data/content/assets/block.svg                                     (./assets/block.svg)

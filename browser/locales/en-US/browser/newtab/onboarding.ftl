@@ -642,6 +642,26 @@ onboarding-minimal-tabs-tooltip =
 onboarding-minimal-tabs-description =
     .aria-description = A browser window displaying tabs as small icons along the side of the screen, in a minimized sidebar.
 
+# AI Killswitch screen: present users with the choice to use or block AI features
+onboarding-refresh-ai-killswitch-title = AI is always your choice
+onboarding-refresh-ai-killswitch-use-label = Use { -brand-short-name } AI features
+onboarding-refresh-ai-killswitch-use-body = Built-in translations, help organizing tabs, and more.
+onboarding-refresh-ai-killswitch-use-tooltip =
+    .title = Built-in translations, help organizing tabs, and more.
+onboarding-refresh-ai-killswitch-use-description =
+    .aria-description = Built-in translations, help organizing tabs, and more.
+
+onboarding-refresh-ai-killswitch-block-label = Block { -brand-short-name } AI features
+onboarding-refresh-ai-killswitch-block-body = Hides AI features and pop-ups promoting them.
+onboarding-refresh-ai-killswitch-block-tooltip =
+    .title = Hides AI features and pop-ups promoting them.
+onboarding-refresh-ai-killswitch-block-description =
+    .aria-description = Hides AI features and pop-ups promoting them.
+onboarding-refresh-ai-killswitch-block-notice = AI controls don’t affect Google search results or AI features on sites you visit.
+onboarding-refresh-ai-killswitch-block-notice-link = Get more details
+
+onboarding-refresh-primary-button-save-start = Save and start browsing
+
 ## Smart window switcher callout
 
 smartwindow-switcher-callout = Switch between Smart and Classic Windows anytime.
