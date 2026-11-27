@@ -148,6 +148,13 @@ ChromeUtils.defineLazyGetter(this, "fxAccounts", () => {
   ).getFxAccountsSingleton();
 });
 
+ChromeUtils.defineLazyGetter(this, "FullZoom", () => {
+  const { FullZoom } = ChromeUtils.importESModule(
+    "moz-src:///browser/components/tabbrowser/FullZoom.sys.mjs"
+  );
+  return new FullZoom(window);
+});
+
 XPCOMUtils.defineLazyScriptGetter(
   this,
   ["BrowserCommands", "kSkipCacheFlags"],
@@ -173,11 +180,6 @@ XPCOMUtils.defineLazyScriptGetter(
   this,
   "ZoomManager",
   "chrome://global/content/viewZoomOverlay.js"
-);
-XPCOMUtils.defineLazyScriptGetter(
-  this,
-  "FullZoom",
-  "chrome://browser/content/tabbrowser/browser-fullZoom.js"
 );
 XPCOMUtils.defineLazyScriptGetter(
   this,

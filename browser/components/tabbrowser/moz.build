@@ -21,6 +21,7 @@ JAR_MANIFESTS += ["jar.mn"]
 
 MOZ_SRC_FILES += [
     "AsyncTabSwitcher.sys.mjs",
+    "FullZoom.sys.mjs",
     "GroupsList.sys.mjs",
     "NewTabPagePreloading.sys.mjs",
     "OpenInTabsUtils.sys.mjs",

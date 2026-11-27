@@ -517,6 +517,7 @@ export interface Modules {
   "moz-src:///browser/components/syncedtabs/SyncedTabsListStore.sys.mjs": typeof import("moz-src:///browser/components/syncedtabs/SyncedTabsListStore.sys.mjs"),
   "moz-src:///browser/components/syncedtabs/TabListComponent.sys.mjs": typeof import("moz-src:///browser/components/syncedtabs/TabListComponent.sys.mjs"),
   "moz-src:///browser/components/tabbrowser/AsyncTabSwitcher.sys.mjs": typeof import("moz-src:///browser/components/tabbrowser/AsyncTabSwitcher.sys.mjs"),
+  "moz-src:///browser/components/tabbrowser/FullZoom.sys.mjs": typeof import("moz-src:///browser/components/tabbrowser/FullZoom.sys.mjs"),
   "moz-src:///browser/components/tabbrowser/GroupsList.sys.mjs": typeof import("moz-src:///browser/components/tabbrowser/GroupsList.sys.mjs"),
   "moz-src:///browser/components/tabbrowser/NewTabPagePreloading.sys.mjs": typeof import("moz-src:///browser/components/tabbrowser/NewTabPagePreloading.sys.mjs"),
   "moz-src:///browser/components/tabbrowser/OpenInTabsUtils.sys.mjs": typeof import("moz-src:///browser/components/tabbrowser/OpenInTabsUtils.sys.mjs"),

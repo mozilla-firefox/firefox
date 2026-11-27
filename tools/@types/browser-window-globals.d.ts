@@ -23,6 +23,7 @@ declare namespace BrowserWindow {
   var gInitialPages: string[];
   var gMultiProcessBrowser: boolean;
   var gURLBar: import("chrome://browser/content/urlbar/UrlbarInput.mjs").UrlbarInput;
+  var FullZoom: import("moz-src:///browser/components/tabbrowser/FullZoom.sys.mjs").FullZoom;
   var delayedStartupPromise: Promise<void>;
   var RTL_UI: boolean;
 

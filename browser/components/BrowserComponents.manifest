@@ -89,7 +89,7 @@ category browser-window-delayed-startup resource://gre/modules/RosettaUtils.sys.
 #endif
 category browser-window-delayed-startup resource:///modules/ReducedProtectionNotification.sys.mjs ReducedProtectionNotification.observePref
 category browser-window-delayed-startup chrome://browser/content/browser.js#BrowserOffline BrowserOffline.init
-category browser-window-delayed-startup chrome://browser/content/tabbrowser/browser-fullZoom.js FullZoom.init
+category browser-window-delayed-startup chrome://browser/content/browser.js#FullZoom FullZoom.init
 category browser-window-delayed-startup chrome://browser/content/customizableui/panelUI.js PanelUI.init
 category browser-window-delayed-startup chrome://browser/content/browser-places.js#BookmarkingUI BookmarkingUI.init
 category browser-window-delayed-startup chrome://browser/content/browser-siteProtections.js gProtectionsHandler.init
@@ -169,7 +169,7 @@ category browser-window-unload chrome://browser/content/browser-sync.js gSync.un
 category browser-window-unload-delayed-startup chrome://browser/content/browser.js#ctrlTab ctrlTab.stopObservingPref
 category browser-window-unload-delayed-startup chrome://browser/content/browser-siteProtections.js gProtectionsHandler.uninit
 category browser-window-unload-delayed-startup chrome://browser/content/browser-trustPanel.js gTrustPanelHandler.uninit
-category browser-window-unload-delayed-startup chrome://browser/content/tabbrowser/browser-fullZoom.js FullZoom.destroy
+category browser-window-unload-delayed-startup chrome://browser/content/browser.js#FullZoom FullZoom.destroy
 category browser-window-unload-delayed-startup chrome://browser/content/browser.js BrowserOffline.uninit
 category browser-window-unload-delayed-startup chrome://browser/content/customizableui/panelUI.js PanelUI.uninit
 category browser-window-unload-delayed-startup chrome://browser/content/browser.js#Win7Features Win7Features.onCloseWindow
