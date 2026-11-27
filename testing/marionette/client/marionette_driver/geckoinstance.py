@@ -17,6 +17,7 @@ import io
 import json
 import os
 import shutil
+import signal
 import sys
 import tempfile
 import time
@@ -35,6 +36,10 @@ if sys.platform.startswith("darwin"):
 
 
 class GeckoInstance:
+    # Force-kill instead of mozprocess' SIGTERM-first fallback,
+    # which Firefox on Linux handles as a clean shutdown.
+    kill_signal = getattr(signal, "SIGKILL", None)
+
     required_prefs = {
         # Make sure Shield doesn't hit the network.
         "app.normandy.api_url": "",
@@ -479,7 +484,7 @@ class GeckoInstance:
 
     def close(self, clean=False):
         """
-        Close the managed Gecko process.
+        Kill the managed Gecko process.
 
         Depending on self.runner_class, setting `clean` to True may also kill
         the emulator process in which this instance is running.
@@ -487,7 +492,7 @@ class GeckoInstance:
         :param clean: If True, also perform runner cleanup.
         """
         if self.runner:
-            self.runner.stop()
+            self.runner.stop(sig=self.kill_signal)
             if clean:
                 self.runner.cleanup()
 
@@ -531,6 +536,10 @@ class GeckoInstance:
 
 
 class FennecInstance(GeckoInstance):
+    # Without a signal, the device runner stops the application through the
+    # activity manager, which force-stops it.
+    kill_signal = None
+
     fennec_prefs = {
         # Enable output for dump() and chrome console API
         "browser.dom.window.dump.enabled": True,
@@ -633,7 +642,7 @@ class FennecInstance(GeckoInstance):
 
     def close(self, clean=False):
         """
-        Close the managed Gecko process.
+        Kill the managed Gecko process.
 
         If `clean` is True and the Fennec instance is running in an
         emulator managed by mozrunner, this will stop the emulator.
