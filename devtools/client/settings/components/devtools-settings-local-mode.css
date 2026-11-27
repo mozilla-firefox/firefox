@@ -60,3 +60,9 @@ p {
 .folder-error {
   color: var(--text-color-error);
 }
+
+.actions {
+  display: flex;
+  justify-content: end;
+  gap: var(--space-small);
+}
