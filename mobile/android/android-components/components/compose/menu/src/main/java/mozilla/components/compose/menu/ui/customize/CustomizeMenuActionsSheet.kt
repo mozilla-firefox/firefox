@@ -21,6 +21,7 @@ import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,14 +70,15 @@ internal data class CustomizeMenuAction<T : Any>(
  * Bottom sheet with the [actions] of a section or an item of the customize menu screens, the ones which cannot be done
  * now shown disabled.
  *
- * @param actions The actions.
+ * @param actions The actions, or `null` when what they act on is gone: the sheet is then dismissed, unless an action
+ *   was chosen, in which case it keeps showing the chosen actions while it hides.
  * @param onAction Called with the result and announcement of the chosen action, before the sheet hides.
  * @param onDismissRequest Called when the sheet is hidden, to stop showing it.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun <T : Any> CustomizeMenuActionsSheet(
-    actions: List<CustomizeMenuAction<T>>,
+    actions: List<CustomizeMenuAction<T>>?,
     onAction: (result: T, announcement: String) -> Unit,
     onDismissRequest: () -> Unit,
 ) {
@@ -88,6 +90,11 @@ internal fun <T : Any> CustomizeMenuActionsSheet(
     val scope = rememberCoroutineScope()
     // The actions as when one was chosen, for the sheet not to change while it hides.
     var chosenActions by remember { mutableStateOf<List<CustomizeMenuAction<T>>?>(null) }
+    val displayed = chosenActions ?: actions
+    if (displayed == null) {
+        SideEffect { onDismissRequest() }
+        return
+    }
     fun hideThenDismiss(onInterrupted: () -> Unit = {}) {
         scope
             .launch { sheetState.hide() }
@@ -109,10 +116,10 @@ internal fun <T : Any> CustomizeMenuActionsSheet(
         },
     ) {
         CustomizeMenuActionsList(
-            actions = chosenActions ?: actions,
+            actions = displayed,
             onAction = { result, announcement ->
                 if (chosenActions == null) {
-                    chosenActions = actions
+                    chosenActions = displayed
                     onAction(result, announcement)
                     hideThenDismiss(onInterrupted = { chosenActions = null })
                 }

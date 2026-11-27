@@ -1457,6 +1457,144 @@ class CustomizeMenuItemsTest {
         assertNull(items.listIndexOf("unknown"))
     }
 
+    @Test
+    fun `GIVEN a shown expandable item THEN the sheet actions of a shown item are move up, move down, move into and hide`() {
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, b, expandable("more", c), d),
+                hidden = emptyList(),
+                expandedIds = emptySet(),
+            )
+        val expected =
+            listOf(
+                EditMenuItemAction.Kind.MOVE_UP,
+                EditMenuItemAction.Kind.MOVE_DOWN,
+                EditMenuItemAction.Kind.MOVE_INTO,
+                EditMenuItemAction.Kind.HIDE,
+            )
+
+        assertEquals(expected, items.sheetKindsOf("a"))
+        assertEquals(expected, items.sheetKindsOf("b"))
+        assertEquals(expected, items.sheetKindsOf("d"))
+    }
+
+    @Test
+    fun `GIVEN an item which can only be directly in its section or a collapsed expandable item THEN its sheet actions have no move into`() {
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, topLevelOnlyItem, expandable("more", c)),
+                hidden = emptyList(),
+                expandedIds = emptySet(),
+            )
+        val expected =
+            listOf(EditMenuItemAction.Kind.MOVE_UP, EditMenuItemAction.Kind.MOVE_DOWN, EditMenuItemAction.Kind.HIDE)
+
+        assertEquals(expected, items.sheetKindsOf("top level only"))
+        assertEquals(expected, items.sheetKindsOf("more"))
+    }
+
+    @Test
+    fun `GIVEN no shown expandable item THEN the sheet actions of a shown item have no move into`() {
+        val notShown = CustomizableMenuItem(id = "not shown", item = null, subItems = listOf(c))
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, b, notShown),
+                hidden = listOf(expandable("more", d)),
+                expandedIds = emptySet(),
+            )
+
+        assertEquals(
+            listOf(EditMenuItemAction.Kind.MOVE_UP, EditMenuItemAction.Kind.MOVE_DOWN, EditMenuItemAction.Kind.HIDE),
+            items.sheetKindsOf("a"),
+        )
+    }
+
+    @Test
+    fun `GIVEN an expanded item THEN the sheet actions of its sub-items are move up, move down, move out of and hide`() {
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, expandable("more", c, d)),
+                hidden = emptyList(),
+                expandedIds = setOf("more"),
+            )
+        val expected =
+            listOf(
+                EditMenuItemAction.Kind.MOVE_UP,
+                EditMenuItemAction.Kind.MOVE_DOWN,
+                EditMenuItemAction.Kind.MOVE_OUT_OF,
+                EditMenuItemAction.Kind.HIDE,
+            )
+
+        assertEquals(expected, items.sheetKindsOf("c"))
+        assertEquals(expected, items.sheetKindsOf("d"))
+    }
+
+    @Test
+    fun `GIVEN hidden items THEN the sheet actions of a hidden item and of a hidden sub-item are move up, move down and unhide`() {
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a),
+                hidden = listOf(b, expandable("hidden more", c, d), expandable("collapsed hidden", item("e"))),
+                expandedIds = setOf("hidden more"),
+            )
+        val expected =
+            listOf(EditMenuItemAction.Kind.MOVE_UP, EditMenuItemAction.Kind.MOVE_DOWN, EditMenuItemAction.Kind.UNHIDE)
+
+        assertEquals(expected, items.sheetKindsOf("b"))
+        assertEquals(expected, items.sheetKindsOf("c"))
+        assertEquals(expected, items.sheetKindsOf("collapsed hidden"))
+    }
+
+    @Test
+    fun `GIVEN an expanded item, a hidden expanded item, a sub-item of a collapsed item or an unknown key THEN it has no sheet actions`() {
+        val notShown = CustomizableMenuItem(id = "not shown", item = null)
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, notShown, expandable("more", c), expandable("collapsed", d)),
+                hidden = listOf(expandable("hidden more", b)),
+                expandedIds = setOf("more", "hidden more"),
+            )
+
+        listOf("more", "hidden more", "d", "not shown", subItemsEndKey("more"), "unknown").forEach {
+            assertTrue(items.sheetKindsOf(it).isEmpty())
+        }
+    }
+
+    @Test
+    fun `THEN the kinds of the available actions of any item are a subsequence of its sheet action kinds`() {
+        val cases =
+            listOf(
+                CustomizeMenuItems(
+                    shown = listOf(a, b, topLevelOnlyItem, expandable("more", c, d)),
+                    hidden = listOf(item("h"), expandable("hidden more", item("hs"))),
+                    expandedIds = setOf("more", "hidden more"),
+                ) to listOf("a", "b", "top level only", "more", "c", "d", "h", "hidden more", "hs", "unknown"),
+                CustomizeMenuItems(
+                    shown = listOf(a, expandable("more", c)),
+                    hidden = emptyList(),
+                    expandedIds = emptySet(),
+                ) to listOf("a", "more", "c"),
+                CustomizeMenuItems(shown = listOf(a), hidden = listOf(b), expandedIds = emptySet()) to listOf("a", "b"),
+            )
+
+        cases.forEach { (items, keys) ->
+            keys.forEach { key ->
+                assertTrue(
+                    "actionsOf($key) should be a subsequence of sheetKindsOf($key)",
+                    items.actionsOf(key).map { it.kind }.isSubsequenceOf(items.sheetKindsOf(key)),
+                )
+            }
+        }
+    }
+
+    private fun <T> List<T>.isSubsequenceOf(other: List<T>): Boolean {
+        var index = 0
+        for (element in other) {
+            if (index < size && this[index] == element) index++
+        }
+        return index == size
+    }
+
     private fun CustomizeMenuItems.subItemsOf(id: String) = shown.first { it.id == id }.subItems
 
     private fun item(id: String) =

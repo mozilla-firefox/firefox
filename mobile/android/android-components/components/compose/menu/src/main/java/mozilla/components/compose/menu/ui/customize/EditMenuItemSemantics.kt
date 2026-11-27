@@ -20,6 +20,7 @@ import mozilla.components.compose.base.text.value
 import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.data.ExpandableMenuItem
 import mozilla.components.compose.menu.data.MenuItem
+import mozilla.components.ui.icons.R as iconsR
 
 /**
  * Make a row of an item a single node for accessibility services, reading its name then, for an item shown in the menu,
@@ -52,7 +53,20 @@ internal fun Modifier.editMenuItemSemantics(
             )
         }
     val expansionAction = if (item is ExpandableMenuItem) expansionAction(row, name, actions) else null
-    val customActions = listOfNotNull(expansionAction) + moveActions(row, name, actions)
+    val customActions =
+        listOfNotNull(expansionAction) +
+            editMenuItemActions(row, name, actions).mapNotNull { entry ->
+                entry.result?.let { action ->
+                    CustomAccessibilityAction(entry.label) {
+                        if (action.isRefused) {
+                            actions.onRejected(row.item.id)
+                        } else {
+                            actions.onMove(row.item.id, action.result, entry.announcement)
+                        }
+                        true
+                    }
+                }
+            }
     val expansionState =
         stringResource(
             if (row.isExpanded) {
@@ -73,53 +87,71 @@ internal fun Modifier.editMenuItemSemantics(
     }
 }
 
+/**
+ * The actions moving, hiding or showing the item of [row], in the order the sheet opened from its drag handle lists
+ * them in, with `null` [CustomizeMenuAction.result] for the ones the item cannot do now. Refused actions keep their
+ * [EditMenuItemAction] result, for accessibility services to still offer them and tell the user why they did not run.
+ */
 @Composable
-private fun moveActions(
+internal fun editMenuItemActions(
     row: EditMenuItemsRow.Item,
     name: String,
     actions: EditMenuItemsActions,
-): List<CustomAccessibilityAction> {
+): List<CustomizeMenuAction<EditMenuItemAction>> {
+    val available = actions.items.actionsOf(row.key).associateBy { it.kind }
     val moveIntoName = firstExpandableName(actions)
     val moveOutOfName = parentName(row, actions)
-    return actions.items.actionsOf(row.key).map { action ->
-        val label: String
-        val announcement: String
-        when (action.kind) {
-            EditMenuItemAction.Kind.MOVE_UP -> {
-                label = stringResource(R.string.mozac_menu_customize_move_up)
-                announcement = movedAnnouncement(row, name, action, actions)
-            }
-            EditMenuItemAction.Kind.MOVE_DOWN -> {
-                label = stringResource(R.string.mozac_menu_customize_move_down)
-                announcement = movedAnnouncement(row, name, action, actions)
-            }
-            EditMenuItemAction.Kind.MOVE_INTO -> {
-                label = stringResource(R.string.mozac_menu_customize_move_into, moveIntoName)
-                announcement = stringResource(R.string.mozac_menu_customize_item_moved_into, name, moveIntoName)
-            }
-            EditMenuItemAction.Kind.MOVE_OUT_OF -> {
-                label = stringResource(R.string.mozac_menu_customize_move_out_of, moveOutOfName)
-                announcement = stringResource(R.string.mozac_menu_customize_item_moved_out_of, name, moveOutOfName)
-            }
-            EditMenuItemAction.Kind.HIDE -> {
-                label = stringResource(R.string.mozac_menu_customize_hide_item)
-                announcement = stringResource(R.string.mozac_menu_customize_item_hidden, name)
-            }
-            EditMenuItemAction.Kind.UNHIDE -> {
-                label = stringResource(R.string.mozac_menu_customize_unhide_item)
-                announcement = stringResource(R.string.mozac_menu_customize_item_shown, name)
-            }
-        }
-        CustomAccessibilityAction(label) {
-            if (action.isRefused) {
-                actions.onRejected(row.item.id)
-            } else {
-                actions.onMove(row.item.id, action.result, announcement)
-            }
-            true
-        }
+    return actions.items.sheetKindsOf(row.key).map { kind ->
+        val action = available[kind]
+        val targetName = if (kind == EditMenuItemAction.Kind.MOVE_INTO) moveIntoName else moveOutOfName
+        CustomizeMenuAction(
+            label = actionLabel(kind, targetName),
+            icon = actionIcon(kind),
+            result = action,
+            announcement = if (action == null) "" else actionAnnouncement(row, name, action, targetName, actions),
+        )
     }
 }
+
+@Composable
+private fun actionLabel(kind: EditMenuItemAction.Kind, targetName: String): String =
+    when (kind) {
+        EditMenuItemAction.Kind.MOVE_UP -> stringResource(R.string.mozac_menu_customize_move_up)
+        EditMenuItemAction.Kind.MOVE_DOWN -> stringResource(R.string.mozac_menu_customize_move_down)
+        EditMenuItemAction.Kind.MOVE_INTO -> stringResource(R.string.mozac_menu_customize_move_into, targetName)
+        EditMenuItemAction.Kind.MOVE_OUT_OF -> stringResource(R.string.mozac_menu_customize_move_out_of, targetName)
+        EditMenuItemAction.Kind.HIDE -> stringResource(R.string.mozac_menu_customize_hide_item)
+        EditMenuItemAction.Kind.UNHIDE -> stringResource(R.string.mozac_menu_customize_unhide_item)
+    }
+
+private fun actionIcon(kind: EditMenuItemAction.Kind): Int =
+    when (kind) {
+        EditMenuItemAction.Kind.MOVE_UP -> iconsR.drawable.mozac_ic_chevron_up_24
+        EditMenuItemAction.Kind.MOVE_DOWN -> iconsR.drawable.mozac_ic_chevron_down_24
+        EditMenuItemAction.Kind.MOVE_INTO,
+        EditMenuItemAction.Kind.MOVE_OUT_OF -> iconsR.drawable.mozac_ic_folder_arrow_right_24
+        EditMenuItemAction.Kind.HIDE -> iconsR.drawable.mozac_ic_eye_slash_24
+        EditMenuItemAction.Kind.UNHIDE -> iconsR.drawable.mozac_ic_eye_24
+    }
+
+@Composable
+private fun actionAnnouncement(
+    row: EditMenuItemsRow.Item,
+    name: String,
+    action: EditMenuItemAction,
+    targetName: String,
+    actions: EditMenuItemsActions,
+): String =
+    when (action.kind) {
+        EditMenuItemAction.Kind.MOVE_UP,
+        EditMenuItemAction.Kind.MOVE_DOWN -> movedAnnouncement(row, name, action, actions)
+        EditMenuItemAction.Kind.MOVE_INTO ->
+            stringResource(R.string.mozac_menu_customize_item_moved_into, name, targetName)
+        EditMenuItemAction.Kind.MOVE_OUT_OF ->
+            stringResource(R.string.mozac_menu_customize_item_moved_out_of, name, targetName)
+        EditMenuItemAction.Kind.HIDE -> stringResource(R.string.mozac_menu_customize_item_hidden, name)
+        EditMenuItemAction.Kind.UNHIDE -> stringResource(R.string.mozac_menu_customize_item_shown, name)
+    }
 
 @Composable
 private fun firstExpandableName(actions: EditMenuItemsActions): String =
@@ -184,7 +216,7 @@ private fun expansionAction(
 
 /** The name of this item read by accessibility services, with its summary, if any, unless it has a description. */
 @Composable
-private fun MenuItem.a11yName(): String {
+internal fun MenuItem.a11yName(): String {
     contentDescription?.let {
         return it.value
     }

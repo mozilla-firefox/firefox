@@ -5,7 +5,8 @@
 package mozilla.components.compose.menu.ui.customize
 
 /**
- * What the rows of the screen customizing the items of a menu section do for accessibility services.
+ * What the rows of the screen customizing the items of a menu section do when the user interacts with them, for
+ * accessibility services or by touch.
  *
  * @property items The items of the screen.
  * @property onExpansionToggle Called with the id of an expandable item when the user expands or collapses it.
@@ -13,6 +14,8 @@ package mozilla.components.compose.menu.ui.customize
  *   the move, to save it.
  * @property onRejected Called with the id of an item when the user ran Hide on the last shown item, which cannot be
  *   hidden.
+ * @property onShowActions Called with the id of an item when the user long presses its drag handle, to show its
+ *   actions.
  * @property announce Called with what to tell the user, politely, once a custom action was done.
  */
 internal class EditMenuItemsActions(
@@ -20,5 +23,6 @@ internal class EditMenuItemsActions(
     val onExpansionToggle: (itemId: String) -> Unit,
     val onMove: (itemId: String, moved: CustomizeMenuItems, announcement: String) -> Unit,
     val onRejected: (itemId: String) -> Unit,
+    val onShowActions: (itemId: String) -> Unit,
     val announce: (announcement: String) -> Unit,
 )

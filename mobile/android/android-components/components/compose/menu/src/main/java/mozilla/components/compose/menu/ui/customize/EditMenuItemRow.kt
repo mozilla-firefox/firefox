@@ -17,11 +17,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.draggable.InteractableDragItemContainer
@@ -41,7 +44,8 @@ import mozilla.components.compose.menu.ui.utils.DRAGGED_GROUP_ALPHA
  * @param position Position in the list of the row.
  * @param dragState State of dragging the items of the screen.
  * @param itemSpacing Space above each row of the list.
- * @param actions What the rows do for accessibility services and when an expandable item is expanded or collapsed.
+ * @param actions What the rows do for accessibility services, when an expandable item is expanded or collapsed, and
+ *   when the user long presses a drag handle.
  * @param modifier The [Modifier] to be applied to the row.
  */
 @Composable
@@ -98,6 +102,7 @@ private fun ItemRow(
         dragKey = dragKey,
         modifier = Modifier.alpha(if (isDragged) DRAGGED_GROUP_ALPHA else 1f).padding(top = itemSpacing),
         semantics = Modifier.editMenuItemSemantics(row, item, actions),
+        onDragHandleLongPress = { actions.onShowActions(row.item.id) },
     ) {
         CustomizedGroupTheme(containerColor = if (row.isHidden) Color.Transparent else null) {
             if (item is ExpandableMenuItem) {
@@ -160,6 +165,7 @@ private fun ItemPill(item: MenuItem, modifier: Modifier) {
  *   handle.
  * @param modifier The [Modifier] to be applied to the row.
  * @param semantics The [Modifier] making the row, with its content and handle, a node for accessibility services.
+ * @param onDragHandleLongPress Called when the user long presses the drag handle without moving.
  * @param content The content of the row.
  */
 @Composable
@@ -169,8 +175,12 @@ private fun RowFrame(
     dragKey: Any?,
     modifier: Modifier,
     semantics: Modifier = Modifier,
+    onDragHandleLongPress: () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
+    val haptic = LocalHapticFeedback.current
+    val currentOnDragHandleLongPress by rememberUpdatedState(onDragHandleLongPress)
+
     Row(
         modifier =
             modifier
@@ -198,12 +208,10 @@ private fun RowFrame(
         } else {
             CustomizeMenuDragIndicator(
                 modifier =
-                    Modifier.dragOnVerticalMove(
-                        dragState.interactionState,
-                        dragState.listState,
-                        dragKey,
-                        onLongPress = null,
-                    )
+                    Modifier.dragOnVerticalMove(dragState.interactionState, dragState.listState, dragKey) {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        currentOnDragHandleLongPress()
+                    }
             )
         }
     }

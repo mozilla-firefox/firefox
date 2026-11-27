@@ -74,14 +74,13 @@ internal fun Modifier.dragAfterLongPress(
  * @param interactionState State of dragging the items of the list.
  * @param listState State of the list showing the item.
  * @param key Key of the list item to drag.
- * @param onLongPress Called when the user long presses without moving, while the finger is still down. If `null`, a
- *   long press without moving does nothing and the item is still dragged once the user moves vertically.
+ * @param onLongPress Called when the user long presses without moving, while the finger is still down.
  */
 internal fun Modifier.dragOnVerticalMove(
     interactionState: ListInteractionState,
     listState: LazyListState,
     key: Any,
-    onLongPress: (() -> Unit)?,
+    onLongPress: () -> Unit,
 ): Modifier =
     this.pointerInput(interactionState, listState, key) {
         val gesture = ListItemDragGesture(interactionState, listState, key)
@@ -115,16 +114,15 @@ private suspend fun AwaitPointerEventScope.awaitVerticalSlop(
     }
 
 /**
- * Wait for the pointer of [down] to move vertically by the touch slop, or call [onLongPress], if not `null`, if it is
- * held still for a long press, in which case this consumes the rest of the touch and returns `null`.
+ * Wait for the pointer of [down] to move vertically by the touch slop, or call [onLongPress] if it is held still for a
+ * long press, in which case this consumes the rest of the touch and returns `null`.
  */
 private suspend fun AwaitPointerEventScope.awaitVerticalSlopOrLongPress(
     down: PointerInputChange,
     gesture: ListItemDragGesture,
     interactionState: ListInteractionState,
-    onLongPress: (() -> Unit)?,
+    onLongPress: () -> Unit,
 ): PointerInputChange? {
-    if (onLongPress == null) return awaitVerticalSlop(down, gesture)
     var slop: PointerInputChange? = null
     val isBeforeLongPress =
         withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {

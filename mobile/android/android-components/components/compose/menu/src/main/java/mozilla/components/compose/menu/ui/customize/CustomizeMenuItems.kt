@@ -119,7 +119,8 @@ internal sealed interface DropOutcome {
 }
 
 /**
- * An action moving an item of a screen customizing the items of a menu section, offered to accessibility services.
+ * An action moving an item of a screen customizing the items of a menu section, offered to accessibility services and
+ * in the sheet opened by a long press on the drag handle of the item.
  *
  * @property kind What the action does.
  * @property result The items as moved by the action.
@@ -251,7 +252,8 @@ internal data class CustomizeMenuItems(
      */
     fun moveToShown(key: Any): CustomizeMenuItems? {
         val row = hiddenRows.firstOrNull { it.key == key } as? EditMenuItemsRow.Item ?: return null
-        return if (row.isDraggable) moveTo(key, endOfTopLevel(firstShownExpandable?.id)) else null
+        if (!row.isDraggable) return null
+        return moveTo(key, endOfTopLevel(firstShownExpandable?.id))
     }
 
     /**
@@ -298,6 +300,43 @@ internal data class CustomizeMenuItems(
                     else -> null
                 }
             }
+
+    /**
+     * The kinds of actions the sheet opened from the drag handle of the item with [key] lists, in the order it lists
+     * them in, the ones the item cannot do now shown disabled. None if the item has no row or cannot be dragged.
+     */
+    fun sheetKindsOf(key: Any): List<EditMenuItemAction.Kind> {
+        val row = (shownRows + hiddenRows).firstOrNull { it.key == key } as? EditMenuItemsRow.Item
+        if (row == null || !row.isDraggable) return emptyList()
+        return when {
+            row.isHidden ->
+                listOf(
+                    EditMenuItemAction.Kind.MOVE_UP,
+                    EditMenuItemAction.Kind.MOVE_DOWN,
+                    EditMenuItemAction.Kind.UNHIDE,
+                )
+            row.parentId != null ->
+                listOf(
+                    EditMenuItemAction.Kind.MOVE_UP,
+                    EditMenuItemAction.Kind.MOVE_DOWN,
+                    EditMenuItemAction.Kind.MOVE_OUT_OF,
+                    EditMenuItemAction.Kind.HIDE,
+                )
+            row.item.canBeSubItem && shown.any { it.item is ExpandableMenuItem } ->
+                listOf(
+                    EditMenuItemAction.Kind.MOVE_UP,
+                    EditMenuItemAction.Kind.MOVE_DOWN,
+                    EditMenuItemAction.Kind.MOVE_INTO,
+                    EditMenuItemAction.Kind.HIDE,
+                )
+            else ->
+                listOf(
+                    EditMenuItemAction.Kind.MOVE_UP,
+                    EditMenuItemAction.Kind.MOVE_DOWN,
+                    EditMenuItemAction.Kind.HIDE,
+                )
+        }
+    }
 
     /**
      * Index in the list of the row of the item with [key], or `null` if it has no row. The rows of the hidden items

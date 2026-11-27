@@ -4,18 +4,27 @@
 
 package mozilla.components.compose.menu.ui.customize
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import mozilla.components.compose.base.R as baseR
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.R
@@ -48,6 +57,12 @@ class EditMenuItemsContentTest {
     private val hiddenItemsTitle = testContext.getString(R.string.mozac_menu_customize_hidden_items)
     private val dragToHide = testContext.getString(R.string.mozac_menu_customize_drag_items_to_hide)
     private val preview = testContext.getString(R.string.mozac_menu_customize_preview)
+    private val moveUp = testContext.getString(R.string.mozac_menu_customize_move_up)
+    private val moveDown = testContext.getString(R.string.mozac_menu_customize_move_down)
+    private val hide = testContext.getString(R.string.mozac_menu_customize_hide_item)
+    private val unhide = testContext.getString(R.string.mozac_menu_customize_unhide_item)
+    private val close = testContext.getString(baseR.string.mozac_compose_base_close_button_content_description)
+    private val hapticFeedback = RecordingHapticFeedback()
 
     @Test
     fun `GIVEN shown and hidden items THEN the shown ones are above the hidden items title and the hidden ones below it`() {
@@ -461,12 +476,409 @@ class EditMenuItemsContentTest {
         assertTrue(actions.none { it is AttemptedMoveAsSubItem })
     }
 
+    @Test
+    fun `WHEN the drag handle of a shown item between others is long pressed THEN move up, move down and hide item are enabled`() {
+        setContent(CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2"), item("Shown 3"))))
+
+        longPressHandle("Shown 2")
+
+        composeTestRule.onNodeWithText(moveUp).assertIsEnabled()
+        composeTestRule.onNodeWithText(moveDown).assertIsEnabled()
+        composeTestRule.onNodeWithText(hide).assertIsEnabled()
+        composeTestRule.onNodeWithText(unhide).assertDoesNotExist()
+    }
+
+    @Test
+    fun `GIVEN the first shown item WHEN its drag handle is long pressed THEN move up is disabled and move down is enabled`() {
+        setContent(CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2"))))
+
+        longPressHandle("Shown 1")
+
+        composeTestRule.onNodeWithText(moveUp).assertIsNotEnabled()
+        composeTestRule.onNodeWithText(moveDown).assertIsEnabled()
+    }
+
+    @Test
+    fun `GIVEN the last shown item WHEN its drag handle is long pressed THEN move up is enabled and move down is disabled`() {
+        setContent(CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2"))))
+
+        longPressHandle("Shown 2")
+
+        composeTestRule.onNodeWithText(moveUp).assertIsEnabled()
+        composeTestRule.onNodeWithText(moveDown).assertIsNotEnabled()
+    }
+
+    @Test
+    fun `GIVEN a shown expandable item WHEN the drag handle of a shown item is long pressed THEN move into is enabled`() {
+        setContent(CustomizableMenuItemsState(items = listOf(item("Shown"), expandable("More", item("Sub")))))
+
+        longPressHandle("Shown")
+
+        composeTestRule.onNodeWithText(moveInto("More")).assertIsEnabled()
+    }
+
+    @Test
+    fun `GIVEN an item which can only be directly in its section WHEN its drag handle is long pressed THEN no move into action is shown`() {
+        setContent(
+            CustomizableMenuItemsState(items = listOf(topLevelOnlyItem("Extensions"), expandable("More", item("Sub"))))
+        )
+
+        longPressHandle("Extensions")
+
+        composeTestRule.onNodeWithText(moveDown).assertIsEnabled()
+        composeTestRule.onNodeWithText(hide).assertIsEnabled()
+        composeTestRule.onNodeWithText(moveInto("More")).assertDoesNotExist()
+    }
+
+    @Test
+    fun `GIVEN no shown expandable item WHEN the drag handle of a shown item is long pressed THEN no move into action is shown`() {
+        setContent(
+            CustomizableMenuItemsState(
+                items = listOf(item("Shown 1"), item("Shown 2")),
+                hiddenItems = listOf(expandable("More", item("Sub"), state = MenuItemState.DISABLED)),
+            )
+        )
+
+        longPressHandle("Shown 1")
+
+        composeTestRule.onNodeWithText(moveDown).assertIsEnabled()
+        composeTestRule.onNodeWithText(moveInto("More")).assertDoesNotExist()
+    }
+
+    @Test
+    fun `GIVEN a sub-item of an expanded item WHEN its drag handle is long pressed THEN move out of is enabled and move up or down is disabled at its ends`() {
+        setContent(
+            CustomizableMenuItemsState(
+                items = listOf(item("Shown"), expandable("More", item("Sub 1"), item("Sub 2"))),
+                expandedItemIds = setOf("More"),
+            )
+        )
+
+        longPressHandle("Sub 1")
+
+        composeTestRule.onNodeWithText(moveUp).assertIsNotEnabled()
+        composeTestRule.onNodeWithText(moveDown).assertIsEnabled()
+        composeTestRule.onNodeWithText(moveOutOf("More")).assertIsEnabled()
+        composeTestRule.onNodeWithText(hide).assertIsEnabled()
+        composeTestRule.onNodeWithText(moveInto("More")).assertDoesNotExist()
+
+        composeTestRule.onNodeWithContentDescription(close).performClick()
+        composeTestRule.waitForIdle()
+
+        longPressHandle("Sub 2")
+
+        composeTestRule.onNodeWithText(moveUp).assertIsEnabled()
+        composeTestRule.onNodeWithText(moveDown).assertIsNotEnabled()
+        composeTestRule.onNodeWithText(moveOutOf("More")).assertIsEnabled()
+    }
+
+    @Test
+    fun `GIVEN a collapsed expandable item WHEN its drag handle is long pressed THEN move up, move down and hide item are shown and no move into`() {
+        setContent(
+            CustomizableMenuItemsState(items = listOf(item("First"), expandable("More", item("Sub")), item("Last")))
+        )
+
+        longPressHandle("More")
+
+        composeTestRule.onNodeWithText(moveUp).assertIsEnabled()
+        composeTestRule.onNodeWithText(moveDown).assertIsEnabled()
+        composeTestRule.onNodeWithText(hide).assertIsEnabled()
+        composeTestRule.onNodeWithText(moveInto("More")).assertDoesNotExist()
+    }
+
+    @Test
+    fun `GIVEN a hidden item WHEN its drag handle is long pressed THEN move up and move down are disabled and unhide item is enabled`() {
+        setContent(
+            CustomizableMenuItemsState(
+                items = listOf(item("Shown")),
+                hiddenItems = listOf(item("Hidden 1"), item("Hidden 2")),
+            )
+        )
+
+        longPressHandle("Hidden 2")
+
+        composeTestRule.onNodeWithText(moveUp).assertIsNotEnabled()
+        composeTestRule.onNodeWithText(moveDown).assertIsNotEnabled()
+        composeTestRule.onNodeWithText(unhide).assertIsEnabled()
+        composeTestRule.onNodeWithText(hide).assertDoesNotExist()
+    }
+
+    @Test
+    fun `GIVEN the only shown item WHEN its drag handle is long pressed THEN hide item is disabled and clicking it changes nothing`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val state = CustomizableMenuItemsState(items = listOf(item("Only")), hiddenItems = listOf(item("Hidden")))
+        val store = setContent(state, listOf(capturing(actions)))
+
+        longPressHandle("Only")
+
+        composeTestRule.onNodeWithText(hide).assertIsNotEnabled()
+        composeTestRule.onNodeWithText(hide).performClick()
+        composeTestRule.waitForIdle()
+
+        assertEquals(state, store.state)
+        assertTrue(actions.none { it is ItemsChanged || it is AttemptedEmptySection })
+        composeTestRule.onNodeWithText(hide).assertIsDisplayed()
+    }
+
+    @Test
+    fun `WHEN the drag handle is held for a long press and then moved THEN the sheet is shown, the state is unchanged and the list is not scrolled`() {
+        val state =
+            CustomizableMenuItemsState(
+                items = List(10) { item("Shown $it") },
+                hiddenItems = List(10) { item("Hidden $it") },
+            )
+        val store = setContent(state)
+        val boundsBefore = boundsOf("Shown 0")
+
+        val from = handleOf("Shown 0")
+        composeTestRule.onRoot().performTouchInput {
+            down(from)
+            advanceEventTime(viewConfiguration.longPressTimeoutMillis * 2)
+            move()
+        }
+        composeTestRule.waitForIdle()
+        val mainRoot = composeTestRule.onAllNodes(isRoot())[0]
+        mainRoot.performTouchInput { moveBy(Offset(0f, -viewConfiguration.touchSlop * 20)) }
+        composeTestRule.waitForIdle()
+        mainRoot.performTouchInput { up() }
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText(moveDown).assertIsEnabled()
+        assertEquals(state, store.state)
+        assertEquals(boundsBefore, boundsOf("Shown 0"))
+        assertEquals(0f, scrolledByValue())
+    }
+
+    @Test
+    fun `WHEN the drag handle is held for a long press THEN the sheet is shown before the finger is lifted and the user feels it`() {
+        setContent(CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2"))))
+
+        pressHandle("Shown 2")
+        composeTestRule.onRoot().performTouchInput {
+            advanceEventTime(viewConfiguration.longPressTimeoutMillis * 2)
+            move()
+        }
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText(moveUp).assertIsDisplayed()
+        assertEquals(listOf(HapticFeedbackType.LongPress), hapticFeedback.performed)
+    }
+
+    @Test
+    fun `WHEN the drag handle is moved sideways and held for a long press THEN no sheet is shown and moving vertically drags the item`() {
+        val store =
+            setContent(CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2"), item("Shown 3"))))
+
+        pressHandle("Shown 1")
+        composeTestRule.onRoot().performTouchInput {
+            moveBy(Offset(-viewConfiguration.touchSlop * 2, 0f))
+            advanceEventTime(viewConfiguration.longPressTimeoutMillis * 2)
+            move()
+        }
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText(moveUp).assertDoesNotExist()
+        moveInSteps(boundsOf("Shown 3").bottomCenter)
+        composeTestRule.onRoot().performTouchInput { up() }
+        composeTestRule.waitForIdle()
+
+        assertEquals(listOf("Shown 2", "Shown 3", "Shown 1"), store.state.items.map { it.id })
+    }
+
+    @Test
+    fun `WHEN the drag handle is tapped THEN no sheet is shown`() {
+        setContent(CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2"))))
+
+        pressHandle("Shown 2")
+        composeTestRule.onRoot().performTouchInput { up() }
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText(moveUp).assertDoesNotExist()
+    }
+
+    @Test
+    fun `GIVEN an expanded item or a hidden expanded item WHEN long pressing where its handle would be THEN no sheet is shown`() {
+        setContent(
+            CustomizableMenuItemsState(
+                items = listOf(item("Shown"), expandable("More", item("Sub 1"))),
+                hiddenItems = listOf(expandable("Hidden More", item("Sub 2"), state = MenuItemState.DISABLED)),
+                expandedItemIds = setOf("More", "Hidden More"),
+            )
+        )
+
+        longPressHandle("More")
+        composeTestRule.onNodeWithText(moveUp).assertDoesNotExist()
+
+        longPressHandle("Hidden More")
+        composeTestRule.onNodeWithText(moveUp).assertDoesNotExist()
+    }
+
+    @Test
+    fun `WHEN move down is chosen in the sheet THEN the item is moved in the store and the sheet closes`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2"), item("Shown 3"))),
+                listOf(capturing(actions)),
+            )
+        longPressHandle("Shown 1")
+
+        composeTestRule.onNodeWithText(moveDown).performClick()
+        composeTestRule.waitForIdle()
+
+        assertEquals(listOf("Shown 2", "Shown 1", "Shown 3"), store.state.items.map { it.id })
+        assertEquals(
+            ItemsChanged(items = store.state.items, hiddenItems = emptyList()),
+            actions.filterIsInstance<ItemsChanged>().single(),
+        )
+        composeTestRule.onNodeWithText(moveDown).assertDoesNotExist()
+    }
+
+    @Test
+    fun `WHEN hide item is chosen in the sheet THEN the item is the first hidden one`() {
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("Shown 1"), item("Shown 2")),
+                    hiddenItems = listOf(item("Hidden")),
+                )
+            )
+        longPressHandle("Shown 1")
+
+        composeTestRule.onNodeWithText(hide).performClick()
+        composeTestRule.waitForIdle()
+
+        assertEquals(listOf("Shown 2"), store.state.items.map { it.id })
+        assertEquals(listOf("Shown 1", "Hidden"), store.state.hiddenItems.map { it.id })
+    }
+
+    @Test
+    fun `WHEN unhide item is chosen in the sheet THEN the item is placed after the last shown item which is not More`() {
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("Shown 1"), item("Shown 2"), expandable("More", item("Sub"))),
+                    hiddenItems = listOf(item("Hidden")),
+                )
+            )
+        longPressHandle("Hidden")
+
+        composeTestRule.onNodeWithText(unhide).performClick()
+        composeTestRule.waitForIdle()
+
+        assertEquals(listOf("Shown 1", "Shown 2", "Hidden", "More"), store.state.items.map { it.id })
+        assertTrue(store.state.hiddenItems.isEmpty())
+    }
+
+    @Test
+    fun `WHEN move into is chosen in the sheet THEN the item is the first sub-item, More stays collapsed and the sheet closes`() {
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("Shown"), expandable("More", item("Sub"))),
+                    expandedItemIds = emptySet(),
+                )
+            )
+        longPressHandle("Shown")
+
+        composeTestRule.onNodeWithText(moveInto("More")).performClick()
+        composeTestRule.waitForIdle()
+
+        assertEquals(listOf("More"), store.state.items.map { it.id })
+        assertEquals(listOf("Shown", "Sub"), store.state.items.single().subItems.map { it.id })
+        assertTrue(store.state.expandedItemIds.isEmpty())
+        composeTestRule.onNodeWithText(moveInto("More")).assertDoesNotExist()
+    }
+
+    @Test
+    fun `WHEN move out of is chosen in the sheet THEN the item is placed after the last shown item which is not More`() {
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("Shown"), expandable("More", item("Sub 1"), item("Sub 2"))),
+                    expandedItemIds = setOf("More"),
+                )
+            )
+        longPressHandle("Sub 1")
+
+        composeTestRule.onNodeWithText(moveOutOf("More")).performClick()
+        composeTestRule.waitForIdle()
+
+        assertEquals(listOf("Shown", "Sub 1", "More"), store.state.items.map { it.id })
+        assertEquals(listOf("Sub 2"), store.state.items.last().subItems.map { it.id })
+        composeTestRule.onNodeWithText(moveOutOf("More")).assertDoesNotExist()
+    }
+
+    @Test
+    fun `WHEN a disabled action is clicked in the sheet THEN nothing changes and the sheet stays open`() {
+        val state = CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2")))
+        val store = setContent(state)
+        longPressHandle("Shown 1")
+
+        composeTestRule.onNodeWithText(moveUp).performClick()
+        composeTestRule.waitForIdle()
+
+        assertEquals(state, store.state)
+        composeTestRule.onNodeWithText(moveDown).assertIsDisplayed()
+    }
+
+    @Test
+    fun `WHEN the sheet is dismissed with its handle THEN the items are unchanged and the sheet closes`() {
+        val state = CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2")))
+        val store = setContent(state)
+        longPressHandle("Shown 2")
+
+        composeTestRule.onNodeWithContentDescription(close).performClick()
+        composeTestRule.waitForIdle()
+
+        assertEquals(state, store.state)
+        composeTestRule.onNodeWithText(moveUp).assertDoesNotExist()
+    }
+
+    @Test
+    fun `WHEN the item loses its row while the sheet is open without a choice THEN the sheet closes`() {
+        val store = setContent(CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2"))))
+        longPressHandle("Shown 1")
+        composeTestRule.onNodeWithText(moveDown).assertIsDisplayed()
+
+        store.dispatch(ItemsChanged(items = listOf(item("Shown 2")), hiddenItems = emptyList()))
+        composeTestRule.waitForIdle()
+
+        composeTestRule.onNodeWithText(moveDown).assertDoesNotExist()
+    }
+
+    @Test
+    fun `WHEN another action is chosen while the sheet hides after move into THEN only the first action is applied`() {
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("Shown 1"), item("Shown 2"), expandable("More", item("Sub")))
+                )
+            )
+        longPressHandle("Shown 1")
+        composeTestRule.mainClock.autoAdvance = false
+
+        composeTestRule.onNodeWithText(moveInto("More")).performClick()
+        composeTestRule.onNodeWithText(hide).performClick()
+        composeTestRule.mainClock.autoAdvance = true
+        composeTestRule.waitForIdle()
+
+        assertEquals(listOf("Shown 2", "More"), store.state.items.map { it.id })
+        assertEquals(listOf("Shown 1", "Sub"), store.state.items.last().subItems.map { it.id })
+        assertTrue(store.state.hiddenItems.isEmpty())
+    }
+
     private fun setContent(
         state: CustomizableMenuItemsState,
         middleware: List<Middleware<CustomizableMenuItemsState, CustomizableMenuItemsAction>> = emptyList(),
     ): CustomizableMenuItemsStore {
         val store = CustomizableMenuItemsStore(initialState = state, middleware = middleware)
-        composeTestRule.setContent { AcornTheme { EditMenuItemsContent(store = store) } }
+        composeTestRule.setContent {
+            AcornTheme {
+                CompositionLocalProvider(LocalHapticFeedback provides hapticFeedback) {
+                    EditMenuItemsContent(store = store)
+                }
+            }
+        }
         return store
     }
 
@@ -490,19 +902,56 @@ class EditMenuItemsContentTest {
             }
         )
 
+    private fun moveInto(name: String) = testContext.getString(R.string.mozac_menu_customize_move_into, name)
+
+    private fun moveOutOf(name: String) = testContext.getString(R.string.mozac_menu_customize_move_out_of, name)
+
+    private fun scrolledByValue() =
+        composeTestRule
+            .onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange))[0]
+            .fetchSemanticsNode()
+            .config[SemanticsProperties.VerticalScrollAxisRange]
+            .value()
+
     /**
      * Tap the handle of the row with [title], drag it in steps through each of [via], in order, each evaluated when its
      * leg starts, then to [to] and let go of it.
      */
     private fun dragByHandle(title: String, via: List<() -> Offset> = emptyList(), to: () -> Offset) {
+        dragFrom(handleOf(title), afterLongPress = false, via = via, to = to)
+    }
+
+    /** Hold the handle of the row with [title] for longer than a long press, then let go of it. */
+    private fun longPressHandle(title: String) {
+        val from = handleOf(title)
+        composeTestRule.onRoot().performTouchInput {
+            down(from)
+            advanceEventTime(viewConfiguration.longPressTimeoutMillis * 2)
+            // Send the delay with a stationary move, an empty batch would drop it.
+            move()
+            up()
+        }
+        composeTestRule.waitForIdle()
+    }
+
+    private fun pressHandle(title: String) {
+        val from = handleOf(title)
+        composeTestRule.onRoot().performTouchInput { down(from) }
+    }
+
+    /** Where the handle of the row with [title] is, at the end of the row. */
+    private fun handleOf(title: String): Offset {
         val listBounds = composeTestRule.onRoot().fetchSemanticsNode().boundsInRoot
         val distanceFromEnd = with(composeTestRule.density) { 30.dp.toPx() }
-        dragFrom(
-            Offset(listBounds.right - distanceFromEnd, boundsOf(title).center.y),
-            afterLongPress = false,
-            via = via,
-            to = to,
-        )
+        return Offset(listBounds.right - distanceFromEnd, boundsOf(title).center.y)
+    }
+
+    private class RecordingHapticFeedback : HapticFeedback {
+        val performed = mutableListOf<HapticFeedbackType>()
+
+        override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+            performed += hapticFeedbackType
+        }
     }
 
     /**
