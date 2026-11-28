@@ -6,6 +6,14 @@
 // openSpecialDatabase, which is tested by test_storage_service_special.js and
 // openUnsharedDatabase, which is tested by test_storage_service_unshared.js.
 
+function copyToTempDir(aFileName, aNewName) {
+  let tempDir = do_get_tempdir();
+  do_get_file(aFileName).copyTo(tempDir, aNewName);
+  let file = tempDir.clone();
+  file.append(aNewName);
+  return file;
+}
+
 function test_openDatabase_null_file() {
   try {
     Services.storage.openDatabase(null);
@@ -34,7 +42,7 @@ function test_openDatabase_file_exists() {
 }
 
 function test_corrupt_db_throws_with_openDatabase() {
-  let db = getCorruptDB();
+  let db = copyToTempDir("corruptDB.sqlite", "corruptDB.sqlite");
 
   try {
     getDatabase(db);
@@ -50,7 +58,7 @@ function test_corrupt_db_throws_with_openDatabase() {
 }
 
 function test_fake_db_throws_with_openDatabase() {
-  let db = getFakeDB();
+  let db = copyToTempDir("fakeDB.sqlite", "fakeDB.sqlite");
 
   try {
     getDatabase(db);
@@ -106,7 +114,7 @@ function test_openDatabase_directory() {
 }
 
 function test_read_gooddb() {
-  let file = do_get_file("goodDB.sqlite");
+  let file = copyToTempDir("goodDB.sqlite", "readGoodDB.sqlite");
   let db = getDatabase(file);
 
   db.executeSimpleSQL("SELECT * FROM Foo;");
@@ -140,10 +148,12 @@ function test_read_gooddb() {
     Glean.sqliteStore.query.get(file.leafName, "misuse").testGetValue(),
     1
   );
+
+  db.close();
 }
 
 function test_read_baddb() {
-  let file = do_get_file("baddataDB.sqlite");
+  let file = copyToTempDir("baddataDB.sqlite", "readBaddataDB.sqlite");
   let db = getDatabase(file);
 
   Assert.throws(
@@ -168,38 +178,41 @@ function test_read_baddb() {
     Glean.sqliteStore.query.get(file.leafName, "corrupt").testGetValue(),
     2
   );
+
+  stmt.finalize();
+  db.close();
 }
 
 function test_busy_telemetry() {
-  let profileDir = do_get_profile();
-  do_get_file("goodDB.sqlite").copyTo(profileDir, "goodDB.sqlite");
-  let file = profileDir.clone();
-  file.append("goodDB.sqlite");
+  let file = copyToTempDir("goodDB.sqlite", "goodDB.sqlite");
   let conn1 = Services.storage.openUnsharedDatabase(file);
   let conn2 = Services.storage.openUnsharedDatabase(file);
 
   conn1.beginTransaction();
   conn1.executeSimpleSQL("CREATE TABLE test (id INTEGER PRIMARY KEY)");
 
-  Assert.throws(
-    () =>
-      conn2.executeSimpleSQL("CREATE TABLE test_busy (id INTEGER PRIMARY KEY)"),
-    /NS_ERROR_STORAGE_BUSY/,
-    "Nested transaction on second connection should fail"
-  );
-  Assert.equal(
-    Glean.sqliteStore.query.get(file.leafName, "busy").testGetValue(),
-    1
-  );
-
-  conn1.rollbackTransaction();
+  try {
+    Assert.throws(
+      () =>
+        conn2.executeSimpleSQL(
+          "CREATE TABLE test_busy (id INTEGER PRIMARY KEY)"
+        ),
+      /NS_ERROR_STORAGE_BUSY/,
+      "Nested transaction on second connection should fail"
+    );
+    Assert.equal(
+      Glean.sqliteStore.query.get(file.leafName, "busy").testGetValue(),
+      1
+    );
+  } finally {
+    conn1.rollbackTransaction();
+    conn1.close();
+    conn2.close();
+  }
 }
 
 function test_busy_open_telemetry() {
-  let profileDir = do_get_profile();
-  do_get_file("goodDB.sqlite").copyTo(profileDir, "busyOpen.sqlite");
-  let file = profileDir.clone();
-  file.append("busyOpen.sqlite");
+  let file = copyToTempDir("goodDB.sqlite", "busyOpen.sqlite");
   let conn1 = Services.storage.openUnsharedDatabase(file);
   conn1.executeSimpleSQL("BEGIN EXCLUSIVE");
 
