@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.247
- * pdfjsBuild = e47398270
+ * pdfjsVersion = 7.0.261
+ * pdfjsBuild = 9548d30dd
  */
 
 ;// ./web/ui_utils.js
@@ -577,9 +577,6 @@ const defaultOptions = new Map([["allowedGlobalEvents", {
 }], ["cursorToolOnLoad", {
   value: 0,
   kind: OptionKind.VIEWER + OptionKind.PREFERENCE
-}], ["debuggerSrc", {
-  value: "./debugger.mjs",
-  kind: OptionKind.VIEWER
 }], ...[], ["defaultZoomDelay", {
   value: 400,
   kind: OptionKind.VIEWER + OptionKind.PREFERENCE
@@ -676,12 +673,6 @@ const defaultOptions = new Map([["allowedGlobalEvents", {
 }], ["maxCanvasPixels", {
   value: 2 ** 25,
   kind: OptionKind.VIEWER
-}], ["minDurationToUpdateCanvas", {
-  value: 500,
-  kind: OptionKind.VIEWER
-}], ["newTextLayerMode", {
-  value: 1,
-  kind: OptionKind.VIEWER + OptionKind.PREFERENCE
 }], ["forcePageColors", {
   value: false,
   kind: OptionKind.VIEWER + OptionKind.PREFERENCE
@@ -726,6 +717,9 @@ const defaultOptions = new Map([["allowedGlobalEvents", {
   kind: OptionKind.API
 }], ["cMapUrl", {
   value: "resource://pdf.js/web/cmaps/",
+  kind: OptionKind.API
+}], ["debugTextLayerFonts", {
+  value: false,
   kind: OptionKind.API
 }], ["disableAutoFetch", {
   value: false,
@@ -912,7 +906,7 @@ const {
 } = globalThis.pdfjsLib;
 
 ;// ./web/internal_evt.js
-const INTERNAL_EVT = "abc31a6c-6598-4e5c-9454-e31b3e97f661";
+const INTERNAL_EVT = "a3617efd-1c8e-46a7-9225-15ffd26c30b0";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -4411,7 +4405,7 @@ class PDFFindController {
     }
     let deferred = Promise.resolve();
     const textOptions = {
-      disableNormalization: true
+      enableNormalization: false
     };
     const pdfDoc = this._pdfDocument;
     for (let i = 0, ii = this._linkService.pagesCount; i < ii; i++) {
@@ -6635,7 +6629,6 @@ class BasePDFPageView extends RenderableView {
     this.enableOptimizedPartialRendering = options.enableOptimizedPartialRendering ?? false;
     this.enableSelectionRendering = options.enableSelectionRendering !== false && FeatureTest.isBackdropFilterSupported;
     this.imagesRightClickMinSize = options.imagesRightClickMinSize ?? -1;
-    this.minDurationToUpdateCanvas = options.minDurationToUpdateCanvas ?? 500;
   }
   get renderingState() {
     return this.#renderingState;
@@ -6672,6 +6665,9 @@ class BasePDFPageView extends RenderableView {
         break;
     }
   }
+  get _minDurationToUpdateCanvas() {
+    return shadow(this, "_minDurationToUpdateCanvas", globalThis.StepperManager?.enabled ? 0 : 500);
+  }
   _createCanvas(onShow, hideUntilComplete = false) {
     const {
       pageColors
@@ -6683,8 +6679,8 @@ class BasePDFPageView extends RenderableView {
     this.#showCanvas = isLastShow => {
       if (updateOnFirstShow) {
         let tempCanvas = this.#tempCanvas;
-        if (!isLastShow && this.minDurationToUpdateCanvas > 0 && !this.renderTask?.isWorkerRendering) {
-          if (Date.now() - this.#startTime < this.minDurationToUpdateCanvas) {
+        if (!isLastShow && !this.renderTask?.isWorkerRendering && this._minDurationToUpdateCanvas > 0) {
+          if (Date.now() - this.#startTime < this._minDurationToUpdateCanvas) {
             return;
           }
           if (!tempCanvas) {
@@ -7899,7 +7895,6 @@ class TextHighlighter {
 class TextLayerBuilder {
   #abortSignal = null;
   #enablePermissions = false;
-  #textContentParams;
   #onAppend = null;
   #removeOwnSelectionListener = null;
   #renderingDone = false;
@@ -7911,7 +7906,6 @@ class TextLayerBuilder {
     highlighter = null,
     accessibilityManager = null,
     enablePermissions = false,
-    newTextLayerMode = 0,
     onAppend = null,
     abortSignal = null
   }) {
@@ -7919,19 +7913,12 @@ class TextLayerBuilder {
     this.highlighter = highlighter;
     this.accessibilityManager = accessibilityManager;
     this.#enablePermissions = enablePermissions === true;
-    const debugTextLayerFonts = newTextLayerMode === 2;
-    this.#textContentParams = {
-      includeMarkedContent: true,
-      disableNormalization: true,
-      includeTextLayerFonts: newTextLayerMode === 1 || debugTextLayerFonts,
-      debugTextLayerFonts
-    };
     this.#onAppend = onAppend;
     this.#abortSignal = abortSignal;
     this.div = document.createElement("div");
     this.div.tabIndex = 0;
     this.div.className = "textLayer";
-    if (debugTextLayerFonts) {
+    if (pdfPage.loadingParams.debugTextLayerFonts) {
       this.div.classList.add("debugFonts");
     }
   }
@@ -7949,7 +7936,9 @@ class TextLayerBuilder {
     }
     this.cancel();
     this.#textLayer = new TextLayer({
-      textContentSource: this.pdfPage.streamTextContent(textContentParams || this.#textContentParams),
+      textContentSource: this.pdfPage.streamTextContent(textContentParams || {
+        enableNormalization: false
+      }),
       images,
       container: this.div,
       viewport
@@ -8122,7 +8111,6 @@ class PDFPageView extends BasePDFPageView {
   #commentManager = null;
   #enableAutoLinking = true;
   #hasRestrictedScaling = false;
-  #newTextLayerMode = 0;
   #isEditing = false;
   #layerProperties = null;
   #needsRestrictedScaling = false;
@@ -8162,7 +8150,6 @@ class PDFPageView extends BasePDFPageView {
     this.maxCanvasDim = options.maxCanvasDim || AppOptions.get("maxCanvasDim");
     this.capCanvasAreaFactor = options.capCanvasAreaFactor ?? AppOptions.get("capCanvasAreaFactor");
     this.#enableAutoLinking = options.enableAutoLinking !== false;
-    this.#newTextLayerMode = options.newTextLayerMode ?? 0;
     this.#commentManager = options.commentManager || null;
     this.l10n = options.l10n;
     this._annotationCanvasMap = null;
@@ -8193,7 +8180,6 @@ class PDFPageView extends BasePDFPageView {
       pagesColors: this.pageColors,
       renderingQueue: this.renderingQueue,
       enableOptimizedPartialRendering: this.enableOptimizedPartialRendering,
-      minDurationToUpdateCanvas: this.minDurationToUpdateCanvas,
       defaultViewport: this.viewport,
       id,
       layerProperties: this.#layerProperties,
@@ -8780,7 +8766,6 @@ class PDFPageView extends BasePDFPageView {
         highlighter: this._textHighlighter,
         accessibilityManager: this._accessibilityManager,
         enablePermissions: this.#textLayerMode === TextLayerMode.ENABLE_PERMISSIONS,
-        newTextLayerMode: this.#newTextLayerMode,
         onAppend: textLayerDiv => {
           this.l10n.pause();
           this.#addLayer(textLayerDiv, "textLayer");
@@ -9013,10 +8998,8 @@ class PDFViewer {
   #enableUpdatedAddImage = false;
   #enableNewAltTextWhenAddingImage = false;
   #enableAutoLinking = true;
-  #newTextLayerMode = 0;
   #abortSignal = null;
   #eventAC = null;
-  #minDurationToUpdateCanvas = 0;
   #mlManager = null;
   #panPosition = [NaN, NaN];
   #printingAllowed = true;
@@ -9038,7 +9021,7 @@ class PDFViewer {
   #savedPageViews = null;
   #deletedPageNumbers = null;
   constructor(options) {
-    const viewerVersion = "7.0.247";
+    const viewerVersion = "7.0.261";
     if (version !== viewerVersion) {
       throw new Error(`The API version "${version}" does not match the Viewer version "${viewerVersion}".`);
     }
@@ -9080,8 +9063,6 @@ class PDFViewer {
     this.#mlManager = options.mlManager || null;
     this.#supportsPinchToZoom = options.supportsPinchToZoom !== false;
     this.#enableAutoLinking = options.enableAutoLinking !== false;
-    this.#newTextLayerMode = options.newTextLayerMode ?? 0;
-    this.#minDurationToUpdateCanvas = options.minDurationToUpdateCanvas ?? 500;
     this.renderingQueue = options.renderingQueue;
     const {
       abortSignal
@@ -9542,7 +9523,6 @@ class PDFViewer {
           optionalContentConfigPromise,
           renderingQueue: this.renderingQueue,
           textLayerMode,
-          newTextLayerMode: this.#newTextLayerMode,
           annotationMode,
           imageResourcesPath: this.imageResourcesPath,
           maxCanvasPixels: this.maxCanvasPixels,
@@ -9556,7 +9536,6 @@ class PDFViewer {
           l10n: this.l10n,
           layerProperties: this._layerProperties,
           enableAutoLinking: this.#enableAutoLinking,
-          minDurationToUpdateCanvas: this.#minDurationToUpdateCanvas,
           commentManager: this.#commentManager,
           abortSignal: this.#abortSignal
         });
@@ -11132,23 +11111,7 @@ const PDFViewerApplication = {
     if (!hash) {
       return;
     }
-    const {
-        mainContainer,
-        viewerContainer
-      } = this.appConfig,
-      params = parseQueryString(hash);
-    const loadPDFBug = async () => {
-      if (this._PDFBug) {
-        return;
-      }
-      const {
-        PDFBug
-      } = await import(
-      /*webpackIgnore: true*/
-      /*@vite-ignore*/
-      AppOptions.get("debuggerSrc"));
-      this._PDFBug = PDFBug;
-    };
+    const params = parseQueryString(hash);
     if (params.get("disableworker") === "true") {
       try {
         GlobalWorkerOptions.workerSrc ||= AppOptions.get("workerSrc");
@@ -11167,34 +11130,29 @@ const PDFViewerApplication = {
           AppOptions.set("textLayerMode", TextLayerMode.DISABLE);
           break;
         case "visible":
-        case "shadow":
-        case "hover":
-          viewerContainer.classList.add(`textLayer-${params.get("textlayer")}`);
-          try {
-            await loadPDFBug();
-            this._PDFBug.loadCSS();
-          } catch (ex) {
-            console.error("_parseHashParams:", ex);
-          }
+          AppOptions.set("debugTextLayerFonts", true);
           break;
       }
     }
     if (params.has("pdfbug")) {
+      const debuggerSrc = "./debugger.mjs";
       const enabled = params.get("pdfbug").split(",");
       try {
-        await loadPDFBug();
-        this._PDFBug.init(mainContainer, enabled);
+        const {
+          PDFBug
+        } = await import(
+        /*webpackIgnore: true*/
+        /*@vite-ignore*/
+        debuggerSrc);
+        PDFBug.init(this.appConfig.mainContainer, enabled);
+        this._PDFBug = PDFBug;
       } catch (ex) {
         console.error("_parseHashParams:", ex);
       }
-      const debugOpts = {
+      AppOptions.setAll({
         pdfBug: true,
         fontExtraProperties: true
-      };
-      if (globalThis.StepperManager?.enabled) {
-        debugOpts.minDurationToUpdateCanvas = 0;
-      }
-      AppOptions.setAll(debugOpts);
+      });
     }
     const opts = {
       disableAutoFetch: x => x === "true",
@@ -11202,7 +11160,6 @@ const PDFViewerApplication = {
       disableHistory: x => x === "true",
       disableRange: x => x === "true",
       disableStream: x => x === "true",
-      newTextLayerMode: x => x | 0,
       verbosity: x => x | 0
     };
     for (const name in opts) {
@@ -11304,7 +11261,6 @@ const PDFViewerApplication = {
       scriptingManager: AppOptions.get("enableScripting") && pdfScriptingManager,
       l10n,
       textLayerMode: AppOptions.get("textLayerMode"),
-      newTextLayerMode: AppOptions.get("newTextLayerMode"),
       annotationMode: AppOptions.get("annotationMode"),
       annotationEditorMode,
       annotationEditorHighlightColors: AppOptions.get("highlightEditorColors"),
@@ -11325,8 +11281,7 @@ const PDFViewerApplication = {
       mlManager,
       abortSignal,
       supportsPinchToZoom: this.supportsPinchToZoom,
-      enableAutoLinking: AppOptions.get("enableAutoLinking"),
-      minDurationToUpdateCanvas: AppOptions.get("minDurationToUpdateCanvas")
+      enableAutoLinking: AppOptions.get("enableAutoLinking")
     });
     renderingQueue.setViewer(pdfViewer);
     linkService.setViewer(pdfViewer);

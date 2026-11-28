@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.247
- * pdfjsBuild = e47398270
+ * pdfjsVersion = 7.0.261
+ * pdfjsBuild = 9548d30dd
  */
 export const __webpack_esm_ids__ = ["editor"];
 export const __webpack_esm_modules__ = {
@@ -41,7 +41,7 @@ export const __webpack_esm_modules__ = {
 /* harmony import */ var _annotation_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(3738);
 /* harmony import */ var _base_stream_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(1834);
 /* harmony import */ var _pdf_images_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(3571);
-/* harmony import */ var _document_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(9397);
+/* harmony import */ var _document_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(2689);
 /* harmony import */ var _shared_murmurhash3_js__WEBPACK_IMPORTED_MODULE_10__ = /*#__PURE__*/__webpack_require__(7651);
 /* harmony import */ var _stream_js__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(4106);
 

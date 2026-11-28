@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.247
- * pdfjsBuild = e47398270
+ * pdfjsVersion = 7.0.261
+ * pdfjsBuild = 9548d30dd
  */
 
 ;// ./src/shared/util.js
@@ -29,6 +29,7 @@ const isNodeJS = false;
 const BBOX_INIT = [Infinity, Infinity, -Infinity, -Infinity];
 const F32_BBOX_INIT = new Float32Array(BBOX_INIT);
 const FONT_IDENTITY_MATRIX = [0.001, 0, 0, 0.001, 0, 0];
+const TEXT_CONTENT_CHUNK_SIZE = 100;
 const DEFAULT_VERTICAL_ORIGIN_Y = 880;
 const DEFAULT_VERTICAL_ADVANCE = 1000;
 const LINE_FACTOR = 1.35;
@@ -2028,7 +2029,7 @@ class FloatingToolbar {
 }
 
 ;// ./src/shared/internal_evt.js
-const INTERNAL_EVT = "abc31a6c-6598-4e5c-9454-e31b3e97f661";
+const INTERNAL_EVT = "a3617efd-1c8e-46a7-9225-15ffd26c30b0";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -14741,7 +14742,7 @@ class RendererWorker {
         terminateEarly("TypedArray transfer test failed.");
         return;
       }
-      const apiVersion = "7.0.247";
+      const apiVersion = "7.0.261";
       if (apiVersion !== data.workerVersion) {
         terminateEarly(`The API version "${apiVersion}" does not match the Worker version "${data.workerVersion}".`);
         return;
@@ -14935,6 +14936,7 @@ class TextLayer {
   #imagesHandler = null;
   #lang = null;
   #layoutTextParams = null;
+  #hasTextLayerFonts = false;
   #ownerDocument;
   #pageHeight = 0;
   #pageWidth = 0;
@@ -15026,6 +15028,12 @@ class TextLayer {
           if (!this.#reader) {
             break;
           }
+          if (!this.#hasTextLayerFonts && this.#fonts.values().some(({
+            fontFace
+          }) => fontFace.status === "loaded")) {
+            this.#hasTextLayerFonts = true;
+            this.#rootContainer.classList.add("textLayerFonts");
+          }
         }
         this.#processItems(value.items);
       }
@@ -15064,6 +15072,7 @@ class TextLayer {
       }
     }
     this.#fonts.clear();
+    this.#rootContainer.classList.remove("textLayerFonts");
   }
   #loadFonts(styles) {
     const fontSet = this.#ownerDocument.fonts;
@@ -15141,12 +15150,15 @@ class TextLayer {
   }
   #appendText(geom) {
     const textDiv = this.#ownerDocument.createElement("span");
+    const isSpace = geom.str === " ";
     const textDivProperties = {
       angle: 0,
       canvasWidth: 0,
       hasText: geom.str !== "",
       hasEOL: geom.hasEOL,
-      fontSize: 0
+      fontSize: 0,
+      fontAdvance: 0,
+      scaleX: 1
     };
     this.#textDivs.push(textDiv);
     Util.transform(this.#transform, geom.transform, TX);
@@ -15155,17 +15167,21 @@ class TextLayer {
     if (style.vertical) {
       angle += Math.PI / 2;
     }
-    let fontFamily = this.#fontInspectorEnabled && style.fontSubstitution || style.fontFamily;
-    fontFamily = TextLayer.fontFamilyMap.get(fontFamily) || fontFamily;
-    let shouldScaleText = geom.str.length > 1;
-    let ascent;
     const {
       textLayerFont
     } = style;
-    if (textLayerFont && this.#fonts.get(textLayerFont.name)?.fontFace.status === "loaded") {
-      fontFamily = `"${textLayerFont.name}", ${fontFamily}`;
+    let fontFamily,
+      ascent,
+      advanceScale = 1;
+    const hasTextLayerFont = textLayerFont && this.#fonts.get(textLayerFont.name)?.fontFace.status === "loaded";
+    if (hasTextLayerFont) {
+      fontFamily = textLayerFont.name;
       ascent = textLayerFont.ascent;
-      shouldScaleText ||= textLayerFont.advanceScale !== 1;
+      advanceScale = textLayerFont.advanceScale;
+      textDivProperties.fontAdvance = (geom.textLayerAdvance ?? 0) / advanceScale;
+    } else {
+      fontFamily = this.#fontInspectorEnabled && style.fontSubstitution || style.fontFamily;
+      fontFamily = TextLayer.fontFamilyMap.get(fontFamily) || fontFamily;
     }
     const fontHeight = Math.hypot(TX[2], TX[3]);
     const fontAscent = fontHeight * (ascent ?? TextLayer.#getAscent(fontFamily, style, this.#layoutTextParams.ctx));
@@ -15193,15 +15209,19 @@ class TextLayer {
     if (angle !== 0) {
       textDivProperties.angle = angle * (180 / Math.PI);
     }
+    let shouldScaleText = geom.str.length > 1 || hasTextLayerFont && (!isSpace || advanceScale !== 1);
     const scaleX = geom.transform[0],
       scaleY = geom.transform[3];
-    if (!shouldScaleText && geom.str !== " " && scaleX !== scaleY) {
+    if (!shouldScaleText && !isSpace && scaleX !== scaleY) {
       const absScaleX = Math.abs(scaleX),
         absScaleY = Math.abs(scaleY);
       shouldScaleText = Math.max(absScaleX, absScaleY) > 1.5 * Math.min(absScaleX, absScaleY);
     }
     if (shouldScaleText) {
       textDivProperties.canvasWidth = style.vertical ? geom.height : geom.width;
+      if (!textDivProperties.canvasWidth && textDivProperties.fontAdvance > 0) {
+        textDivProperties.scaleX = 0;
+      }
     }
     this.#layoutTextParams.div = textDiv;
     this.#layoutTextParams.properties = textDivProperties;
@@ -15226,21 +15246,26 @@ class TextLayer {
     } = div;
     const {
       canvasWidth,
-      fontSize
+      fontSize,
+      fontAdvance
+    } = properties;
+    let {
+      scaleX
     } = properties;
     if (canvasWidth !== 0 && fontSize !== 0 && properties.hasText) {
-      const {
-        fontFamily
-      } = style;
-      const pixelRatio = this.#pixelRatio;
-      const measuredSize = TextLayer.#quantizeFontSize(fontSize * this.#scale / pixelRatio) * pixelRatio;
-      TextLayer.#ensureCtxFont(ctx, measuredSize, fontFamily);
-      const {
-        width
-      } = ctx.measureText(div.textContent);
-      if (width > 0) {
-        style.setProperty("--scale-x", canvasWidth * measuredSize / (width * fontSize));
+      let width = fontAdvance * fontSize;
+      if (!width) {
+        const pixelRatio = this.#pixelRatio;
+        const measuredSize = TextLayer.#quantizeFontSize(fontSize * this.#scale / pixelRatio) * pixelRatio;
+        TextLayer.#ensureCtxFont(ctx, measuredSize, style.fontFamily);
+        width = ctx.measureText(div.textContent).width * fontSize / measuredSize;
       }
+      if (width > 0) {
+        scaleX = canvasWidth / width;
+      }
+    }
+    if (scaleX !== 1) {
+      style.setProperty("--scale-x", scaleX);
     }
     if (properties.angle !== 0) {
       style.setProperty("--rotate", `${properties.angle}deg`);
@@ -15392,6 +15417,7 @@ function getDocument(src = {}) {
   const canvasMaxAreaInBytes = Number.isInteger(src.canvasMaxAreaInBytes) ? src.canvasMaxAreaInBytes : -1;
   const disableFontFace = typeof src.disableFontFace === "boolean" ? src.disableFontFace : (/* inlined export .isNodeJS */false);
   const fontExtraProperties = src.fontExtraProperties === true;
+  const debugTextLayerFonts = src.debugTextLayerFonts === true;
   const enableXfa = src.enableXfa === true;
   const ownerDocument = src.ownerDocument || globalThis.document;
   const disableRange = src.disableRange === true;
@@ -15448,7 +15474,7 @@ function getDocument(src = {}) {
   }
   const docParams = {
     docId,
-    apiVersion: "7.0.247",
+    apiVersion: "7.0.261",
     data,
     password,
     disableAutoFetch,
@@ -15462,6 +15488,7 @@ function getDocument(src = {}) {
       isImageDecoderSupported,
       canvasMaxAreaInBytes,
       fontExtraProperties,
+      debugTextLayerFonts,
       useSystemFonts,
       useWasm,
       useWorkerFetch,
@@ -15479,6 +15506,7 @@ function getDocument(src = {}) {
     rendererWorker: task._rendererWorker,
     enableWebGPU,
     loadingParams: {
+      debugTextLayerFonts,
       disableAutoFetch,
       enableXfa
     }
@@ -15797,6 +15825,9 @@ class PDFPageProxy {
   get filterFactory() {
     return this._transport.filterFactory;
   }
+  get loadingParams() {
+    return this._transport.loadingParams;
+  }
   get isPureXfa() {
     return shadow(this, "isPureXfa", !!this._transport._htmlForXfa);
   }
@@ -15942,21 +15973,16 @@ class PDFPageProxy {
     throw new Error("Not implemented: getOperatorList");
   }
   streamTextContent({
-    includeMarkedContent,
-    disableNormalization,
-    includeTextLayerFonts,
-    debugTextLayerFonts
+    enableMarkedContent,
+    enableNormalization
   } = {}) {
-    const TEXT_CONTENT_CHUNK_SIZE = 100;
     return this._transport.messageHandler.sendWithStream("GetTextContent", {
       pageId: this.#pagesMapper.getPageId(this._pageIndex + 1) - 1,
       pageIndex: this._pageIndex,
-      includeMarkedContent: includeMarkedContent === true,
-      disableNormalization: disableNormalization === true,
-      includeTextLayerFonts: includeTextLayerFonts === true,
-      debugTextLayerFonts: debugTextLayerFonts === true
+      enableMarkedContent: enableMarkedContent !== false,
+      enableNormalization: enableNormalization !== false
     }, {
-      highWaterMark: TEXT_CONTENT_CHUNK_SIZE,
+      highWaterMark: (/* inlined export .TEXT_CONTENT_CHUNK_SIZE */100),
       size: textContent => textContent.items.length
     });
   }
@@ -17169,8 +17195,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "7.0.247";
-const build = "e47398270";
+const version = "7.0.261";
+const build = "9548d30dd";
 
 ;// ./src/display/editor/color_picker.js
 

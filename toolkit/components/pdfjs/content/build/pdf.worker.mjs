@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.247
- * pdfjsBuild = e47398270
+ * pdfjsVersion = 7.0.261
+ * pdfjsBuild = 9548d30dd
  */
 /******/ var __webpack_modules__ = ({
 
@@ -1427,7 +1427,6 @@ class Annotation {
       stream: this.appearance,
       task,
       resources,
-      includeMarkedContent: true,
       keepWhiteSpace: true,
       sink,
       viewBox
@@ -10898,7 +10897,7 @@ class StreamsSequenceStream extends DecodeStream {
 
 /***/ },
 
-/***/ 9397
+/***/ 2689
 (__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
 
 
@@ -10992,10 +10991,7 @@ class SingleIntersector {
   maxY = -Infinity;
   #quadPoints = null;
   #text = [];
-  #textExtraCharIds = [];
   #extraChars = [];
-  #extraCharIds = [];
-  #lastExtraCharId = -1;
   #lastIntersectingQuadIndex = -1;
   #canTakeExtraChars = false;
   constructor(annotation) {
@@ -11044,46 +11040,18 @@ class SingleIntersector {
       return false;
     }
     if (this.#extraChars.length > 0) {
-      for (let i = 0, ii = this.#extraChars.length; i < ii; i++) {
-        this.#text.push(this.#extraChars[i]);
-        this.#textExtraCharIds.push(this.#extraCharIds[i]);
+      for (const char of this.#extraChars) {
+        this.#text.push(char);
       }
       this.#extraChars.length = 0;
-      this.#extraCharIds.length = 0;
     }
     this.#text.push(glyph);
-    this.#textExtraCharIds.push(-1);
     this.#canTakeExtraChars = true;
     return true;
   }
-  addExtraChar(char, id) {
+  addExtraChar(char) {
     if (this.#canTakeExtraChars) {
       this.#extraChars.push(char);
-      this.#extraCharIds.push(id);
-      this.#lastExtraCharId = id;
-    }
-  }
-  removeExtraChar(id) {
-    if (id > this.#lastExtraCharId) {
-      return;
-    }
-    const index = this.#extraCharIds.lastIndexOf(id);
-    if (index >= 0) {
-      this.#extraChars.splice(index, 1);
-      this.#extraCharIds.splice(index, 1);
-      return;
-    }
-    const ids = this.#textExtraCharIds;
-    for (let i = ids.length - 1; i >= 0; i--) {
-      const textId = ids[i];
-      if (textId === id) {
-        this.#text.splice(i, 1);
-        ids.splice(i, 1);
-        return;
-      }
-      if (textId >= 0 && textId < id) {
-        return;
-      }
     }
   }
   disableExtraChars() {
@@ -11092,7 +11060,6 @@ class SingleIntersector {
     }
     this.#canTakeExtraChars = false;
     this.#extraChars.length = 0;
-    this.#extraCharIds.length = 0;
   }
   setText() {
     this.#annotation.data.overlaidText = this.#text.join("");
@@ -11102,7 +11069,6 @@ const STEPS = 64;
 class Intersector {
   #intersectors = [];
   #grid = [];
-  #extraCharId = 0;
   #minX;
   #maxX;
   #minY;
@@ -11149,9 +11115,7 @@ class Intersector {
     const j = Math.floor((y - this.#minY) * this.#invYRatio);
     return i + j * STEPS;
   }
-  addGlyph(transform, width, height, glyph) {
-    const x = transform[4] + width / 2;
-    const y = transform[5] + height / 2;
+  addGlyph(x, y, glyph) {
     if (x < this.#minX || y < this.#minY || x > this.#maxX || y > this.#maxY) {
       return;
     }
@@ -11164,15 +11128,8 @@ class Intersector {
     }
   }
   addExtraChar(char) {
-    const id = this.#extraCharId++;
     for (const intersector of this.#intersectors) {
-      intersector.addExtraChar(char, id);
-    }
-    return id;
-  }
-  removeExtraChar(id) {
-    for (const intersector of this.#intersectors) {
-      intersector.removeExtraChar(id);
+      intersector.addExtraChar(char);
     }
   }
   setText() {
@@ -11200,353 +11157,8 @@ var decode_stream = __webpack_require__(4563);
 var string_utils = __webpack_require__(5389);
 // EXTERNAL MODULE: ./src/core/struct_tree.js
 var struct_tree = __webpack_require__(8802);
-// EXTERNAL MODULE: ./src/core/fonts.js + 8 modules
-var fonts = __webpack_require__(837);
-// EXTERNAL MODULE: ./src/core/data_builder.js
-var data_builder = __webpack_require__(9230);
-// EXTERNAL MODULE: ./src/core/opentype_file_builder.js
-var opentype_file_builder = __webpack_require__(615);
-;// ./src/core/text_layer_font.js
-
-
-
-
-const UNITS_PER_EM = 2048;
-const DEFAULT_ASCENT = 0.8;
-const DEFAULT_SPACE_ADVANCE = 250;
-const MAX_ADVANCE = 0xffff * 1000 / UNITS_PER_EM;
-const ZERO_WIDTH_REGEXP = /^[\p{Mn}\p{Default_Ignorable_Code_Point}]$/u;
-const DEBUG_STROKE_WIDTH = 80;
-let nameTable;
-let postTable;
-function createStats() {
-  return {
-    advances: new Map(),
-    ligatures: new Map(),
-    spaceGaps: []
-  };
-}
-function getAscentRatio({
-  ascent,
-  descent,
-  bbox,
-  fontMatrix,
-  isType3Font
-}, heightScaled = false) {
-  const isValid = ratio => ratio > 0.5 && ratio < 0.95;
-  const ratio = ascent / (ascent + Math.abs(descent));
-  if (isValid(ratio)) {
-    return ratio;
-  }
-  if (!bbox) {
-    return DEFAULT_ASCENT;
-  }
-  if (isType3Font && fontMatrix && !heightScaled) {
-    const bounds = util.BBOX_INIT.slice();
-    util.Util.axialAlignedBoundingBox(bbox, fontMatrix, bounds);
-    bbox = bounds;
-  }
-  const [, yMin,, yMax] = bbox;
-  const height = yMax - yMin;
-  if (!(height > 0 && Number.isFinite(height))) {
-    return DEFAULT_ASCENT;
-  }
-  const bboxRatio = yMax / height;
-  if (isType3Font && yMin <= 0 && yMax >= 0) {
-    return bboxRatio;
-  }
-  return isValid(bboxRatio) ? bboxRatio : DEFAULT_ASCENT;
-}
-function addCount(samples, key, advance) {
-  const counts = samples.getOrInsertComputed(key, util.makeMap);
-  counts.set(advance, (counts.get(advance) || 0) + 1);
-}
-function getMostFrequent(counts) {
-  let best = NaN,
-    bestCount = 0;
-  for (const [value, count] of counts) {
-    if (count > bestCount) {
-      best = value;
-      bestCount = count;
-    }
-  }
-  return best;
-}
-function createBoxGlyph(width, yMin, yMax) {
-  const xMax = Math.min(width, 0x7fff);
-  const s = Math.min(DEBUG_STROKE_WIDTH, Math.floor(xMax / 4));
-  if (s === 0) {
-    return null;
-  }
-  const points = [0, yMin, 0, yMax, xMax, yMax, xMax, yMin, s, yMin + s, xMax - s, yMin + s, xMax - s, yMax - s, s, yMax - s];
-  const glyph = new Uint8Array(56);
-  const view = new DataView(glyph.buffer);
-  view.setInt16(0, 2);
-  view.setInt16(4, yMin);
-  view.setInt16(6, xMax);
-  view.setInt16(8, yMax);
-  view.setUint16(10, 3);
-  view.setUint16(12, 7);
-  glyph.fill(0x01, 16, 24);
-  for (let i = 0, x = 0, y = 0; i < 8; i++) {
-    view.setInt16(24 + 2 * i, points[2 * i] - x);
-    view.setInt16(40 + 2 * i, points[2 * i + 1] - y);
-    x = points[2 * i];
-    y = points[2 * i + 1];
-  }
-  return glyph;
-}
-function buildTextLayerFont(advances, ascent, drawBoxes = false, advanceScale = 1) {
-  const hmtxAdvances = [0];
-  const glyphIds = new Map();
-  const charCodeToGlyphId = new Map();
-  let advanceSum = 0,
-    advanceMax = 0,
-    firstChar = 0xffff,
-    lastChar = 0;
-  for (const [codePoint, advance] of advances) {
-    const scaledAdvance = advance / advanceScale;
-    const units = Math.round(scaledAdvance * UNITS_PER_EM / 1000);
-    if (!(scaledAdvance >= 0 && scaledAdvance <= MAX_ADVANCE) || units === 0 && scaledAdvance > 0) {
-      return null;
-    }
-    let glyphId = glyphIds.get(units);
-    if (glyphId === undefined) {
-      glyphId = hmtxAdvances.push(units) - 1;
-      glyphIds.set(units, glyphId);
-      advanceSum += units;
-      advanceMax = Math.max(advanceMax, units);
-    }
-    charCodeToGlyphId.set(codePoint, glyphId);
-    const char = Math.min(codePoint, 0xffff);
-    firstChar = Math.min(firstChar, char);
-    lastChar = Math.max(lastChar, char);
-  }
-  const numGlyphs = hmtxAdvances.length;
-  const avgCharWidth = Math.round(advanceSum / (numGlyphs - 1));
-  const ascender = Math.round(ascent * UNITS_PER_EM);
-  const descender = ascender - UNITS_PER_EM;
-  const builder = new opentype_file_builder.OpenTypeFileBuilder("true");
-  function createTable(tag, length) {
-    const data = new Uint8Array(length);
-    builder.addTable(tag, data);
-    return new DataView(data.buffer);
-  }
-  const head = createTable("head", 54);
-  head.setUint32(0, 0x00010000);
-  head.setUint32(4, 0x00010000);
-  head.setUint32(12, 0x5f0f3cf5);
-  head.setUint16(16, 0x0003);
-  head.setUint16(18, UNITS_PER_EM);
-  head.setInt16(38, descender);
-  head.setInt16(42, ascender);
-  head.setUint16(46, 8);
-  head.setInt16(48, 2);
-  const hhea = createTable("hhea", 36);
-  hhea.setUint32(0, 0x00010000);
-  hhea.setInt16(4, ascender);
-  hhea.setInt16(6, descender);
-  hhea.setUint16(10, advanceMax);
-  hhea.setInt16(18, 1);
-  hhea.setUint16(34, numGlyphs);
-  const maxp = createTable("maxp", 32);
-  maxp.setUint32(0, 0x00010000);
-  maxp.setUint16(4, numGlyphs);
-  maxp.setUint16(14, 2);
-  const os2 = createTable("OS/2", 96);
-  os2.setUint16(0, 4);
-  os2.setInt16(2, Math.min(avgCharWidth, 0x7fff));
-  os2.setUint16(4, 400);
-  os2.setUint16(6, 5);
-  os2.setUint32(58, 0x5044464a, false);
-  os2.setUint16(62, 0xc0);
-  os2.setUint16(64, firstChar);
-  os2.setUint16(66, lastChar);
-  os2.setInt16(68, ascender);
-  os2.setInt16(70, descender);
-  os2.setUint16(74, Math.max(ascender, 1));
-  os2.setUint16(76, -descender);
-  os2.setUint16(92, 0x20);
-  os2.setUint16(94, 1);
-  const hmtx = createTable("hmtx", 4 * numGlyphs);
-  for (let i = 0; i < numGlyphs; i++) {
-    hmtx.setUint16(4 * i, hmtxAdvances[i]);
-  }
-  if (drawBoxes) {
-    const loca = createTable("loca", 4 * (numGlyphs + 1));
-    const glyf = new data_builder.DataBuilder({
-      exactLength: 56 * numGlyphs
-    });
-    for (let i = 0; i < numGlyphs; i++) {
-      const glyph = createBoxGlyph(hmtxAdvances[i], descender, ascender);
-      if (glyph) {
-        glyf.setArray(glyph);
-      }
-      loca.setUint32(4 * (i + 1), glyf.length);
-    }
-    if (!glyf.length) {
-      glyf.skip(1);
-    }
-    const xMax = Math.min(advanceMax, 0x7fff);
-    head.setInt16(40, xMax);
-    head.setInt16(50, 1);
-    hhea.setInt16(16, xMax);
-    maxp.setUint16(6, 8);
-    maxp.setUint16(8, 2);
-    builder.addTable("glyf", glyf.data);
-  } else {
-    builder.addTable("loca", new Uint8Array(2 * (numGlyphs + 1)));
-    builder.addTable("glyf", new Uint8Array(1));
-  }
-  builder.addTable("cmap", (0,fonts.createCmapTable)(charCodeToGlyphId, null, numGlyphs));
-  builder.addTable("name", nameTable ??= (0,fonts.createNameTable)("PDFJSTextLayer"));
-  builder.addTable("post", postTable ??= (0,fonts.createPostTable)({
-    italicAngle: 0
-  }));
-  return builder.toArray();
-}
-class TextLayerFonts {
-  #buildBound = this.#build.bind(this);
-  #chunks = [];
-  #drawBoxes;
-  #heightScaled = new WeakSet();
-  #idFactory;
-  #loadedNames = new Map();
-  #sink;
-  #stats = new Map();
-  desiredSize = Infinity;
-  constructor(sink, idFactory, drawBoxes = false) {
-    this.#sink = sink;
-    this.#idFactory = idFactory;
-    this.#drawBoxes = drawBoxes;
-  }
-  get ready() {
-    return this.#sink.isCancelled ? Promise.reject(new util.AbortException("Text content stream cancelled.")) : Promise.resolve();
-  }
-  enqueue(chunk) {
-    this.#chunks.push({
-      ...chunk
-    });
-  }
-  addFont(loadedName, font, heightScaled = false) {
-    this.#loadedNames.set(loadedName, font);
-    if (heightScaled) {
-      this.#heightScaled.add(font);
-    }
-  }
-  #getStats(font) {
-    return this.#stats.getOrInsertComputed(font, createStats);
-  }
-  addGlyph(font, unicode, advance) {
-    if (!unicode) {
-      return;
-    }
-    const stats = this.#getStats(font);
-    const firstCodePoint = unicode.codePointAt(0);
-    if (unicode.length === (firstCodePoint > 0xffff ? 2 : 1)) {
-      if (firstCodePoint < 0xd800 || firstCodePoint > 0xdfff) {
-        addCount(stats.advances, firstCodePoint, ZERO_WIDTH_REGEXP.test(unicode) ? 0 : advance);
-      }
-      return;
-    }
-    const chars = [];
-    for (const char of unicode) {
-      const codePoint = char.codePointAt(0);
-      if (codePoint >= 0xd800 && codePoint <= 0xdfff) {
-        continue;
-      }
-      if (ZERO_WIDTH_REGEXP.test(char)) {
-        addCount(stats.advances, codePoint, 0);
-      } else {
-        chars.push(char);
-      }
-    }
-    if (chars.length === 1) {
-      addCount(stats.advances, chars[0].codePointAt(0), advance);
-    } else if (chars.length > 1) {
-      addCount(stats.ligatures, chars.join(""), advance);
-    }
-  }
-  addSpaceGap(loadedName, gap) {
-    const font = this.#loadedNames.get(loadedName);
-    if (font && Number.isFinite(gap)) {
-      this.#getStats(font).spaceGaps.push(gap);
-    }
-  }
-  #build(font) {
-    const stats = this.#stats.get(font);
-    if (!stats) {
-      return null;
-    }
-    const advances = new Map();
-    for (const [codePoint, counts] of stats.advances) {
-      advances.set(codePoint, getMostFrequent(counts));
-    }
-    for (const [unicode, counts] of stats.ligatures) {
-      const codePoints = Array.from(unicode, char => char.codePointAt(0));
-      let known = 0,
-        unknown = 0;
-      for (const codePoint of codePoints) {
-        const advance = advances.get(codePoint);
-        if (advance === undefined) {
-          unknown++;
-        } else {
-          known += advance;
-        }
-      }
-      if (!unknown) {
-        continue;
-      }
-      const advance = Math.max(getMostFrequent(counts) - known, 0) / unknown;
-      for (const codePoint of codePoints) {
-        advances.getOrInsert(codePoint, advance);
-      }
-    }
-    if (!advances.has(0x20) && stats.spaceGaps.length > 0) {
-      const gaps = stats.spaceGaps.sort((a, b) => a - b);
-      advances.set(0x20, gaps[gaps.length >> 1]);
-    }
-    let advanceScale = 1;
-    for (const advance of advances.values()) {
-      if (!Number.isFinite(advance)) {
-        return null;
-      }
-      while (advance > MAX_ADVANCE * advanceScale) {
-        advanceScale *= 2;
-      }
-    }
-    advances.getOrInsert(0x20, Math.max(DEFAULT_SPACE_ADVANCE, advanceScale * 1000 / UNITS_PER_EM));
-    const ascent = font.vertical ? 0.5 : getAscentRatio(font, this.#heightScaled.has(font));
-    const data = buildTextLayerFont(advances, ascent, this.#drawBoxes, advanceScale);
-    if (!data) {
-      return null;
-    }
-    return {
-      name: `${this.#idFactory.getDocId()}_t${this.#idFactory.createFontId()}`,
-      data,
-      ascent,
-      advanceScale
-    };
-  }
-  send() {
-    const sink = this.#sink;
-    if (sink.isCancelled) {
-      return;
-    }
-    const fonts = new Map();
-    for (const chunk of this.#chunks) {
-      for (const [loadedName, style] of Object.entries(chunk.styles)) {
-        const font = this.#loadedNames.get(loadedName);
-        const textLayerFont = fonts.getOrInsertComputed(font, this.#buildBound);
-        if (textLayerFont) {
-          style.textLayerFont = textLayerFont;
-        }
-      }
-      sink.enqueue(chunk, chunk.items.length);
-    }
-  }
-}
-
+// EXTERNAL MODULE: ./src/core/text_extraction.js + 1 modules
+var text_extraction = __webpack_require__(3488);
 // EXTERNAL MODULE: ./src/core/wasm_image.js
 var wasm_image = __webpack_require__(5412);
 ;// ./src/core/xref.js
@@ -12750,10 +12362,8 @@ class Page {
   async extractTextContent({
     handler,
     task,
-    includeMarkedContent,
-    disableNormalization,
-    includeTextLayerFonts = false,
-    debugTextLayerFonts = false,
+    enableMarkedContent,
+    enableNormalization,
     sink,
     intersector = null
   }) {
@@ -12763,20 +12373,22 @@ class Page {
     const [contentStream,, lang] = await Promise.all([contentStreamPromise, resourcesPromise, langPromise]);
     const resources = await this.#getMergedResources(contentStream.dict, core_utils.RESOURCES_KEYS_TEXT_CONTENT);
     const partialEvaluator = this._createPartialEvaluator(handler);
-    const textLayerFonts = includeTextLayerFonts ? new TextLayerFonts(sink, this._localIdFactory, debugTextLayerFonts) : null;
+    const textExtraction = new text_extraction.TextExtraction(sink, {
+      idFactory: intersector ? null : this._localIdFactory,
+      debugFonts: this.evaluatorOptions.debugTextLayerFonts,
+      intersector
+    });
     await partialEvaluator.getTextContent({
       stream: contentStream,
       task,
       resources,
-      includeMarkedContent,
-      disableNormalization,
-      textLayerFonts,
-      sink: textLayerFonts ?? sink,
+      enableMarkedContent,
+      enableNormalization,
+      sink: textExtraction,
       viewBox: this.view,
-      lang,
-      intersector
+      lang
     });
-    textLayerFonts?.send();
+    textExtraction.send();
   }
   async getStructTree() {
     const structTreeRoot = await this.pdfManager.ensureCatalog("structTreeRoot");
@@ -12828,8 +12440,8 @@ class Page {
       textContentPromises.push(this.extractTextContent({
         handler,
         task,
-        includeMarkedContent: false,
-        disableNormalization: false,
+        enableMarkedContent: false,
+        enableNormalization: false,
         sink: null,
         intersector
       }).then(() => {
@@ -14892,10 +14504,8 @@ var to_unicode_map = __webpack_require__(2346);
 var core_function = __webpack_require__(4950);
 // EXTERNAL MODULE: ./src/core/image_utils.js
 var image_utils = __webpack_require__(4907);
-// EXTERNAL MODULE: ./src/core/evaluator_utils.js
-var evaluator_utils = __webpack_require__(5275);
-// EXTERNAL MODULE: ./src/core/bidi.js + 1 modules
-var bidi = __webpack_require__(3362);
+// EXTERNAL MODULE: ./src/core/text_extraction.js + 1 modules
+var text_extraction = __webpack_require__(3488);
 // EXTERNAL MODULE: ./src/core/colorspace.js
 var colorspace = __webpack_require__(3069);
 // EXTERNAL MODULE: ./src/core/colorspace_utils.js + 1 modules
@@ -15867,6 +15477,8 @@ class Hellbox {
 
 // EXTERNAL MODULE: ./src/shared/murmurhash3.js
 var murmurhash3 = /*#__PURE__*/__webpack_require__(7651);
+// EXTERNAL MODULE: ./src/core/evaluator_utils.js
+var evaluator_utils = __webpack_require__(5275);
 // EXTERNAL MODULE: ./src/core/image.js
 var core_image = __webpack_require__(8545);
 // EXTERNAL MODULE: ./src/core/string_utils.js
@@ -15910,6 +15522,7 @@ const DefaultPartialEvaluatorOptions = Object.freeze({
   isImageDecoderSupported: false,
   canvasMaxAreaInBytes: -1,
   fontExtraProperties: false,
+  debugTextLayerFonts: false,
   useSystemFonts: true,
   useWasm: true,
   useWorkerFetch: true,
@@ -15924,6 +15537,7 @@ const PatternType = {
   SHADING: 2
 };
 const TEXT_CHUNK_BATCH_SIZE = 10;
+const NO_TEXT_RISE = Object.freeze([0, 0]);
 const deferred = Promise.resolve();
 const argIsDict = arg => arg instanceof primitives.Dict;
 function normalizeBlendMode(value, parsingArray = false) {
@@ -17558,16 +17172,14 @@ class PartialEvaluator {
     task,
     resources,
     stateManager = null,
-    includeMarkedContent = false,
+    enableMarkedContent = true,
     sink,
     seenStyles = new Set(),
     viewBox,
     lang = null,
-    disableNormalization = false,
-    textLayerFonts = null,
+    enableNormalization = true,
     keepWhiteSpace = false,
     prevRefs = null,
-    intersector = null,
     markedContentScope = ""
   }) {
     if (stream.isAsync) {
@@ -17576,7 +17188,7 @@ class PartialEvaluator {
         stream = new core_stream.Stream(bytes, 0, bytes.length, stream.dict);
       }
     }
-    sink ??= (0,evaluator_utils.textSinkWrapper)(null);
+    const textExtraction = sink instanceof text_extraction.TextExtraction ? sink : new text_extraction.TextExtraction(sink ?? null);
     const objId = stream.dict?.objId;
     const seenRefs = new primitives.RefSet(prevRefs);
     if (objId) {
@@ -17594,58 +17206,8 @@ class PartialEvaluator {
       styles: Object.create(null),
       lang
     };
-    const textContentItem = {
-      initialized: false,
-      str: [],
-      totalWidth: 0,
-      totalHeight: 0,
-      width: 0,
-      height: 0,
-      vertical: false,
-      prevTransform: null,
-      prevGlyphWidth: 0,
-      prevTextRise: 0,
-      textAdvanceScale: 0,
-      spaceInFlowMin: 0,
-      spaceInFlowMax: 0,
-      trackingSpaceMin: Infinity,
-      useCharWidthThreshold: false,
-      wideSpaceMax: Infinity,
-      minAdvance: Infinity,
-      pendingSpaceIndex: -1,
-      pendingSpaceAdvance: 0,
-      pendingSpaceExtraCharId: -1,
-      negativeSpaceMax: -Infinity,
-      notASpace: -Infinity,
-      transform: null,
-      fontName: null,
-      hasEOL: false
-    };
-    const twoLastChars = [" ", " "];
-    let twoLastCharsPos = 0;
-    function saveLastChar(char) {
-      const nextPos = (twoLastCharsPos + 1) % 2;
-      const ret = twoLastChars[twoLastCharsPos] !== " " && twoLastChars[nextPos] === " ";
-      twoLastChars[twoLastCharsPos] = char;
-      twoLastCharsPos = nextPos;
-      return !keepWhiteSpace && ret;
-    }
-    function shouldAddWhitepsace() {
-      return !keepWhiteSpace && twoLastChars[twoLastCharsPos] !== " " && twoLastChars[(twoLastCharsPos + 1) % 2] === " ";
-    }
-    function resetLastChars() {
-      twoLastChars[0] = twoLastChars[1] = " ";
-      twoLastCharsPos = 0;
-    }
-    const TRACKING_SPACE_FACTOR = 0.102;
-    const NOT_A_SPACE_FACTOR = 0.03;
-    const MAX_SPACE_WIDTH_FACTOR = 1 / 3;
-    const NEGATIVE_SPACE_FACTOR = -0.2;
-    const SPACE_IN_FLOW_MAX_FACTOR = 0.6;
-    const WIDE_SPACE_MULT = 1.3;
-    const WIDE_SPACE_MAX_FACTOR = 0.4;
-    const CHAR_WIDTH_SPACE_FACTOR = 0.25;
-    const VERTICAL_SHIFT_RATIO = 0.25;
+    const textRuns = new text_extraction.TextRuns(item => textContent.items.push(item));
+    const textLayerFonts = textExtraction.fonts;
     const self = this;
     const xref = this.xref;
     const showSpacedTextBuffer = [];
@@ -17654,50 +17216,8 @@ class PartialEvaluator {
     const emptyGStateCache = new image_utils.LocalGStateCache();
     const preprocessor = new EvaluatorPreprocessor(stream, xref, stateManager);
     let textState;
-    let {
-      font: currentFont,
-      fontName: currentFontName,
-      fontSize: currentFontSize
-    } = stateManager.state;
     const textSpaceMatrix = new Float32Array(6);
     const glyphTransform = new Float32Array(6);
-    let lastFakeSpaceExtraCharId = -1;
-    let hScaleChanged = false;
-    function unmirrorTransform(transform, width) {
-      const a = transform[0];
-      const b = transform[1];
-      const c = transform[2];
-      const d = transform[3];
-      if (a * d - b * c >= 0 || d <= 0) {
-        return false;
-      }
-      const scale = width / Math.hypot(a, b);
-      transform[0] = -a;
-      transform[1] = -b;
-      transform[4] += a * scale;
-      transform[5] += b * scale;
-      return true;
-    }
-    function pushWhitespace({
-      width = 0,
-      height = 0,
-      fontName = textContentItem.fontName
-    }) {
-      intersector?.addExtraChar(" ");
-      const transform = textContentItem.prevTransform.slice();
-      if (width) {
-        unmirrorTransform(transform, width);
-      }
-      textContent.items.push({
-        str: " ",
-        dir: "ltr",
-        width,
-        height,
-        transform,
-        fontName,
-        hasEOL: false
-      });
-    }
     function getType3HeightScale() {
       const {
         font,
@@ -17719,10 +17239,7 @@ class PartialEvaluator {
       util.Util.transform(textState.textMatrix, textSpaceMatrix, result);
       return util.Util.transform(textState.ctm, result, result);
     }
-    function ensureTextContentItem() {
-      if (textContentItem.initialized) {
-        return textContentItem;
-      }
+    function ensureTextStyle() {
       const {
         font,
         loadedName
@@ -17740,100 +17257,8 @@ class PartialEvaluator {
           style.fontSubstitution = font.systemFontInfo.css;
           style.fontSubstitutionLoadedName = font.systemFontInfo.loadedName;
         }
-        textLayerFonts?.addFont(loadedName, font, getType3HeightScale() !== 1);
+        textExtraction.addFont(loadedName, font, getType3HeightScale() !== 1);
       }
-      textContentItem.fontName = loadedName;
-      const trm = textContentItem.transform = getCurrentTextTransform();
-      if (!font.vertical) {
-        textContentItem.width = textContentItem.totalWidth = 0;
-        textContentItem.height = textContentItem.totalHeight = Math.hypot(trm[2], trm[3]);
-        textContentItem.vertical = false;
-      } else {
-        textContentItem.width = textContentItem.totalWidth = Math.hypot(trm[0], trm[1]);
-        textContentItem.height = textContentItem.totalHeight = 0;
-        textContentItem.vertical = true;
-      }
-      const scaleLineX = Math.hypot(textState.textLineMatrix[0], textState.textLineMatrix[1]);
-      const scaleCtmX = Math.hypot(textState.ctm[0], textState.ctm[1]);
-      textContentItem.textAdvanceScale = scaleCtmX * scaleLineX;
-      const {
-        fontSize
-      } = textState;
-      let trackingFactor = TRACKING_SPACE_FACTOR;
-      if (!font.isType3Font) {
-        const spaceEm = font.spaceWidth / 1000;
-        if (spaceEm > 0 && spaceEm <= MAX_SPACE_WIDTH_FACTOR) {
-          trackingFactor = Math.max(0.5 * spaceEm, TRACKING_SPACE_FACTOR);
-        }
-      }
-      textContentItem.trackingSpaceMin = fontSize * trackingFactor;
-      textContentItem.useCharWidthThreshold = font.isType3Font;
-      textContentItem.spaceInFlowMin = fontSize * trackingFactor;
-      textContentItem.wideSpaceMax = fontSize * WIDE_SPACE_MAX_FACTOR;
-      resetAdaptiveSpacing();
-      textContentItem.notASpace = fontSize * NOT_A_SPACE_FACTOR;
-      textContentItem.negativeSpaceMax = fontSize * NEGATIVE_SPACE_FACTOR;
-      textContentItem.spaceInFlowMax = fontSize * SPACE_IN_FLOW_MAX_FACTOR;
-      textContentItem.hasEOL = false;
-      textContentItem.initialized = true;
-      return textContentItem;
-    }
-    function updateAdvanceScale() {
-      if (!textContentItem.initialized) {
-        return;
-      }
-      const scaleLineX = Math.hypot(textState.textLineMatrix[0], textState.textLineMatrix[1]);
-      const scaleCtmX = Math.hypot(textState.ctm[0], textState.ctm[1]);
-      const scaleFactor = scaleCtmX * scaleLineX;
-      if (scaleFactor === textContentItem.textAdvanceScale) {
-        return;
-      }
-      if (!textContentItem.vertical) {
-        textContentItem.totalWidth += textContentItem.width * textContentItem.textAdvanceScale;
-        textContentItem.width = 0;
-      } else {
-        textContentItem.totalHeight += textContentItem.height * textContentItem.textAdvanceScale;
-        textContentItem.height = 0;
-      }
-      textContentItem.textAdvanceScale = scaleFactor;
-    }
-    function runBidiTransform(textChunk) {
-      const {
-        str,
-        transform,
-        vertical
-      } = textChunk;
-      const width = Math.abs(textChunk.totalWidth);
-      const unmirrored = !vertical && unmirrorTransform(transform, width);
-      if (unmirrored) {
-        str.reverse();
-      }
-      const bidiResult = (0,bidi.bidi)(str, -1, vertical, textLayerFonts ? (glyph, unicode) => {
-        glyph.unicode = unicode;
-      } : null);
-      if (textLayerFonts) {
-        if (unmirrored) {
-          str.reverse();
-        }
-        for (const {
-          font,
-          unicode,
-          advance
-        } of str) {
-          if (font) {
-            textLayerFonts.addGlyph(font, unicode, advance);
-          }
-        }
-      }
-      return {
-        str: bidiResult.str,
-        dir: bidiResult.dir,
-        width,
-        height: Math.abs(textChunk.totalHeight),
-        transform,
-        fontName: textChunk.fontName,
-        hasEOL: textChunk.hasEOL
-      };
     }
     async function handleSetFont(fontName, fontRef) {
       const translated = await self.loadFont(fontName, fontRef, resources, task, null, null, seenRefs);
@@ -17841,441 +17266,96 @@ class PartialEvaluator {
       textState.font = translated.font;
       textState.fontMatrix = translated.font.fontMatrix || util.FONT_IDENTITY_MATRIX;
     }
-    function getTrackingSpaceMin(glyphWidth) {
-      if (textContentItem.useCharWidthThreshold && glyphWidth) {
-        const width = Math.abs(glyphWidth * textState.textHScale);
-        return Math.sign(textState.fontSize) * Math.min(width, Math.abs(textContentItem.prevGlyphWidth) || width) * CHAR_WIDTH_SPACE_FACTOR;
-      }
-      return textContentItem.trackingSpaceMin;
-    }
-    function getSpaceThreshold(trackingSpaceMin) {
-      const {
-        minAdvance,
-        wideSpaceMax
-      } = textContentItem;
-      if (minAdvance > trackingSpaceMin && minAdvance < WIDE_SPACE_MULT * trackingSpaceMin) {
-        return Math.min(WIDE_SPACE_MULT * minAdvance, wideSpaceMax);
-      }
-      return trackingSpaceMin;
-    }
-    function resetAdaptiveSpacing() {
-      textContentItem.minAdvance = Infinity;
-      textContentItem.pendingSpaceIndex = -1;
-      textContentItem.pendingSpaceAdvance = 0;
-      textContentItem.pendingSpaceExtraCharId = -1;
-    }
     function resetTextMatrix() {
       textState.setTextMatrix(textState.textLineMatrix);
-      hScaleChanged = false;
-      resetAdaptiveSpacing();
+      textRuns.resetTracking();
     }
     function moveText(x, y) {
       textState.translateTextLineMatrix(x, y);
       resetTextMatrix();
     }
-    function recordPendingSpace(advance, textOrientation) {
-      if (textContentItem.useCharWidthThreshold || textContentItem.minAdvance < Infinity) {
-        return;
+    function advanceTextMatrix(distance, vertical) {
+      if (vertical) {
+        textState.translateTextMatrix(0, -distance);
+      } else {
+        textState.translateTextMatrix(distance * textState.textHScale, 0);
       }
-      textContentItem.pendingSpaceIndex = textContentItem.str.length - 1;
-      textContentItem.pendingSpaceAdvance = textOrientation * advance;
-      textContentItem.pendingSpaceExtraCharId = lastFakeSpaceExtraCharId;
     }
-    function resolvePendingSpace(advance, textOrientation, trackingSpaceMin, spaceThreshold, hasWhitespace) {
-      if (textContentItem.pendingSpaceIndex < 0) {
-        return;
-      }
+    function getTextRiseOffset(transform) {
       const {
-        pendingSpaceAdvance
-      } = textContentItem;
-      const forwardAdvance = textOrientation * advance;
-      const baseline = Math.min(pendingSpaceAdvance, forwardAdvance);
-      if (!hasWhitespace && baseline > trackingSpaceMin / WIDE_SPACE_MULT && forwardAdvance <= spaceThreshold && pendingSpaceAdvance <= spaceThreshold) {
-        textContentItem.str.splice(textContentItem.pendingSpaceIndex, 1);
-        if (textContentItem.pendingSpaceExtraCharId >= 0) {
-          intersector?.removeExtraChar(textContentItem.pendingSpaceExtraCharId);
-        }
+        fontSize,
+        textRise
+      } = textState;
+      if (!textRise) {
+        return NO_TEXT_RISE;
       }
-      textContentItem.pendingSpaceIndex = -1;
-      textContentItem.pendingSpaceExtraCharId = -1;
+      const scale = textRise / (fontSize * getType3HeightScale());
+      return [transform[2] * scale, transform[3] * scale];
     }
-    function recordMinAdvance(advance, textOrientation, trackingSpaceMin) {
-      if (textContentItem.useCharWidthThreshold) {
-        return;
-      }
-      const forwardAdvance = textOrientation * advance;
-      if (forwardAdvance > trackingSpaceMin && forwardAdvance < textContentItem.minAdvance) {
-        textContentItem.minAdvance = forwardAdvance;
-      }
-    }
-    function compareWithLastPosition(glyphWidth) {
-      const currentTransform = getCurrentTextTransform(glyphTransform);
-      let posX = currentTransform[4];
-      let posY = currentTransform[5];
-      if (textState.font?.vertical) {
-        if (posX < viewBox[0] || posX > viewBox[2] || posY + glyphWidth < viewBox[1] || posY > viewBox[3]) {
-          return false;
-        }
-      } else if (posX + glyphWidth < viewBox[0] || posX > viewBox[2] || posY < viewBox[1] || posY > viewBox[3]) {
-        return false;
-      }
+    function buildTextRun(chars, extraSpacing) {
       const {
-        prevTransform
-      } = textContentItem;
-      if (!textState.font || !prevTransform) {
-        return true;
-      }
-      let lastPosX = prevTransform[4];
-      let lastPosY = prevTransform[5];
-      if (lastPosX === posX && lastPosY === posY) {
-        textContentItem.minAdvance = Infinity;
-        return true;
-      }
-      let rotate = -1;
-      if (currentTransform[0] && currentTransform[1] === 0 && currentTransform[2] === 0) {
-        rotate = currentTransform[0] > 0 ? 0 : 180;
-      } else if (currentTransform[1] && currentTransform[0] === 0 && currentTransform[3] === 0) {
-        rotate = currentTransform[1] > 0 ? 90 : 270;
-      }
-      const x = posX;
-      const lastX = lastPosX;
-      switch (rotate) {
-        case 0:
-          break;
-        case 90:
-          posX = posY;
-          posY = x;
-          lastPosX = lastPosY;
-          lastPosY = lastX;
-          break;
-        case 180:
-          posX = -posX;
-          posY = -posY;
-          lastPosX = -lastPosX;
-          lastPosY = -lastPosY;
-          break;
-        case 270:
-          posX = -posY;
-          posY = -x;
-          lastPosX = -lastPosY;
-          lastPosY = -lastX;
-          break;
-        default:
-          {
-            const scale = Math.hypot(currentTransform[0], currentTransform[1]);
-            posX = (currentTransform[0] * x + currentTransform[1] * posY) / scale;
-            posY = (currentTransform[2] * x + currentTransform[3] * posY) / scale;
-            const lastScale = Math.hypot(prevTransform[0], prevTransform[1]);
-            lastPosX = (prevTransform[0] * lastX + prevTransform[1] * lastPosY) / lastScale;
-            lastPosY = (prevTransform[2] * lastX + prevTransform[3] * lastPosY) / lastScale;
-          }
-      }
-      if (textState.font.vertical) {
-        const advanceY = (lastPosY - posY) / textContentItem.textAdvanceScale;
-        const advanceX = posX - lastPosX;
-        const textOrientation = Math.sign(textContentItem.height || textContentItem.totalHeight);
-        if (advanceY < textOrientation * textContentItem.negativeSpaceMax) {
-          if (Math.abs(advanceX) > 0.5 * textContentItem.width) {
-            appendEOL();
-            return true;
-          }
-          resetLastChars();
-          flushTextContentItem();
-          return true;
-        }
-        if (Math.abs(advanceX) > textContentItem.width) {
-          appendEOL();
-          return true;
-        }
-        if (advanceY <= textOrientation * textContentItem.notASpace) {
-          resetLastChars();
-          textContentItem.minAdvance = Infinity;
-        }
-        const trackingSpaceMin = getTrackingSpaceMin(glyphWidth);
-        const spaceThreshold = getSpaceThreshold(trackingSpaceMin);
-        const hasWhitespace = shouldAddWhitepsace();
-        resolvePendingSpace(advanceY, textOrientation, trackingSpaceMin, spaceThreshold, hasWhitespace);
-        if (advanceY <= textOrientation * spaceThreshold) {
-          if (shouldAddWhitepsace()) {
-            resetLastChars();
-            flushTextContentItem();
-            pushWhitespace({
-              height: Math.abs(advanceY)
-            });
-          } else {
-            textContentItem.height += advanceY;
-          }
-        } else if (!addFakeSpaces(advanceY, currentTransform, textOrientation)) {
-          if (textContentItem.str.length === 0) {
-            resetLastChars();
-            pushWhitespace({
-              height: Math.abs(advanceY)
-            });
-          } else {
-            textContentItem.height += advanceY;
-            if (!hasWhitespace) {
-              recordPendingSpace(advanceY, textOrientation);
-            }
-          }
-        }
-        if (!hasWhitespace) {
-          recordMinAdvance(advanceY, textOrientation, trackingSpaceMin);
-        }
-        if (Math.abs(advanceX) > textContentItem.width * VERTICAL_SHIFT_RATIO) {
-          flushTextContentItem();
-        }
-        return true;
-      }
-      const advanceX = (posX - lastPosX) / textContentItem.textAdvanceScale;
-      const advanceY = posY - lastPosY;
-      const textOrientation = Math.sign(textContentItem.width || textContentItem.totalWidth);
-      if (advanceX < textOrientation * textContentItem.negativeSpaceMax) {
-        if (Math.abs(advanceY) > 0.5 * textContentItem.height) {
-          appendEOL();
-          return true;
-        }
-        resetLastChars();
-        flushTextContentItem();
-        return true;
-      }
-      const textRiseDelta = textState.textRise - textContentItem.prevTextRise;
-      const advanceYCorrected = textRiseDelta === 0 ? advanceY : advanceY - currentTransform[3] / textState.fontSize * textRiseDelta;
-      if (Math.abs(advanceYCorrected) > textContentItem.height) {
-        appendEOL();
-        return true;
-      }
-      if (advanceX <= textOrientation * textContentItem.notASpace) {
-        resetLastChars();
-        textContentItem.minAdvance = Infinity;
-      }
-      const trackingSpaceMin = getTrackingSpaceMin(glyphWidth);
-      const spaceThreshold = getSpaceThreshold(trackingSpaceMin);
-      const hasWhitespace = shouldAddWhitepsace();
-      resolvePendingSpace(advanceX, textOrientation, trackingSpaceMin, spaceThreshold, hasWhitespace);
-      if (advanceX <= textOrientation * spaceThreshold) {
-        if (shouldAddWhitepsace()) {
-          resetLastChars();
-          flushTextContentItem();
-          pushWhitespace({
-            width: Math.abs(advanceX)
-          });
-        } else {
-          textContentItem.width += advanceX;
-        }
-      } else if (!addFakeSpaces(advanceX, currentTransform, textOrientation)) {
-        if (textContentItem.str.length === 0) {
-          resetLastChars();
-          pushWhitespace({
-            width: Math.abs(advanceX)
-          });
-        } else {
-          textContentItem.width += advanceX;
-          if (!hasWhitespace) {
-            recordPendingSpace(advanceX, textOrientation);
-          }
-        }
-      }
-      if (!hasWhitespace) {
-        recordMinAdvance(advanceX, textOrientation, trackingSpaceMin);
-      }
-      if (Math.abs(advanceY) > textContentItem.height * VERTICAL_SHIFT_RATIO) {
-        flushTextContentItem();
-      }
-      return true;
-    }
-    function buildTextContentItem({
-      chars,
-      extraSpacing
-    }) {
-      if (currentFontSize !== textState.fontSize || currentFontName !== textState.fontName && (currentFont?.name !== textState.font.name || currentFont.vertical !== textState.font.vertical)) {
-        flushTextContentItem();
-        currentFont = textState.font;
-        currentFontName = textState.fontName;
-        currentFontSize = textState.fontSize;
-      }
-      const font = textState.font;
-      const baseCharSpacing = font.vertical ? -textState.charSpacing : textState.charSpacing;
+        font,
+        fontSize,
+        fontMatrix,
+        loadedName
+      } = textState;
+      const {
+        vertical
+      } = font;
       if (!chars) {
-        const charSpacing = baseCharSpacing + extraSpacing;
-        if (charSpacing) {
-          if (!font.vertical) {
-            textState.translateTextMatrix(charSpacing * textState.textHScale, 0);
-          } else {
-            textState.translateTextMatrix(0, -charSpacing);
-          }
-        }
+        advanceTextMatrix(extraSpacing, vertical);
         if (keepWhiteSpace) {
-          compareWithLastPosition(0);
+          const transform = getCurrentTextTransform(glyphTransform);
+          textRuns.addEmptyText(transform, getTextRiseOffset(transform), vertical);
         }
         return;
       }
       const glyphs = font.charsToGlyphs(chars);
-      const scale = textState.fontMatrix[0] * textState.fontSize;
-      const advanceScale = Math.abs(textState.fontMatrix[0] * 1000 / getType3HeightScale());
+      const unitScale = fontMatrix[0] * 1000;
+      const axisSign = !vertical && unitScale < 0 ? -1 : 1;
+      const spaceWidth = font.isType3Font ? null : (vertical ? Math.abs(font.defaultVMetrics[0]) : font.spaceWidth) * unitScale * axisSign;
+      const charSpacing = vertical ? -textState.charSpacing : textState.charSpacing;
+      const wordSpacing = vertical ? -textState.wordSpacing : textState.wordSpacing;
+      const charSpacingUnits = 1000 * charSpacing / fontSize * axisSign;
+      let rise = null;
       for (let i = 0, ii = glyphs.length; i < ii; i++) {
         const glyph = glyphs[i];
         const {
-          category
-        } = glyph;
-        const glyphWidth = font.vertical ? glyph.vmetric[0] : glyph.width;
-        const {
-          isInvisibleFormatMark,
-          isZeroWidthDiacritic
-        } = category;
-        if (isInvisibleFormatMark && !glyphWidth) {
-          continue;
-        }
-        let charSpacing = baseCharSpacing + (i + 1 === ii ? extraSpacing : 0);
-        let scaledDim = glyphWidth * scale;
-        if (glyph.isSpace) {
-          charSpacing += textState.wordSpacing;
-        }
-        if (!keepWhiteSpace && category.isWhitespace) {
-          textLayerFonts?.addGlyph(font, " ", Math.abs(glyphWidth) * advanceScale);
-          if (!font.vertical) {
-            charSpacing += scaledDim;
-            textState.translateTextMatrix(charSpacing * textState.textHScale, 0);
-          } else {
-            charSpacing += -scaledDim;
-            textState.translateTextMatrix(0, -charSpacing);
-          }
-          saveLastChar(" ");
-          continue;
-        }
-        const inView = isZeroWidthDiacritic || compareWithLastPosition(scaledDim);
-        hScaleChanged = false;
-        if (!inView) {
-          if (!font.vertical) {
-            textState.translateTextMatrix(scaledDim * textState.textHScale, 0);
-          } else {
-            textState.translateTextMatrix(0, scaledDim);
-          }
-          continue;
-        }
-        const textChunk = ensureTextContentItem();
-        if (isZeroWidthDiacritic) {
-          scaledDim = 0;
-        }
-        const glyphUnicode = isInvisibleFormatMark ? "" : glyph.unicode;
-        if (!font.vertical) {
-          scaledDim *= textState.textHScale;
-          intersector?.addGlyph(getCurrentTextTransform(glyphTransform), scaledDim, 0, glyphUnicode);
-          textState.translateTextMatrix(scaledDim, 0);
-          textChunk.width += scaledDim;
-        } else {
-          intersector?.addGlyph(getCurrentTextTransform(glyphTransform), 0, scaledDim, glyphUnicode);
-          textState.translateTextMatrix(0, scaledDim);
-          scaledDim = Math.abs(scaledDim);
-          textChunk.height += scaledDim;
-        }
-        if (scaledDim) {
-          textChunk.prevTransform ??= new Float32Array(6);
-          getCurrentTextTransform(textChunk.prevTransform);
-          textChunk.prevGlyphWidth = scaledDim;
-          textChunk.prevTextRise = textState.textRise;
-        }
-        if (!isInvisibleFormatMark) {
-          if (saveLastChar(glyphUnicode)) {
-            textChunk.str.push(" ");
-            intersector?.addExtraChar(" ");
-          }
-          const unicode = disableNormalization ? glyphUnicode : glyph.normalizedUnicode;
-          if (!intersector) {
-            const {
-              isUnicodeVisual
-            } = glyph;
-            if (textLayerFonts) {
-              textChunk.str.push({
-                unicode,
-                isUnicodeVisual,
-                font,
-                advance: isZeroWidthDiacritic ? 0 : Math.abs(glyphWidth) * advanceScale
-              });
-            } else {
-              textChunk.str.push(isUnicodeVisual ? {
-                unicode,
-                isUnicodeVisual
-              } : unicode);
+          isWhitespace,
+          isInvisibleFormatMark
+        } = glyph.category;
+        const advance = (vertical ? -glyph.vmetric[0] : glyph.width) * unitScale;
+        const extent = vertical ? Math.abs(advance) : advance * axisSign;
+        const spacing = charSpacing + (glyph.isSpace ? wordSpacing : 0) + (i + 1 === ii ? extraSpacing : 0);
+        if (isWhitespace && !keepWhiteSpace) {
+          textLayerFonts?.addGlyph(font, " ", extent);
+          textRuns.addSpace();
+        } else if (!isInvisibleFormatMark) {
+          const transform = getCurrentTextTransform(glyphTransform);
+          const x = transform[4],
+            y = transform[5];
+          const endX = x + (vertical ? -transform[2] : transform[0]) * advance / 1000;
+          const endY = y + (vertical ? -transform[3] : transform[1]) * advance / 1000;
+          const unicode = enableNormalization ? glyph.normalizedUnicode : glyph.unicode;
+          if (unicode && Math.max(x, endX) >= viewBox[0] && Math.min(x, endX) <= viewBox[2] && Math.max(y, endY) >= viewBox[1] && Math.min(y, endY) <= viewBox[3]) {
+            ensureTextStyle();
+            rise ??= getTextRiseOffset(transform);
+            if (axisSign < 0) {
+              transform[0] = -transform[0];
+              transform[1] = -transform[1];
             }
+            textRuns.addGlyph(loadedName, transform, rise, unicode, glyph.isUnicodeVisual, extent, charSpacingUnits, spaceWidth, vertical);
+            textLayerFonts?.addGlyph(font, unicode, extent);
           }
         }
-        if (charSpacing) {
-          if (!font.vertical) {
-            textState.translateTextMatrix(charSpacing * textState.textHScale, 0);
-          } else {
-            textState.translateTextMatrix(0, -charSpacing);
-          }
-        }
+        advanceTextMatrix(advance * fontSize / 1000 + spacing, vertical);
       }
-    }
-    function appendEOL() {
-      intersector?.addExtraChar("\n");
-      resetLastChars();
-      if (textContentItem.initialized) {
-        textContentItem.hasEOL = true;
-        flushTextContentItem();
-      } else {
-        textContent.items.push({
-          str: "",
-          dir: "ltr",
-          width: 0,
-          height: 0,
-          transform: getCurrentTextTransform(),
-          fontName: textState.loadedName,
-          hasEOL: true
-        });
-      }
-    }
-    function addFakeSpaces(width, currentTransform, textOrientation) {
-      lastFakeSpaceExtraCharId = -1;
-      if (textOrientation * textContentItem.spaceInFlowMin <= width && width <= textOrientation * textContentItem.spaceInFlowMax) {
-        if (textContentItem.initialized) {
-          resetLastChars();
-          textContentItem.str.push(" ");
-          lastFakeSpaceExtraCharId = intersector?.addExtraChar(" ") ?? -1;
-          if (textLayerFonts && !textContentItem.vertical && !hScaleChanged) {
-            const emLength = Math.hypot(currentTransform[0], currentTransform[1]) * Math.abs(getType3HeightScale());
-            if (emLength > 0) {
-              textLayerFonts.addSpaceGap(textContentItem.fontName, 1000 * Math.abs(width) * textContentItem.textAdvanceScale / emLength);
-            }
-          }
-        }
-        return false;
-      }
-      const fontName = textContentItem.fontName;
-      let height = 0;
-      if (textContentItem.vertical) {
-        height = width;
-        width = 0;
-      }
-      flushTextContentItem();
-      resetLastChars();
-      pushWhitespace({
-        width: Math.abs(width),
-        height: Math.abs(height),
-        fontName
-      });
-      return true;
-    }
-    function flushTextContentItem() {
-      if (!textContentItem.initialized || !textContentItem.str) {
-        return;
-      }
-      if (!textContentItem.vertical) {
-        textContentItem.totalWidth += textContentItem.width * textContentItem.textAdvanceScale;
-      } else {
-        textContentItem.totalHeight += textContentItem.height * textContentItem.textAdvanceScale;
-      }
-      textContent.items.push(runBidiTransform(textContentItem));
-      textContentItem.initialized = false;
-      resetAdaptiveSpacing();
-      textContentItem.str.length = 0;
     }
     function closePendingMarkedContentItems(level = 0) {
-      if (!includeMarkedContent || markedContentLevel <= level) {
+      if (!enableMarkedContent || markedContentLevel <= level) {
         return;
       }
-      flushTextContentItem();
+      textRuns.flush();
       for (; markedContentLevel > level; markedContentLevel--) {
         textContent.items.push({
           type: "endMarkedContent"
@@ -18290,7 +17370,7 @@ class PartialEvaluator {
       if (batch && length < TEXT_CHUNK_BATCH_SIZE) {
         return;
       }
-      sink.enqueue(textContent, length);
+      textExtraction.enqueue(textContent, length);
       textContent.items = [];
       textContent.styles = Object.create(null);
     }
@@ -18298,7 +17378,7 @@ class PartialEvaluator {
     return new Promise(function promiseBody(resolve, reject) {
       const next = function (promise) {
         enqueueChunk(true);
-        Promise.all([promise, sink.ready]).then(function () {
+        Promise.all([promise, textExtraction.ready]).then(function () {
           try {
             promiseBody(resolve, reject);
           } catch (ex) {
@@ -18337,11 +17417,7 @@ class PartialEvaluator {
             textState.textRise = args[0];
             break;
           case util.OPS.setHScale:
-            if (textState.textHScale !== args[0] / 100) {
-              textState.textHScale = args[0] / 100;
-              hScaleChanged = true;
-              resetAdaptiveSpacing();
-            }
+            textState.textHScale = args[0] / 100;
             break;
           case util.OPS.setLeading:
             textState.leading = args[0];
@@ -18357,19 +17433,12 @@ class PartialEvaluator {
           case util.OPS.setTextMatrix:
             textState.setTextLineMatrix(args);
             resetTextMatrix();
-            updateAdvanceScale();
             break;
           case util.OPS.setCharSpacing:
-            if (textState.charSpacing !== args[0]) {
-              textState.charSpacing = args[0];
-              resetAdaptiveSpacing();
-            }
+            textState.charSpacing = args[0];
             break;
           case util.OPS.setWordSpacing:
-            if (textState.wordSpacing !== args[0]) {
-              textState.wordSpacing = args[0];
-              resetAdaptiveSpacing();
-            }
+            textState.wordSpacing = args[0];
             break;
           case util.OPS.beginText:
             textState.setTextLineMatrix(core_utils.IDENTITY_MATRIX);
@@ -18394,19 +17463,13 @@ class PartialEvaluator {
               } else if (typeof item === "number" && item !== 0) {
                 const str = showSpacedTextBuffer.join("");
                 showSpacedTextBuffer.length = 0;
-                buildTextContentItem({
-                  chars: str,
-                  extraSpacing: item * spaceFactor
-                });
+                buildTextRun(str, item * spaceFactor);
               }
             }
             if (showSpacedTextBuffer.length > 0) {
               const str = showSpacedTextBuffer.join("");
               showSpacedTextBuffer.length = 0;
-              buildTextContentItem({
-                chars: str,
-                extraSpacing: 0
-              });
+              buildTextRun(str, 0);
             }
             break;
           case util.OPS.showText:
@@ -18414,10 +17477,7 @@ class PartialEvaluator {
               self.ensureStateFont(stateManager.state);
               continue;
             }
-            buildTextContentItem({
-              chars: args[0],
-              extraSpacing: 0
-            });
+            buildTextRun(args[0], 0);
             break;
           case util.OPS.nextLineShowText:
           case util.OPS.nextLineSetSpacingShowText:
@@ -18430,13 +17490,10 @@ class PartialEvaluator {
               textState.charSpacing = args[1];
             }
             moveText(0, -textState.leading);
-            buildTextContentItem({
-              chars: args.at(-1),
-              extraSpacing: 0
-            });
+            buildTextRun(args.at(-1), 0);
             break;
           case util.OPS.paintXObject:
-            flushTextContentItem();
+            textRuns.flush();
             xobjs ??= resources.get("XObject") || primitives.Dict.empty;
             isValidName = args[0] instanceof primitives.Name;
             name = args[0].name;
@@ -18484,24 +17541,25 @@ class PartialEvaluator {
               const localResources = dict.get("Resources");
               const xObjMarkedContentScope = Number.isInteger(dict.get("StructParents")) && dict.objId ? `_x${dict.objId}` : markedContentScope;
               enqueueChunk();
-              const sinkWrapper = (0,evaluator_utils.textSinkWrapper)(sink);
+              const {
+                chunkCount
+              } = textExtraction;
               self.getTextContent({
                 stream: xobj,
                 task,
                 resources: localResources instanceof primitives.Dict ? localResources : resources,
                 stateManager: xObjStateManager,
-                includeMarkedContent,
-                sink: sinkWrapper,
+                enableMarkedContent,
+                sink: textExtraction,
                 seenStyles,
                 viewBox,
                 lang,
-                disableNormalization,
-                textLayerFonts,
+                enableNormalization,
                 keepWhiteSpace,
                 prevRefs: seenRefs,
                 markedContentScope: xObjMarkedContentScope
               }).then(function () {
-                if (!sinkWrapper.enqueueInvoked) {
+                if (textExtraction.chunkCount === chunkCount) {
                   emptyXObjectCache.set(name, dict.objId, true);
                 }
                 resolveXObject();
@@ -18541,7 +17599,7 @@ class PartialEvaluator {
                 resolveGState();
                 return;
               }
-              flushTextContentItem();
+              textRuns.flush();
               textState.fontName = null;
               textState.fontSize = gStateFont[1];
               handleSetFont(null, gStateFont[0]).then(resolveGState, rejectGState);
@@ -18557,8 +17615,8 @@ class PartialEvaluator {
             }));
             return;
           case util.OPS.beginMarkedContent:
-            flushTextContentItem();
-            if (includeMarkedContent) {
+            textRuns.flush();
+            if (enableMarkedContent) {
               markedContentLevel++;
               textContent.items.push({
                 type: "beginMarkedContent",
@@ -18567,8 +17625,8 @@ class PartialEvaluator {
             }
             break;
           case util.OPS.beginMarkedContentProps:
-            flushTextContentItem();
-            if (includeMarkedContent) {
+            textRuns.flush();
+            if (enableMarkedContent) {
               markedContentLevel++;
               const mcid = args[1] instanceof primitives.Dict ? args[1].get("MCID") : null;
               textContent.items.push({
@@ -18579,8 +17637,8 @@ class PartialEvaluator {
             }
             break;
           case util.OPS.endMarkedContent:
-            flushTextContentItem();
-            if (includeMarkedContent) {
+            textRuns.flush();
+            if (enableMarkedContent) {
               if (markedContentLevel === 0) {
                 break;
               }
@@ -18591,7 +17649,7 @@ class PartialEvaluator {
             }
             break;
         }
-        if (textContent.items.length >= sink.desiredSize) {
+        if (textContent.items.length >= textExtraction.desiredSize) {
           stop = true;
           break;
         }
@@ -18600,7 +17658,7 @@ class PartialEvaluator {
         next(deferred);
         return;
       }
-      flushTextContentItem();
+      textRuns.flush();
       closePendingMarkedContentItems();
       enqueueChunk();
       resolve();
@@ -18610,7 +17668,7 @@ class PartialEvaluator {
       }
       if (this.options.ignoreErrors) {
         (0,util.warn)(`getTextContent - ignoring errors during "${task.name}" ` + `task: "${reason}".`);
-        flushTextContentItem();
+        textRuns.flush();
         closePendingMarkedContentItems();
         enqueueChunk();
         return;
@@ -19488,6 +18546,7 @@ class PartialEvaluator {
   }
 }
 class TranslatedFont {
+  #glyphBBox = null;
   #prepareSystemFont;
   sent = null;
   #type3Loaded = null;
@@ -19587,6 +18646,7 @@ class TranslatedFont {
       }
     }
     font.charProcOperatorList = charProcOperatorList;
+    font.glyphBBox = this.#glyphBBox;
     if (this._bbox) {
       font.isCharBBox = true;
       font.bbox = this._bbox;
@@ -19602,9 +18662,13 @@ class TranslatedFont {
     if (width === 0 || height === 0) {
       operatorList.fnArray.splice(0, 1);
       operatorList.argsArray.splice(0, 1);
-    } else if (fontBBoxSize === 0 || Math.round(charBBoxSize / fontBBoxSize) >= 10) {
-      this._bbox ??= util.BBOX_INIT.slice();
-      util.Util.rectBoundingBox(...charBBox, this._bbox);
+    } else {
+      this.#glyphBBox ??= util.BBOX_INIT.slice();
+      util.Util.rectBoundingBox(...charBBox, this.#glyphBBox);
+      if (fontBBoxSize === 0 || Math.round(charBBoxSize / fontBBoxSize) >= 10) {
+        this._bbox ??= util.BBOX_INIT.slice();
+        util.Util.rectBoundingBox(...charBBox, this._bbox);
+      }
     }
     let i = 0,
       ii = operatorList.length;
@@ -20244,30 +19308,12 @@ class EvaluatorPreprocessor {
 (__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
 
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   parseMarkedContentProps: () => (/* binding */ parseMarkedContentProps),
-/* harmony export */   textSinkWrapper: () => (/* binding */ textSinkWrapper)
+/* harmony export */   parseMarkedContentProps: () => (/* binding */ parseMarkedContentProps)
 /* harmony export */ });
 /* harmony import */ var _primitives_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5632);
 /* harmony import */ var _shared_util_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4292);
 
 
-function textSinkWrapper(sink) {
-  const TEXT_CONTENT_CHUNK_SIZE = 100;
-  const resolved = sink ? null : Promise.resolve();
-  return {
-    enqueueInvoked: false,
-    enqueue(chunk, size) {
-      this.enqueueInvoked = true;
-      sink?.enqueue(chunk, size);
-    },
-    get desiredSize() {
-      return sink?.desiredSize ?? TEXT_CONTENT_CHUNK_SIZE;
-    },
-    get ready() {
-      return sink?.ready ?? resolved;
-    }
-  };
-}
 function _parseVisibilityExpression(xref, array, nestingCounter, currentResult) {
   const MAX_NESTING = 10;
   if (++nestingCounter > MAX_NESTING) {
@@ -41990,8 +41036,8 @@ class ImageResizer {
   }
 }
 
-// EXTERNAL MODULE: ./src/core/document.js + 4 modules
-var core_document = __webpack_require__(9397);
+// EXTERNAL MODULE: ./src/core/document.js + 3 modules
+var core_document = __webpack_require__(2689);
 ;// ./src/core/pdf_manager.js
 
 
@@ -44834,6 +43880,946 @@ class StructTreePage {
 
 /***/ },
 
+/***/ 3488
+(__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
+
+
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  TextExtraction: () => (/* binding */ TextExtraction),
+  TextRuns: () => (/* binding */ TextRuns)
+});
+
+// EXTERNAL MODULE: ./src/shared/util.js
+var util = __webpack_require__(4292);
+// EXTERNAL MODULE: ./src/core/fonts.js + 8 modules
+var fonts = __webpack_require__(837);
+// EXTERNAL MODULE: ./src/core/data_builder.js
+var data_builder = __webpack_require__(9230);
+// EXTERNAL MODULE: ./src/core/opentype_file_builder.js
+var opentype_file_builder = __webpack_require__(615);
+;// ./src/core/text_layer_font.js
+
+
+
+
+const UNITS_PER_EM = 2048;
+const DEFAULT_ASCENT = 0.8;
+const DEFAULT_SPACE_ADVANCE = 250;
+const MAX_ADVANCE = 0xffff * 1000 / UNITS_PER_EM;
+const ZERO_WIDTH_REGEXP = /^[\p{Mn}\p{Default_Ignorable_Code_Point}]+$/u;
+const SARA_AM_DECOMPOSITIONS = new Map([[0x0e33, [0x0e4d, 0x0e32]], [0x0eb3, [0x0ecd, 0x0eb2]]]);
+const DEBUG_STROKE_WIDTH = 80;
+let nameTable;
+let postTable;
+function toFontUnits(advance) {
+  return Math.round(advance * UNITS_PER_EM / 1000);
+}
+function roundFontAdvance(advance) {
+  return toFontUnits(advance) * 1000 / UNITS_PER_EM;
+}
+function isZeroWidth(text) {
+  return text.charCodeAt(0) >= 0xad && ZERO_WIDTH_REGEXP.test(text);
+}
+function getTextAdvance(text, advances) {
+  let width = 0;
+  for (const char of text) {
+    const codePoint = char.codePointAt(0);
+    if (!isZeroWidth(char)) {
+      width += roundFontAdvance(advances.get(SARA_AM_DECOMPOSITIONS.get(codePoint)?.[1] ?? codePoint));
+    } else if (!advances.has(codePoint)) {
+      return NaN;
+    }
+  }
+  return width;
+}
+function createStats() {
+  return {
+    advances: new Map(),
+    ligatures: new Map(),
+    spaceGaps: []
+  };
+}
+function getAscentRatio({
+  ascent,
+  descent,
+  bbox,
+  glyphBBox,
+  fontMatrix,
+  isType3Font
+}, heightScaled = false) {
+  const isValid = ratio => ratio > 0.5 && ratio < 0.95;
+  const ratio = ascent / (ascent + Math.abs(descent));
+  if (isValid(ratio)) {
+    return ratio;
+  }
+  if (!bbox) {
+    return DEFAULT_ASCENT;
+  }
+  if (isType3Font && fontMatrix && !heightScaled) {
+    const bounds = util.BBOX_INIT.slice();
+    util.Util.axialAlignedBoundingBox(glyphBBox ?? bbox, fontMatrix, bounds);
+    bbox = bounds;
+  }
+  const [, yMin,, yMax] = bbox;
+  const height = yMax - yMin;
+  if (!(height > 0 && Number.isFinite(height))) {
+    return DEFAULT_ASCENT;
+  }
+  const bboxRatio = yMax / height;
+  if (isType3Font && yMin <= 0 && yMax >= 0) {
+    return bboxRatio;
+  }
+  return isValid(bboxRatio) ? bboxRatio : DEFAULT_ASCENT;
+}
+function addCount(samples, key, advance) {
+  const counts = samples.getOrInsertComputed(key, util.makeMap);
+  counts.set(advance, (counts.get(advance) || 0) + 1);
+}
+function getMostFrequent(counts) {
+  let best = NaN,
+    bestCount = 0;
+  for (const [value, count] of counts) {
+    if (count > bestCount) {
+      best = value;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+function getAdvances(stats) {
+  const advances = new Map();
+  for (const [codePoint, counts] of stats.advances) {
+    let advance = getMostFrequent(counts);
+    if (advance === 0 && counts.size > 1) {
+      advance = counts.keys().find(width => width > 0) ?? 0;
+    }
+    advances.set(codePoint, advance);
+  }
+  for (const [unicode, counts] of stats.ligatures) {
+    let known = 0;
+    const missing = [];
+    for (const char of unicode) {
+      const codePoint = char.codePointAt(0);
+      const advance = advances.get(codePoint);
+      if (advance === undefined) {
+        missing.push(codePoint);
+      } else {
+        known += advance;
+      }
+    }
+    if (!missing.length) {
+      continue;
+    }
+    const advance = Math.max(getMostFrequent(counts) - known, 0) / missing.length;
+    for (const codePoint of missing) {
+      advances.set(codePoint, advance);
+    }
+  }
+  for (const [codePoint, [mark, base]] of SARA_AM_DECOMPOSITIONS) {
+    const advance = advances.get(codePoint);
+    if (advance !== undefined) {
+      advances.getOrInsert(mark, 0);
+      advances.getOrInsert(base, advance);
+    }
+  }
+  if (!advances.has(0x20) && stats.spaceGaps.length > 0) {
+    const gaps = stats.spaceGaps.sort((a, b) => a - b);
+    advances.set(0x20, gaps[gaps.length >> 1]);
+  }
+  return advances;
+}
+function createBoxGlyph(width, yMin, yMax) {
+  const xMax = Math.min(width, 0x7fff);
+  const s = Math.min(DEBUG_STROKE_WIDTH, Math.floor(xMax / 4));
+  if (s === 0) {
+    return null;
+  }
+  const points = [0, yMin, 0, yMax, xMax, yMax, xMax, yMin, s, yMin + s, xMax - s, yMin + s, xMax - s, yMax - s, s, yMax - s];
+  const glyph = new Uint8Array(56);
+  const view = new DataView(glyph.buffer);
+  view.setInt16(0, 2);
+  view.setInt16(4, yMin);
+  view.setInt16(6, xMax);
+  view.setInt16(8, yMax);
+  view.setUint16(10, 3);
+  view.setUint16(12, 7);
+  glyph.fill(0x01, 16, 24);
+  for (let i = 0, x = 0, y = 0; i < 8; i++) {
+    view.setInt16(24 + 2 * i, points[2 * i] - x);
+    view.setInt16(40 + 2 * i, points[2 * i + 1] - y);
+    x = points[2 * i];
+    y = points[2 * i + 1];
+  }
+  return glyph;
+}
+function buildTextLayerFont(advances, ascent, drawBoxes = false, advanceScale = 1) {
+  const hmtxAdvances = [0];
+  const glyphIds = new Map();
+  const charCodeToGlyphId = new Map();
+  let advanceSum = 0,
+    advanceMax = 0,
+    firstChar = 0xffff,
+    lastChar = 0;
+  for (const [codePoint, advance] of advances) {
+    const scaledAdvance = advance / advanceScale;
+    const units = Math.round(scaledAdvance * UNITS_PER_EM / 1000);
+    if (!(scaledAdvance >= 0 && scaledAdvance <= MAX_ADVANCE) || units === 0 && scaledAdvance > 0) {
+      return null;
+    }
+    let glyphId = glyphIds.get(units);
+    if (glyphId === undefined) {
+      glyphId = hmtxAdvances.push(units) - 1;
+      glyphIds.set(units, glyphId);
+      advanceSum += units;
+      advanceMax = Math.max(advanceMax, units);
+    }
+    charCodeToGlyphId.set(codePoint, glyphId);
+    const char = Math.min(codePoint, 0xffff);
+    firstChar = Math.min(firstChar, char);
+    lastChar = Math.max(lastChar, char);
+  }
+  const numGlyphs = hmtxAdvances.length;
+  const avgCharWidth = Math.round(advanceSum / (numGlyphs - 1));
+  const ascender = Math.round(ascent * UNITS_PER_EM);
+  const descender = ascender - UNITS_PER_EM;
+  const builder = new opentype_file_builder.OpenTypeFileBuilder("true");
+  function createTable(tag, length) {
+    const data = new Uint8Array(length);
+    builder.addTable(tag, data);
+    return new DataView(data.buffer);
+  }
+  const head = createTable("head", 54);
+  head.setUint32(0, 0x00010000);
+  head.setUint32(4, 0x00010000);
+  head.setUint32(12, 0x5f0f3cf5);
+  head.setUint16(16, 0x0003);
+  head.setUint16(18, UNITS_PER_EM);
+  head.setInt16(38, descender);
+  head.setInt16(42, ascender);
+  head.setUint16(46, 8);
+  head.setInt16(48, 2);
+  const hhea = createTable("hhea", 36);
+  hhea.setUint32(0, 0x00010000);
+  hhea.setInt16(4, ascender);
+  hhea.setInt16(6, descender);
+  hhea.setUint16(10, advanceMax);
+  hhea.setInt16(18, 1);
+  hhea.setUint16(34, numGlyphs);
+  const maxp = createTable("maxp", 32);
+  maxp.setUint32(0, 0x00010000);
+  maxp.setUint16(4, numGlyphs);
+  maxp.setUint16(14, 2);
+  const os2 = createTable("OS/2", 96);
+  os2.setUint16(0, 4);
+  os2.setInt16(2, Math.min(avgCharWidth, 0x7fff));
+  os2.setUint16(4, 400);
+  os2.setUint16(6, 5);
+  os2.setUint32(58, 0x5044464a, false);
+  os2.setUint16(62, 0xc0);
+  os2.setUint16(64, firstChar);
+  os2.setUint16(66, lastChar);
+  os2.setInt16(68, ascender);
+  os2.setInt16(70, descender);
+  os2.setUint16(74, Math.max(ascender, 1));
+  os2.setUint16(76, -descender);
+  os2.setUint16(92, 0x20);
+  os2.setUint16(94, 1);
+  const hmtx = createTable("hmtx", 4 * numGlyphs);
+  for (let i = 0; i < numGlyphs; i++) {
+    hmtx.setUint16(4 * i, hmtxAdvances[i]);
+  }
+  if (drawBoxes) {
+    const loca = createTable("loca", 4 * (numGlyphs + 1));
+    const glyf = new data_builder.DataBuilder({
+      exactLength: 56 * numGlyphs
+    });
+    for (let i = 0; i < numGlyphs; i++) {
+      const glyph = createBoxGlyph(hmtxAdvances[i], descender, ascender);
+      if (glyph) {
+        glyf.setArray(glyph);
+      }
+      loca.setUint32(4 * (i + 1), glyf.length);
+    }
+    if (!glyf.length) {
+      glyf.skip(1);
+    }
+    const xMax = Math.min(advanceMax, 0x7fff);
+    head.setInt16(40, xMax);
+    head.setInt16(50, 1);
+    hhea.setInt16(16, xMax);
+    maxp.setUint16(6, 8);
+    maxp.setUint16(8, 2);
+    builder.addTable("glyf", glyf.data);
+  } else {
+    builder.addTable("loca", new Uint8Array(2 * (numGlyphs + 1)));
+    builder.addTable("glyf", new Uint8Array(1));
+  }
+  builder.addTable("cmap", (0,fonts.createCmapTable)(charCodeToGlyphId, null, numGlyphs));
+  builder.addTable("name", nameTable ??= (0,fonts.createNameTable)("PDFJSTextLayer"));
+  builder.addTable("post", postTable ??= (0,fonts.createPostTable)({
+    italicAngle: 0
+  }));
+  return builder.toArray();
+}
+class TextLayerFonts {
+  #drawBoxes;
+  #heightScaled = new WeakSet();
+  #idFactory;
+  #stats = new Map();
+  constructor(idFactory, drawBoxes = false) {
+    this.#idFactory = idFactory;
+    this.#drawBoxes = drawBoxes;
+  }
+  #getStats(font) {
+    return this.#stats.getOrInsertComputed(font, createStats);
+  }
+  addGlyph(font, unicode, advance) {
+    if (!unicode) {
+      return;
+    }
+    const {
+      advances,
+      ligatures
+    } = this.#getStats(font);
+    if (unicode.length === 1) {
+      if (unicode.isWellFormed()) {
+        addCount(advances, unicode.charCodeAt(0), isZeroWidth(unicode) ? 0 : advance);
+      }
+      return;
+    }
+    let text = "",
+      length = 0;
+    for (const char of unicode) {
+      if (!char.isWellFormed()) {
+        continue;
+      }
+      if (isZeroWidth(char)) {
+        addCount(advances, char.codePointAt(0), 0);
+      } else {
+        text += char;
+        length++;
+      }
+    }
+    if (length === 1) {
+      addCount(advances, text.codePointAt(0), advance);
+    } else if (length > 1) {
+      addCount(ligatures, text, advance);
+    }
+  }
+  addSpaceGap(font, gap) {
+    if (Number.isFinite(gap)) {
+      this.#getStats(font).spaceGaps.push(gap);
+    }
+  }
+  addHeightScaledFont(font) {
+    this.#heightScaled.add(font);
+  }
+  getMetrics(font) {
+    const stats = this.#stats.get(font);
+    if (!stats) {
+      return null;
+    }
+    const advances = getAdvances(stats);
+    let advanceScale = 1;
+    for (const advance of advances.values()) {
+      if (!Number.isFinite(advance)) {
+        return null;
+      }
+      while (advance > MAX_ADVANCE * advanceScale) {
+        advanceScale *= 2;
+      }
+    }
+    advances.getOrInsert(0x20, Math.max(DEFAULT_SPACE_ADVANCE, advanceScale * 1000 / UNITS_PER_EM));
+    if (advanceScale !== 1) {
+      for (const [key, value] of advances) {
+        const advance = roundFontAdvance(value / advanceScale) * advanceScale;
+        if (advance === 0 && value > 0) {
+          return null;
+        }
+        advances.set(key, advance);
+      }
+    }
+    return {
+      advances,
+      advanceScale
+    };
+  }
+  build(font, metrics = this.getMetrics(font)) {
+    if (!metrics) {
+      return null;
+    }
+    const ascent = font.vertical ? 0.5 : getAscentRatio(font, this.#heightScaled.has(font));
+    const {
+      advances,
+      advanceScale
+    } = metrics;
+    const data = buildTextLayerFont(advances, ascent, this.#drawBoxes, advanceScale);
+    if (!data) {
+      return null;
+    }
+    return {
+      name: `${this.#idFactory.getDocId()}_t${this.#idFactory.createFontId()}`,
+      data,
+      ascent,
+      advanceScale
+    };
+  }
+}
+
+// EXTERNAL MODULE: ./src/core/bidi.js + 1 modules
+var bidi = __webpack_require__(3362);
+;// ./src/core/text_extraction.js
+
+
+
+const SIMPLE_TEXT = /^[ 0-9\u30fc\uff10-\uff19\uff70\p{sc=Latin}\p{sc=Greek}\p{sc=Cyrillic}\p{sc=Han}\p{sc=Hiragana}\p{sc=Katakana}\p{sc=Thai}\p{sc=Lao}\p{Mn}\p{P}\p{Sc}\p{Sm}\p{Sk}]+$/u;
+const SIMPLE_RTL_TEXT = /^[ \ufb50-\ufdff\ufe70-\ufefc\p{sc=Hebr}\p{Mn}\p{P}]+$/u;
+const GAP_STEP = 5;
+const MIN_SPACE_GAP = 30;
+const MAX_GLYPH_OVERLAP = 200;
+const MAX_INLINE_SPACE = 600;
+const POSITION_TOLERANCE = 0.75;
+const MIN_SPACE_THRESHOLD = 102;
+const MAX_SPACE_WIDTH = 333;
+const TYPE3_SPACE_FACTOR = 0.25;
+function transformAt(transform, offset, vertical) {
+  const result = new Float32Array(transform);
+  result[4] += (vertical ? -transform[2] : transform[0]) * offset / 1000;
+  result[5] += (vertical ? -transform[3] : transform[1]) * offset / 1000;
+  return result;
+}
+function makeItem(str, dir, transform, length, fontName) {
+  const vertical = dir === "ttb";
+  return {
+    str,
+    dir,
+    transform,
+    width: vertical ? Math.hypot(transform[0], transform[1]) : length,
+    height: vertical ? length : Math.hypot(transform[2], transform[3]),
+    fontName,
+    hasEOL: false
+  };
+}
+function makeSpaceItem(transform, advance, length, fontName, dir) {
+  return makeItem(" ", dir, transformAt(transform, advance, dir === "ttb"), Math.max(0, length), fontName);
+}
+function getSpaceThreshold(spaceWidth, leftAdvance, rightAdvance) {
+  if (spaceWidth === null) {
+    const left = Math.abs(leftAdvance);
+    const right = Math.abs(rightAdvance);
+    return TYPE3_SPACE_FACTOR * (Math.min(left, right) || left || right) || MIN_SPACE_THRESHOLD;
+  }
+  return Math.max(MIN_SPACE_THRESHOLD, Math.min(spaceWidth || 0, MAX_SPACE_WIDTH) / 2);
+}
+function hasSameAxes(left, right) {
+  return left[0] === right[0] && left[1] === right[1] && left[2] === right[2] && left[3] === right[3];
+}
+function unmirrorTransform(transform, width) {
+  const a = transform[0];
+  const b = transform[1];
+  const c = transform[2];
+  const d = transform[3];
+  if (a * d - b * c >= 0 || d <= 0) {
+    return false;
+  }
+  const scale = width / Math.hypot(a, b);
+  transform[0] = -a;
+  transform[1] = -b;
+  transform[4] += a * scale;
+  transform[5] += b * scale;
+  return true;
+}
+function getLineShift(from, fromRise, to, toRise, pa, pb, baselineLength) {
+  const dx = to[4] - from[4] - (toRise[0] - fromRise[0]),
+    dy = to[5] - from[5] - (toRise[1] - fromRise[1]);
+  return (dy * pa - dx * pb) / baselineLength;
+}
+class TextRuns {
+  #emit;
+  #run = null;
+  #prevRun = null;
+  #prevGlyph = null;
+  #prevTransform = new Float32Array(6);
+  #prevTextRise = null;
+  #space = false;
+  #trackingStart = false;
+  constructor(emit) {
+    this.#emit = emit;
+  }
+  addSpace() {
+    this.#space = true;
+  }
+  resetTracking() {
+    this.#trackingStart = true;
+  }
+  addGlyph(fontName, transform, textRise, unicode, isUnicodeVisual, advance, charSpacing, spaceWidth, vertical) {
+    const axis = vertical ? 2 : 0;
+    const sign = vertical ? -1 : 1;
+    const a = sign * transform[axis],
+      b = sign * transform[axis + 1],
+      x = transform[4],
+      y = transform[5];
+    const scale = Math.hypot(a, b) / 1000;
+    if (!scale || !Number.isFinite(scale)) {
+      return;
+    }
+    let leadingSpace = null;
+    const prevRun = this.#prevRun;
+    if (prevRun && prevRun.vertical !== vertical) {
+      this.reset();
+    } else if (prevRun) {
+      const base = this.#prevGlyph,
+        prevTransform = this.#prevTransform,
+        prevTextRise = this.#prevTextRise;
+      const {
+        scale: prevScale,
+        spaceWidth: prevSpaceWidth,
+        fontName: prevFontName
+      } = prevRun;
+      const pa = sign * prevTransform[axis],
+        pb = sign * prevTransform[axis + 1];
+      const baselineLength = 1000 * prevScale;
+      const along = ((x - prevTransform[4]) * pa + (y - prevTransform[5]) * pb) / baselineLength;
+      const lineShift = getLineShift(prevTransform, prevTextRise, transform, textRise, pa, pb, baselineLength);
+      const height = Math.hypot(prevTransform[2 - axis], prevTransform[3 - axis]);
+      const run = this.#run;
+      const sameFontAndAxes = prevFontName === fontName && hasSameAxes(transform, prevTransform);
+      if (run && sameFontAndAxes && !this.#space && Math.abs(lineShift) <= height && isZeroWidth(unicode)) {
+        base.unicode += unicode;
+        base.advance += advance;
+        base.charSpacing += charSpacing;
+        return;
+      }
+      const gap = along / prevScale - base.advance;
+      const backwards = along < -POSITION_TOLERANCE || gap + 1e-6 < Math.min(base.charSpacing, 0) - MAX_GLYPH_OVERLAP;
+      const newLine = Math.abs(lineShift) > height * (backwards ? 0.5 : 1);
+      if (newLine) {
+        this.flush(true);
+      } else if (!run || !sameFontAndAxes || backwards || Math.abs((y - run.transform[5]) * pa - (x - run.transform[4]) * pb) > baselineLength * 0.25) {
+        this.flush();
+        if (!backwards && a * pa + b * pb > 0 && (this.#space && gap > MIN_SPACE_GAP || gap - base.charSpacing > getSpaceThreshold(prevSpaceWidth, base.advance, advance))) {
+          leadingSpace = makeSpaceItem(prevTransform, base.advance, gap * prevScale, prevFontName, vertical ? "ttb" : "ltr");
+        }
+      }
+    }
+    this.#run ??= {
+      fontName,
+      transform: transform.slice(),
+      scale,
+      spaceWidth,
+      vertical,
+      leadingSpace,
+      glyphs: [],
+      hasEOL: false
+    };
+    const {
+      glyphs,
+      transform: start
+    } = this.#run;
+    const offset = ((x - start[4]) * a + (y - start[5]) * b) / (1000 * scale * scale);
+    const glyph = {
+      unicode,
+      isUnicodeVisual,
+      offset,
+      advance,
+      charSpacing,
+      space: glyphs.length > 0 && this.#space,
+      trackingStart: this.#trackingStart
+    };
+    glyphs.push(glyph);
+    this.#prevRun = this.#run;
+    this.#prevGlyph = glyph;
+    this.#prevTransform.set(transform);
+    this.#prevTextRise = textRise;
+    this.#space = false;
+    this.#trackingStart = false;
+  }
+  addEmptyText(transform, textRise, vertical) {
+    const prevRun = this.#prevRun;
+    if (prevRun?.vertical !== vertical) {
+      return;
+    }
+    const axis = vertical ? 2 : 0;
+    const sign = vertical ? -1 : 1;
+    const prevTransform = this.#prevTransform;
+    const lineShift = getLineShift(prevTransform, this.#prevTextRise, transform, textRise, sign * prevTransform[axis], sign * prevTransform[axis + 1], 1000 * prevRun.scale);
+    if (Math.abs(lineShift) > 0.5 * Math.hypot(prevTransform[2 - axis], prevTransform[3 - axis])) {
+      this.flush(true);
+    }
+  }
+  flush(hasEOL = false) {
+    const run = this.#run;
+    if (run) {
+      run.hasEOL = hasEOL;
+      this.#emit(run);
+      this.#run = null;
+    } else if (hasEOL && this.#prevRun) {
+      const {
+        vertical,
+        fontName
+      } = this.#prevRun;
+      this.#emit({
+        str: "",
+        dir: vertical ? "ttb" : "ltr",
+        transform: this.#prevTransform.slice(),
+        fontName,
+        width: 0,
+        height: 0,
+        hasEOL
+      });
+    }
+  }
+  reset() {
+    this.flush();
+    this.#prevRun = this.#prevGlyph = null;
+    this.#space = false;
+  }
+}
+function getGap(left, right) {
+  return right.offset - left.offset - left.advance;
+}
+function inferTracking(glyphs, start, end, threshold) {
+  const bins = new Map();
+  let samples = 0;
+  for (let i = start + 1; i < end; i++) {
+    const left = glyphs[i - 1],
+      right = glyphs[i];
+    if (right.space) {
+      continue;
+    }
+    const gap = getGap(left, right) - left.charSpacing;
+    const value = Math.round(gap / GAP_STEP) * GAP_STEP;
+    const bin = bins.get(value);
+    if (bin) {
+      bin.count++;
+      bin.differentPairs ||= left.unicode !== bin.left || right.unicode !== bin.right;
+    } else {
+      bins.set(value, {
+        left: left.unicode,
+        right: right.unicode,
+        count: 1,
+        differentPairs: false
+      });
+    }
+    samples++;
+  }
+  let value = 0,
+    count = 0;
+  for (const [gap, {
+    count: frequency
+  }] of bins) {
+    if (frequency > count || frequency === count && Math.abs(gap) < Math.abs(value)) {
+      value = gap;
+      count = frequency;
+    }
+  }
+  if (!value || count < 2 || !bins.get(value).differentPairs) {
+    return 0;
+  }
+  if (Math.abs(value) <= threshold) {
+    return value;
+  }
+  const maxTracking = bins.keys().some(gap => gap > value + threshold) ? 2.5 * threshold : 1.5 * threshold;
+  return value > 0 && value < maxTracking && 2 * count >= samples ? value : 0;
+}
+function inferSpaces({
+  glyphs,
+  spaceWidth
+}, fonts, font) {
+  for (let start = 0, end; start < glyphs.length; start = end) {
+    end = start + 1;
+    while (end < glyphs.length && !glyphs[end].trackingStart) {
+      end++;
+    }
+    const tracking = spaceWidth === null ? 0 : inferTracking(glyphs, start, end, getSpaceThreshold(spaceWidth));
+    for (let i = Math.max(1, start); i < end; i++) {
+      const left = glyphs[i - 1],
+        right = glyphs[i];
+      const gap = getGap(left, right);
+      const pairTracking = i === start ? 0 : tracking;
+      const adjustedGap = gap - left.charSpacing - pairTracking;
+      const threshold = getSpaceThreshold(spaceWidth, left.advance, right.advance);
+      right.space = right.space ? gap > MIN_SPACE_GAP : adjustedGap > (pairTracking > 0 ? 0.8 : 1) * threshold;
+      if (right.space && adjustedGap > 0) {
+        fonts?.addSpaceGap(font, adjustedGap);
+      }
+    }
+  }
+}
+function makeTextItem(run, first, last, str, dir = run.vertical ? "ttb" : "ltr") {
+  const {
+    glyphs,
+    scale,
+    fontName
+  } = run;
+  const start = glyphs[first].offset;
+  const {
+    offset,
+    advance
+  } = glyphs[last];
+  const end = offset + advance;
+  return makeItem(str, dir, transformAt(run.transform, start, run.vertical), Math.abs(end - start) * scale, fontName);
+}
+function getTextParts(glyphs, first, last) {
+  const text = [glyphs[first].unicode];
+  for (let i = first + 1; i <= last; i++) {
+    const {
+      space,
+      unicode
+    } = glyphs[i];
+    if (space) {
+      text.push(" ");
+    }
+    text.push(unicode);
+  }
+  return text;
+}
+function hasSimpleGlyphOrder({
+  str,
+  dir
+}, parts, visualText) {
+  return dir === "rtl" ? SIMPLE_RTL_TEXT.test(str) && str === parts.toReversed().join("") : SIMPLE_TEXT.test(str) && str === visualText;
+}
+function widthFittedItem(item, {
+  advances
+}, visualText) {
+  const {
+    str
+  } = item;
+  if (str.length > 1 && /\S/.test(str) && (item.dir !== "rtl" || !/\p{Bidi_Mirrored}/u.test(visualText)) && !/\p{Variation_Selector}/u.test(visualText) && visualText === visualText.normalize("NFC")) {
+    const width = getTextAdvance(visualText, advances);
+    if (width > 0) {
+      item.textLayerAdvance = width / 1000;
+    }
+  }
+  return item;
+}
+function makeSpan(run, first, last, dir, metrics) {
+  const parts = getTextParts(run.glyphs, first, last);
+  const visualText = parts.join("");
+  const str = dir === "rtl" ? parts.reverse().join("") : visualText;
+  return widthFittedItem(makeTextItem(run, first, last, str, dir), metrics, visualText);
+}
+function getBidiRun(run, onMirror) {
+  const {
+    glyphs,
+    vertical
+  } = run;
+  const fullItem = makeTextItem(run, 0, glyphs.length - 1, "");
+  const unmirrored = !vertical && unmirrorTransform(fullItem.transform, fullItem.width);
+  const parts = [];
+  for (const glyph of glyphs) {
+    if (glyph.space) {
+      parts.push(" ");
+    }
+    parts.push(glyph);
+  }
+  if (unmirrored) {
+    parts.reverse();
+  }
+  Object.assign(fullItem, (0,bidi.bidi)(parts, -1, vertical, onMirror));
+  return {
+    run,
+    item: fullItem,
+    text: parts.map(part => part.unicode ?? part),
+    unmirrored
+  };
+}
+function layoutRun({
+  run,
+  item,
+  text,
+  unmirrored
+}, metrics, items) {
+  const visualText = text.join("");
+  if (!hasSimpleGlyphOrder(item, text, visualText)) {
+    items.push(item);
+    return;
+  }
+  const {
+    glyphs
+  } = run;
+  const {
+    dir
+  } = item;
+  const start = items.length;
+  let first = 0;
+  for (let i = 1; !unmirrored && i < glyphs.length; i++) {
+    const left = glyphs[i - 1];
+    const gap = glyphs[i].space ? getGap(left, glyphs[i]) : 0;
+    if (gap > MAX_INLINE_SPACE) {
+      items.push(makeSpan(run, first, i - 1, dir, metrics), makeSpaceItem(run.transform, left.offset + left.advance, gap * run.scale, run.fontName, dir));
+      first = i;
+    }
+  }
+  if (first === 0) {
+    items.push(widthFittedItem(item, metrics, visualText));
+    return;
+  }
+  items.push(makeSpan(run, first, glyphs.length - 1, dir, metrics));
+  if (dir === "rtl") {
+    for (let i = start, j = items.length - 1; i < j; i++, j--) {
+      const tmp = items[i];
+      items[i] = items[j];
+      items[j] = tmp;
+    }
+  }
+}
+function intersectRun(intersector, run) {
+  const {
+    glyphs,
+    transform,
+    vertical
+  } = run;
+  if (run.leadingSpace) {
+    intersector.addExtraChar(" ");
+  }
+  const a = vertical ? -transform[2] : transform[0],
+    b = vertical ? -transform[3] : transform[1];
+  for (const {
+    unicode,
+    offset,
+    advance,
+    space
+  } of glyphs) {
+    if (space) {
+      intersector.addExtraChar(" ");
+    }
+    const middle = (offset + advance / 2) / 1000;
+    intersector.addGlyph(transform[4] + a * middle, transform[5] + b * middle, unicode);
+  }
+  if (run.hasEOL) {
+    intersector.addExtraChar("\n");
+  }
+}
+class TextExtraction {
+  #chunks = [];
+  #fonts = new Map();
+  #intersector;
+  #sink;
+  chunkCount = 0;
+  constructor(sink, {
+    idFactory = null,
+    debugFonts = false,
+    intersector = null
+  } = {}) {
+    this.#sink = sink;
+    this.#intersector = intersector;
+    this.fonts = idFactory ? new TextLayerFonts(idFactory, debugFonts) : null;
+  }
+  get ready() {
+    if (!this.fonts) {
+      return this.#sink?.ready ?? Promise.resolve();
+    }
+    return this.#sink.isCancelled ? Promise.reject(new util.AbortException("Text content stream cancelled.")) : Promise.resolve();
+  }
+  get desiredSize() {
+    if (this.fonts) {
+      return Infinity;
+    }
+    return this.#sink ? this.#sink.desiredSize : (/* inlined export .TEXT_CONTENT_CHUNK_SIZE */100);
+  }
+  enqueue(chunk) {
+    this.chunkCount++;
+    const {
+      fonts
+    } = this;
+    const intersector = this.#intersector;
+    const {
+      items
+    } = chunk;
+    for (let i = 0, ii = items.length; i < ii; i++) {
+      const run = items[i];
+      if (!run.glyphs) {
+        if (run.hasEOL) {
+          intersector?.addExtraChar("\n");
+        }
+        continue;
+      }
+      const font = this.#fonts.get(run.fontName);
+      inferSpaces(run, fonts, font);
+      if (intersector) {
+        intersectRun(intersector, run);
+        continue;
+      }
+      items[i] = getBidiRun(run, fonts && ((glyph, unicode) => fonts.addGlyph(font, unicode, glyph.advance)));
+    }
+    if (intersector) {
+      return;
+    }
+    if (fonts) {
+      this.#chunks.push({
+        ...chunk
+      });
+      return;
+    }
+    const laidOut = this.#layoutItems(items, null);
+    this.#sink?.enqueue({
+      ...chunk,
+      items: laidOut
+    }, laidOut.length);
+  }
+  #layoutItems(items, getMetrics) {
+    const result = [];
+    for (const entry of items) {
+      const {
+        run
+      } = entry;
+      if (!run) {
+        result.push(entry);
+        continue;
+      }
+      if (run.leadingSpace) {
+        result.push(run.leadingSpace);
+      }
+      const metrics = getMetrics?.(entry.item.fontName);
+      if (metrics) {
+        layoutRun(entry, metrics, result);
+      } else {
+        result.push(entry.item);
+      }
+      result.at(-1).hasEOL = run.hasEOL;
+    }
+    return result;
+  }
+  addFont(name, font, heightScaled = false) {
+    this.#fonts.set(name, font);
+    if (heightScaled) {
+      this.fonts?.addHeightScaledFont(font);
+    }
+  }
+  send() {
+    const {
+      fonts
+    } = this;
+    if (!fonts || this.#sink.isCancelled) {
+      return;
+    }
+    const metrics = new Map();
+    const computeMetrics = font => fonts.getMetrics(font);
+    const getFontMetrics = font => metrics.getOrInsertComputed(font, computeMetrics);
+    const getMetrics = name => getFontMetrics(this.#fonts.get(name));
+    for (const chunk of this.#chunks) {
+      chunk.items = this.#layoutItems(chunk.items, getMetrics);
+    }
+    const textLayerFonts = new Map();
+    const build = font => fonts.build(font, getFontMetrics(font));
+    for (const chunk of this.#chunks) {
+      for (const [name, style] of Object.entries(chunk.styles)) {
+        const textLayerFont = textLayerFonts.getOrInsertComputed(this.#fonts.get(name), build);
+        if (textLayerFont) {
+          style.textLayerFont = textLayerFont;
+        }
+      }
+      this.#sink.enqueue(chunk, chunk.items.length);
+    }
+  }
+}
+
+
+/***/ },
+
 /***/ 2346
 (__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
 
@@ -45941,6 +45927,7 @@ const isNodeJS = false;
 const BBOX_INIT = [Infinity, Infinity, -Infinity, -Infinity];
 const F32_BBOX_INIT = new Float32Array(BBOX_INIT);
 const FONT_IDENTITY_MATRIX = [0.001, 0, 0, 0.001, 0, 0];
+const TEXT_CONTENT_CHUNK_SIZE = 100;
 const DEFAULT_VERTICAL_ORIGIN_Y = 880;
 const DEFAULT_VERTICAL_ADVANCE = 1000;
 const LINE_FACTOR = 1.35;
@@ -47558,7 +47545,7 @@ class WorkerMessageHandler {
       docId,
       apiVersion
     } = docParams;
-    const workerVersion = "7.0.247";
+    const workerVersion = "7.0.261";
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match the Worker version "${workerVersion}".`);
     }

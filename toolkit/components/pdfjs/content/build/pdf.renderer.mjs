@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.247
- * pdfjsBuild = e47398270
+ * pdfjsVersion = 7.0.261
+ * pdfjsBuild = 9548d30dd
  */
 
 ;// ./src/shared/util.js
@@ -29,6 +29,7 @@ const isNodeJS = false;
 const BBOX_INIT = [Infinity, Infinity, -Infinity, -Infinity];
 const F32_BBOX_INIT = new Float32Array(BBOX_INIT);
 const FONT_IDENTITY_MATRIX = [0.001, 0, 0, 0.001, 0, 0];
+const TEXT_CONTENT_CHUNK_SIZE = 100;
 const DEFAULT_VERTICAL_ORIGIN_Y = 880;
 const DEFAULT_VERTICAL_ADVANCE = 1000;
 const LINE_FACTOR = 1.35;
@@ -7632,7 +7633,7 @@ class RendererMessageHandler {
     this.#connection = null;
   }
   static #sendReady(handler) {
-    const workerVersion = "7.0.247";
+    const workerVersion = "7.0.261";
     const testObj = new Uint8Array();
     handler.send("ready", {
       testObj,
