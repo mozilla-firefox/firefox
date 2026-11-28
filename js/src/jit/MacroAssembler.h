@@ -5511,7 +5511,7 @@ class MacroAssembler : public MacroAssemblerSpecific {
   // needs a barrier. Callers must have done that check themselves.
   template <typename T>
   void unguardedCallPreBarrier(const T& address, MIRType type) {
-    Label done;
+    NearLabel done;
     if (type == MIRType::Value) {
       branchTestGCThing(Assembler::NotEqual, address, &done);
     } else if (type == MIRType::Object || type == MIRType::String) {
@@ -5532,7 +5532,7 @@ class MacroAssembler : public MacroAssemblerSpecific {
 
   template <typename T>
   void guardedCallPreBarrier(const T& address, MIRType type) {
-    Label done;
+    NearLabel done;
     branchTestNeedsMarkingBarrier(Assembler::Zero, &done);
     unguardedCallPreBarrier(address, type);
     bind(&done);
@@ -5544,7 +5544,7 @@ class MacroAssembler : public MacroAssemblerSpecific {
   template <typename T>
   void guardedCallPreBarrierAnyZone(const T& address, MIRType type,
                                     Register scratch) {
-    Label done;
+    NearLabel done;
     branchTestNeedsMarkingBarrierAnyZone(Assembler::Zero, &done, scratch);
     unguardedCallPreBarrier(address, type);
     bind(&done);
