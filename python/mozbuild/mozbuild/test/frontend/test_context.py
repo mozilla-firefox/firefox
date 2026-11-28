@@ -442,9 +442,10 @@ class TestPaths(unittest.TestCase):
         ctxt = Context(config=config)
         ctxt.push_source(mozpath.join(config.topsrcdir, "foo", "moz.build"))
 
-        path = AbsolutePath(ctxt, "%/qux")
-        self.assertEqual(path, "%/qux")
-        self.assertEqual(path.full_path, "/qux")
+        abspath = mozpath.join(config.topobjdir, "qux")
+        path = AbsolutePath(ctxt, f"%{abspath}")
+        self.assertEqual(path, f"%{abspath}")
+        self.assertEqual(path.full_path, abspath)
 
         with self.assertRaises(ValueError):
             path = AbsolutePath(ctxt, "%qux")

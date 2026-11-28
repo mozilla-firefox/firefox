@@ -4,6 +4,6 @@
 JS_SHELL_ARCHIVE_FILES += [
     "!/dist/bin/js",
     "!/dist/bin/libmozglue.so",
-    "%/usr/bin/llvm-symbolizer",
+    f"%{TOPOBJDIR}/llvm-symbolizer",
     "!/dist/bin/fuzz-tests",
 ]
