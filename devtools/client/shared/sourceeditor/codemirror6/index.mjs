@@ -13,6 +13,7 @@ import * as codemirrorLangCss from "@codemirror/lang-css";
 import * as codemirrorLangHtml from "@codemirror/lang-html";
 import * as codemirrorLangJson from "@codemirror/lang-json";
 import * as codemirrorLangXml from "@codemirror/lang-xml";
+import * as codemirrorLangVue from "@codemirror/lang-vue";
 import * as lezerHighlight from "@lezer/highlight";
 
 // XXX When adding new exports, you need to update the codemirror6.bundle.mjs file,
@@ -30,5 +31,6 @@ export {
   codemirrorLangCss,
   codemirrorLangHtml,
   codemirrorLangXml,
+  codemirrorLangVue,
   lezerHighlight,
 };
