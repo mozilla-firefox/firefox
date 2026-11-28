@@ -121,10 +121,11 @@ def dependency_kinds(metadata, tooling_members=TOOLING_MEMBERS, report=None):
     """Map each third-party package of a `cargo metadata` document to its kinds.
 
     A crate is reached from the workspace as a normal, a build or a dev
-    dependency, and only the first two end up in the product: `mockall` and
-    `expect-test` are as vendored as `serde` but ship in nothing. Cargo.lock
+    dependency, and only the first ends up in the product: `mockall`, `cc`
+    and `syn` are as vendored as `serde` but ship in nothing. Cargo.lock
     cannot answer this -- it is the flat union of all three -- so the kinds
     come from `cargo metadata`, whose resolve graph labels every edge.
+    A proc-macro, and what it or a build dependency reaches, is `build`.
 
     The workspace also holds test servers and code generators, listed in
     ``tooling_members``. What a member reached only from those depends on is
@@ -146,6 +147,12 @@ def dependency_kinds(metadata, tooling_members=TOOLING_MEMBERS, report=None):
         if node["id"] in packages
     }
     members = {m for m in metadata["workspace_members"] if m in nodes}
+    proc_macros = {
+        package["id"]
+        for package in metadata["packages"]
+        for target in package.get("targets", ())
+        if "proc-macro" in target["kind"]
+    }
 
     def edges(node_id):
         for dep in nodes[node_id]["deps"]:
@@ -184,22 +191,29 @@ def dependency_kinds(metadata, tooling_members=TOOLING_MEMBERS, report=None):
         queue.extend(
             target
             for target, kind in edges(member)
-            if kind != "dev" and target in members
+            if kind == "normal" and target in members - proc_macros
         )
 
     queue = collections.deque()
     for member in members:
-        for target, kind in edges(member):
-            queue.append((
-                target,
-                kind if kind == "dev" or member in shipped else "tooling",
-            ))
+        for target, edge_kind in edges(member):
+            if edge_kind == "normal" and member in proc_macros:
+                kind = "build"
+            elif member not in shipped and edge_kind != "dev":
+                kind = "tooling"
+            else:
+                kind = edge_kind
+            queue.append((target, kind))
 
     kinds = collections.defaultdict(set)
     seen = set()
     while queue:
         package_id, kind = queue.popleft()
-        if (package_id, kind) in seen or package_id not in nodes:
+        if package_id not in nodes:
+            continue
+        if kind == "normal" and package_id in proc_macros:
+            kind = "build"
+        if (package_id, kind) in seen:
             continue
         seen.add((package_id, kind))
         kinds[package_id].add(kind)
@@ -207,7 +221,7 @@ def dependency_kinds(metadata, tooling_members=TOOLING_MEMBERS, report=None):
             # A dependency's own dev-dependencies are never built, so the walk
             # stops there rather than dragging a whole test-only subtree in.
             if target_kind != "dev":
-                queue.append((target, kind))
+                queue.append((target, "build" if target_kind == "build" else kind))
 
     return {
         (packages[package_id]["name"], packages[package_id]["version"]): sorted(values)
@@ -359,9 +373,9 @@ def crate_records(topsrcdir, lock_path=None, kinds=None):
 
 
 def is_tooling(record):
-    """Is a crate reached only as a dev dependency or from a tooling member?
+    """Is a crate reached only as a build or dev dependency, or by tooling?
 
     Such a crate builds or tests the product and ships in nothing. Without
     kinds, which an unconfigured tree cannot collect, nothing is known to be.
     """
-    return bool(record["kinds"]) and set(record["kinds"]) <= {"dev", "tooling"}
+    return bool(record["kinds"]) and "normal" not in record["kinds"]

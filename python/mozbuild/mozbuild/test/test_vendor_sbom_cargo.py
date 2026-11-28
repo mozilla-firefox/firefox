@@ -173,7 +173,8 @@ class TestCrateRecords(unittest.TestCase):
         self.assertTrue(is_tooling({"kinds": ["dev"]}))
         self.assertTrue(is_tooling({"kinds": ["dev", "tooling"]}))
         self.assertFalse(is_tooling({"kinds": ["dev", "normal"]}))
-        self.assertFalse(is_tooling({"kinds": ["build", "tooling"]}))
+        self.assertTrue(is_tooling({"kinds": ["build", "tooling"]}))
+        self.assertFalse(is_tooling({"kinds": ["build", "normal"]}))
         # Without cargo metadata nothing is known to be tooling.
         self.assertFalse(is_tooling({"kinds": []}))
 
@@ -342,6 +343,84 @@ class TestDependencyKinds(unittest.TestCase):
 
     def test_workspace_members_are_not_reported(self):
         self.assertNotIn(("gkrust", "0.1.0"), dependency_kinds(self.metadata()))
+
+    def test_proc_macros_and_their_dependencies_are_build(self):
+        metadata = self.metadata()
+        metadata["packages"] += [
+            dict(
+                package("serde_derive", "1.0.200"),
+                targets=[{"kind": ["proc-macro"]}],
+            ),
+            package("syn", "2.0.0"),
+        ]
+        nodes = metadata["resolve"]["nodes"]
+        nodes[0]["deps"].append({
+            "pkg": "serde_derive@1.0.200",
+            "dep_kinds": [{"kind": None}],
+        })
+        nodes += [
+            node("serde_derive", "1.0.200", [("syn", "2.0.0", None)]),
+            node("syn", "2.0.0", []),
+        ]
+        kinds = dependency_kinds(metadata)
+        self.assertEqual(kinds[("serde_derive", "1.0.200")], ["build"])
+        self.assertEqual(kinds[("syn", "2.0.0")], ["build"])
+        self.assertEqual(kinds[("serde", "1.0.200")], ["normal"])
+
+    def test_dependencies_of_a_proc_macro_member_are_build(self):
+        metadata = self.metadata()
+        metadata["workspace_members"].append("style_derive@0.0.1")
+        metadata["packages"] += [
+            dict(
+                package("style_derive", "0.0.1", source=None),
+                targets=[{"kind": ["proc-macro"]}],
+            ),
+            package("syn", "2.0.0"),
+        ]
+        nodes = metadata["resolve"]["nodes"]
+        nodes[0]["deps"].append({
+            "pkg": "style_derive@0.0.1",
+            "dep_kinds": [{"kind": None}],
+        })
+        nodes += [
+            node("style_derive", "0.0.1", [("syn", "2.0.0", None)]),
+            node("syn", "2.0.0", []),
+        ]
+        self.assertEqual(dependency_kinds(metadata)[("syn", "2.0.0")], ["build"])
+
+    def test_dependencies_of_a_member_only_a_build_script_uses_do_not_ship(self):
+        metadata = self.metadata()
+        metadata["workspace_members"].append("build_helper@0.0.1")
+        metadata["packages"] += [
+            package("build_helper", "0.0.1", source=None),
+            package("cc", "1.0.0"),
+        ]
+        nodes = metadata["resolve"]["nodes"]
+        nodes[0]["deps"].append({
+            "pkg": "build_helper@0.0.1",
+            "dep_kinds": [{"kind": "build"}],
+        })
+        nodes += [
+            node("build_helper", "0.0.1", [("cc", "1.0.0", None)]),
+            node("cc", "1.0.0", []),
+        ]
+        self.assertNotIn("normal", dependency_kinds(metadata)[("cc", "1.0.0")])
+
+    def test_a_build_dependency_of_a_dependency_is_build(self):
+        metadata = self.metadata()
+        metadata["packages"] += [
+            package("bindgen", "0.70.0"),
+            package("clang-sys", "1.0.0"),
+        ]
+        metadata["resolve"]["nodes"][1]["deps"].append({
+            "pkg": "bindgen@0.70.0",
+            "dep_kinds": [{"kind": "build"}],
+        })
+        metadata["resolve"]["nodes"] += [
+            node("bindgen", "0.70.0", [("clang-sys", "1.0.0", None)]),
+            node("clang-sys", "1.0.0", []),
+        ]
+        self.assertEqual(dependency_kinds(metadata)[("clang-sys", "1.0.0")], ["build"])
 
 
 class TestToolingMembers(unittest.TestCase):

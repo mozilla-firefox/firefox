@@ -182,13 +182,13 @@ def build_tooling_document(
     dependencies.update(python_edges)
     log(f"{len(packages)} vendored Python packages.")
 
-    # The crates only the tests and the tools build, which the product
-    # document leaves out.
+    # The crates only the tests, the tools and the build scripts build, which
+    # the product document leaves out.
     _, crates, crate_edges, kinds = _crate_records(topsrcdir, topobjdir, substs, log)
     records.extend(crates)
     dependencies.update(crate_edges)
     if kinds:
-        log(f"{len(crates)} test and tooling crates.")
+        log(f"{len(crates)} build, test and tooling crates.")
     elif strict:
         raise SbomError(
             "cargo metadata unavailable; tooling crates cannot be told apart."
@@ -275,20 +275,20 @@ def build_document(
         "tooling document."
     )
 
-    # A crate only tests or tools use ships in nothing; the build tooling
-    # document has it.
+    # A crate only tests, tools or build scripts use ships in nothing; the
+    # build tooling document has it.
     crates, tooling, dependencies, kinds = _crate_records(
         topsrcdir, topobjdir, substs, log
     )
     records.extend(crates)
 
     if kinds:
-        shipped = sum(1 for c in crates if {"normal", "build"} & set(c["kinds"]))
+        shipped = sum(1 for c in crates if "normal" in c["kinds"])
         log(
             f"{len(crates)} crates: {shipped} built into the product, "
             f"{len(crates) - shipped} not reached by cargo metadata; "
-            f"{len(tooling)} test and tooling crate(s) left to the build tooling "
-            "document.",
+            f"{len(tooling)} build, test and tooling crate(s) left to the build "
+            "tooling document.",
         )
     else:
         log(
