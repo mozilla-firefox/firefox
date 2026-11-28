@@ -100,7 +100,7 @@ hamcrest = "2.2"
 junit4 = "4.13.2"
 junit6 = "6.1.3"
 leakcanary = "2.14"
-mockito = "5.24.0"
+mockito = "5.25.0"
 mockk = "1.14.12"
 robolectric = "4.18.1"
 
