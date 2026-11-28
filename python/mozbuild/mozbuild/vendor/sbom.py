@@ -194,6 +194,28 @@ def collect_records(repo, topsrcdir, log=None):
     return records, errors
 
 
+# Vendored code that only builds, tests, benchmarks or fuzzes the tree. A
+# manifest at or under one of these, or under a directory named like a test
+# directory, describes code that ships in nothing, so it goes to the build
+# tooling document.
+TOOLING_PATHS = (
+    "third_party/googletest",
+    "third_party/webkit/PerformanceTests",
+    "tools/fuzzing",
+    "tools/lint",
+)
+TEST_DIRECTORY_NAMES = frozenset(("test", "tests", "testing"))
+
+
+def is_tooling_path(path):
+    """Does a topsrcdir-relative directory hold test or build tooling code?"""
+    if TEST_DIRECTORY_NAMES.intersection(path.split("/")):
+        return True
+    return any(
+        path == prefix or path.startswith(prefix + "/") for prefix in TOOLING_PATHS
+    )
+
+
 def load_license_notices(path):
     """Read the licenses.json the build backend writes from moz.build LICENSES.
 

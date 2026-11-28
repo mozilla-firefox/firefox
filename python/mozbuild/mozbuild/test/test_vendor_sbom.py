@@ -10,6 +10,7 @@ from mozbuild.vendor.sbom import (
     clean_version,
     components_for_unmatched,
     discover_manifests,
+    is_tooling_path,
     load_license_notices,
     manifest_to_record,
     merge_license_notices,
@@ -528,6 +529,30 @@ class TestDiscoverManifests(unittest.TestCase):
             "tools/lint/test/files/license-declarations/bad/vendored/moz.yaml",
         ])
         self.assertEqual(discover_manifests(repo, "/src"), ["gfx/harfbuzz/moz.yaml"])
+
+
+class TestIsToolingPath(unittest.TestCase):
+    def test_test_suites_and_benchmarks(self):
+        for path in (
+            "dom/canvas/test/webgl-conf",
+            "dom/webgpu/tests/cts",
+            "remote/test/puppeteer",
+            "testing/mochitest/pywebsocket3",
+            "third_party/googletest",
+            "third_party/webkit/PerformanceTests/Speedometer3",
+            "tools/fuzzing/libfuzzer",
+            "tools/lint/eslint/eslint-plugin-sdl-vendored",
+        ):
+            self.assertTrue(is_tooling_path(path), path)
+
+    def test_shipped_code(self):
+        for path in (
+            "media/libvpx",
+            "third_party/googletest-like",
+            "toolkit/components/pdfjs",
+            "third_party/js/testlib",
+        ):
+            self.assertFalse(is_tooling_path(path), path)
 
 
 if __name__ == "__main__":

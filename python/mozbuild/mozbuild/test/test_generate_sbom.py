@@ -226,6 +226,37 @@ class TestBuildDocument(unittest.TestCase):
         refs = {c["bom-ref"] for c in self.build()["components"]}
         self.assertFalse([r for r in refs if "hyper" in r or r.startswith("license:")])
 
+    def write_manifest(self, directory, name):
+        manifest = dict(MOZ_YAML, origin=dict(MOZ_YAML["origin"], name=name))
+        del manifest["origin"]["npm-name"]
+        self.write(f"{directory}/moz.yaml", yaml.safe_dump(manifest))
+
+    def refs(self, document):
+        return {c["bom-ref"] for c in document["components"]}
+
+    def tooling_document(self, **kwargs):
+        return json.loads(
+            build_tooling_document(
+                self.topsrcdir,
+                self.topsrcdir,
+                Repo(self.topsrcdir),
+                version="155.0a1",
+                **kwargs,
+            )
+        )
+
+    def test_test_suites_leave_the_product_document(self):
+        self.write_manifest("third_party/googletest", "googletest")
+        self.write_manifest("dom/webgpu/tests/cts", "webgpu-cts")
+        product = self.refs(self.build())
+        self.assertIn("third_party/js/PKI.js", product)
+        self.assertNotIn("third_party/googletest", product)
+        self.assertNotIn("dom/webgpu/tests/cts", product)
+        tooling = self.refs(self.tooling_document())
+        self.assertIn("third_party/googletest", tooling)
+        self.assertIn("dom/webgpu/tests/cts", tooling)
+        self.assertNotIn("third_party/js/PKI.js", tooling)
+
     def test_rejected_arguments(self):
         output = os.path.join(self.topsrcdir, "sbom.json")
         for arguments in (

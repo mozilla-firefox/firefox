@@ -208,7 +208,11 @@ Components come from four sources, because none alone covers the tree:
 
 - **`moz.yaml` manifests** give a name, an upstream version and revision, a
   description, upstream URLs and a Bugzilla component, but only exist for
-  libraries that `mach vendor` manages.
+  libraries that `mach vendor` manages. A manifest under a `test`, `tests` or
+  `testing` directory, or under one of `TOOLING_PATHS` (`sbom.py`:
+  googletest, the WebKit benchmarks, the fuzzers and linters), describes a
+  test suite or a tool and goes to the
+  {ref}`build tooling document <build_tooling_sbom>`.
 - **`Cargo.lock`** describes `third_party/rust`, which `moz.yaml` does not:
   one component per third-party crate, with its exact version, a `pkg:cargo`
   package URL, the SHA-256 crates.io publishes for the `.crate` archive, and
@@ -387,6 +391,7 @@ It holds:
   `pnpm-lock.yaml` the closure of `devDependencies` less anything a runtime
   dependency already reaches. A package that both ship and build use is
   described by the product document only.
+- **The vendored test suites, benchmarks and tools** that have a `moz.yaml`.
 - **The test and tooling crates**, reached from the workspace only as dev
   dependencies or from a `TOOLING_MEMBERS` member, which the product document
   leaves out. Telling them apart needs `cargo metadata`, so an unconfigured

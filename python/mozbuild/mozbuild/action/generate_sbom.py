@@ -49,6 +49,28 @@ def _crate_records(topsrcdir, topobjdir, substs, log):
     return shipped, tooling, edges, kinds
 
 
+def _manifest_records(repo, topsrcdir, log):
+    """The moz.yaml records, split by whether they ship in the product.
+
+    Returns (shipped, tooling, errors). The vendored Python packages and the
+    test suites, benchmarks and fuzzers build or test the product rather than
+    ship in it.
+    """
+    from mozbuild.vendor.sbom import collect_records, is_tooling_path
+    from mozbuild.vendor.sbom_python import VENDOR_DIR as PYTHON_VENDOR_DIR
+
+    records, errors = collect_records(repo, topsrcdir, log=log)
+
+    shipped, tooling = [], []
+    for record in records:
+        directory = record["bom_ref"]
+        if directory.startswith(PYTHON_VENDOR_DIR + "/"):
+            # sbom_python describes these, vsdownload's moz.yaml included.
+            continue
+        (tooling if is_tooling_path(directory) else shipped).append(record)
+    return shipped, tooling, errors
+
+
 def _source_revision_and_time(repo):
     from mozbuild.vendor.sbom_cyclonedx import utc_timestamp
 
@@ -148,6 +170,12 @@ def build_tooling_document(
     records, dependencies = npm_records(topsrcdir, dev=True)
     log(f"{len(records)} npm packages that only build the bundles.")
 
+    _, manifests, errors = _manifest_records(repo, topsrcdir, log)
+    if errors and strict:
+        raise SbomError(f"{len(errors)} manifest(s) failed to load.")
+    records.extend(manifests)
+    log(f"{len(manifests)} vendored test, benchmark and tooling libraries.")
+
     # What mach, the build system and the test harnesses run on.
     packages, python_edges = python_records(topsrcdir)
     records.extend(packages)
@@ -221,7 +249,6 @@ def build_document(
     asks for a hard failure.
     """
     from mozbuild.vendor.sbom import (
-        collect_records,
         components_for_unmatched,
         load_license_notices,
         merge_license_notices,
@@ -233,21 +260,20 @@ def build_document(
         gradle_records,
     )
     from mozbuild.vendor.sbom_npm import npm_records, upgrade_manifest_purls
-    from mozbuild.vendor.sbom_python import VENDOR_DIR as PYTHON_VENDOR_DIR
 
     substs = substs or {}
     log = log or (lambda message: None)
 
-    records, errors = collect_records(repo, topsrcdir, log=log)
+    # The test suites, benchmarks and vendored Python packages build or test
+    # the product rather than ship in it; the build tooling document has them.
+    records, manifest_tooling, errors = _manifest_records(repo, topsrcdir, log)
     if errors and strict:
         raise SbomError(f"{len(errors)} manifest(s) failed to load.")
-    # The vendored Python packages, vsdownload's moz.yaml included, build the
-    # product rather than ship in it; the build tooling document has them.
-    records = [
-        record
-        for record in records
-        if not record["bom_ref"].startswith(PYTHON_VENDOR_DIR + "/")
-    ]
+    log(
+        f"{len(records)} vendored libraries; "
+        f"{len(manifest_tooling)} test and tooling libraries left to the build "
+        "tooling document."
+    )
 
     # A crate only tests or tools use ships in nothing; the build tooling
     # document has it.
@@ -316,7 +342,7 @@ def build_document(
                 records,
                 notices,
                 lambda path: os.path.isfile(os.path.join(topsrcdir, path)),
-                elsewhere=tooling,
+                elsewhere=manifest_tooling + tooling,
             )
         )
         product_notices = unattached_notices(records, notices)

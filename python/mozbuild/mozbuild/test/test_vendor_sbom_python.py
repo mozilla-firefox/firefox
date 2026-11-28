@@ -366,6 +366,11 @@ class TestBuildToolingDocument(PythonFixture):
         def get_commit_time(self):
             return 0
 
+        def get_tracked_files_finder(self, path):
+            from mozpack.files import FileFinder
+
+            return FileFinder(path)
+
     @mock.patch("mozbuild.vendor.sbom_cargo.collect_dependency_kinds", return_value={})
     def test_document(self, collect_dependency_kinds):
         from mozbuild.action.generate_sbom import build_tooling_document
