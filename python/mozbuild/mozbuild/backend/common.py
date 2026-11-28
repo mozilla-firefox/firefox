@@ -270,6 +270,7 @@ class CommonBackend(BuildBackend):
         self._generated_sources = set()
         self._l10n_manifest_data = []
         self._licenses = LicenseCollection()
+        self._traversed_dirs = set()
         self._xpi_archives = []
         self._computed_flags = defaultdict(list)
         # Collect Rust edges until all per directory flags are available.
@@ -416,6 +417,8 @@ class CommonBackend(BuildBackend):
 
     def consume_object(self, obj):
         self._configs.add(obj.config)
+        if relsrcdir := getattr(obj, "relsrcdir", None):
+            self._traversed_dirs.add(relsrcdir)
 
         # A duplicate id is only detectable once a second moz.build has been
         # read, so unlike the rest of the license validation this cannot happen
@@ -581,6 +584,11 @@ class CommonBackend(BuildBackend):
             json.dump(
                 {"licenses": self._licenses.records()}, fh, sort_keys=True, indent=2
             )
+        # The directories this configuration traverses, for the SBOM to tell a
+        # vendored library another platform builds from one this one does.
+        path = mozpath.join(self.environment.topobjdir, "sbom-inputs.json")
+        with self._write_file(path) as fh:
+            json.dump({"directories": sorted(self._traversed_dirs)}, fh, indent=2)
 
     def consume_finished(self):
         if len(self._idl_manager.modules):

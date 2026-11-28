@@ -212,7 +212,10 @@ Components come from four sources, because none alone covers the tree:
   `testing` directory, or under one of `TOOLING_PATHS` (`sbom.py`:
   googletest, the WebKit benchmarks, the fuzzers and linters), describes a
   test suite or a tool and goes to the
-  {ref}`build tooling document <build_tooling_sbom>`.
+  {ref}`build tooling document <build_tooling_sbom>`. A manifest none of
+  whose `moz.build` files that compile sources the configuration traverses
+  describes code another platform builds and is left out: pipewire on
+  Windows, perfetto off Android.
 - **`Cargo.lock`** describes `third_party/rust`, which `moz.yaml` does not:
   one component per third-party crate, with its exact version, a `pkg:cargo`
   package URL, the SHA-256 crates.io publishes for the `.crate` archive, and

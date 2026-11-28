@@ -296,6 +296,27 @@ class TestBuildDocument(unittest.TestCase):
                 self.refs(self.tooling_document(substs=substs)),
             )
 
+    def test_libraries_for_other_platforms_leave_the_product_document(self):
+        for directory in (
+            "third_party/pipewire",
+            "third_party/libwebrtc",
+            "third_party/application-services",
+            "third_party/js/prosemirror",
+        ):
+            self.write_manifest(directory, directory)
+            self.write(f"{directory}/libs/moz.build", "SOURCES += []")
+        self.write("third_party/js/prosemirror/libs/moz.build", "")
+        self.write("third_party/application-services/libs/Cargo.toml", "")
+        inputs = {"directories": ["third_party/libwebrtc/libs"]}
+        self.write("sbom-inputs.json", json.dumps(inputs))
+        self.assertIn("third_party/pipewire", self.refs(self.build()))
+
+        product = self.refs(self.build(substs={"COMPILE_ENVIRONMENT": "1"}))
+        self.assertNotIn("third_party/pipewire", product)
+        self.assertIn("third_party/libwebrtc", product)
+        self.assertIn("third_party/application-services", product)
+        self.assertIn("third_party/js/prosemirror", product)
+
     def test_rejected_arguments(self):
         output = os.path.join(self.topsrcdir, "sbom.json")
         for arguments in (

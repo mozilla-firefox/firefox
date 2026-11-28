@@ -385,6 +385,7 @@ if CONFIG["MOZ_GENERATE_SBOM"]:
     # regenerating a document only the builds that ask for it produce.
     sbom_deps = [
         "!/licenses.json",
+        "!/sbom-inputs.json",
         "!/.cargo/config.toml",
         "/Cargo.lock",
     ]

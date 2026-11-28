@@ -2936,6 +2936,13 @@ class TestRecursiveMakeBackend(BackendTester):
         self.assertEqual(mylib["acknowledgement"], "Portions are copyright Somebody.")
         self.assertIsNone(mit["acknowledgement"])
 
+    def test_sbom_inputs_json(self):
+        """The traversed directories are listed for the SBOM."""
+        env = self._consume("licenses", RecursiveMakeBackend)
+
+        with open(mozpath.join(env.topobjdir, "sbom-inputs.json")) as fh:
+            self.assertIn("lib", json.load(fh)["directories"])
+
 
 if __name__ == "__main__":
     main()
