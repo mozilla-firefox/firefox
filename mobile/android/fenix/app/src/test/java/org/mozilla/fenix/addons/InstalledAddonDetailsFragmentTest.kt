@@ -81,10 +81,9 @@ class InstalledAddonDetailsFragmentTest {
     }
 
     @Test
-    fun `GIVEN add-on is supported and not disabled WHEN enabling it THEN the add-on is requested by the user`() {
+    fun `GIVEN add-on is not disabled as unsupported WHEN enabling it THEN the add-on is requested by the user`() {
         val addon = mockk<Addon>()
         every { addon.isDisabledAsUnsupported() } returns false
-        every { addon.isSupported() } returns true
         every { fragment.addon } returns addon
         every { addonManager.enableAddon(any(), any(), any(), any()) } just Runs
 
@@ -94,10 +93,9 @@ class InstalledAddonDetailsFragmentTest {
     }
 
     @Test
-    fun `GIVEN add-on is supported and disabled as previously unsupported WHEN enabling it THEN the add-on is requested by both the app and the user`() {
+    fun `GIVEN add-on is disabled as unsupported WHEN enabling it THEN the add-on is requested by both the app and the user`() {
         val addon = mockk<Addon>()
         every { addon.isDisabledAsUnsupported() } returns true
-        every { addon.isSupported() } returns true
         every { fragment.addon } returns addon
         val capturedAddon = slot<Addon>()
         val capturedOnSuccess = slot<(Addon) -> Unit>()
@@ -193,7 +191,6 @@ class InstalledAddonDetailsFragmentTest {
     fun `GIVEN enabling fails WHEN tapping retry on the snackbar THEN the enable is attempted again`() {
         val addon = mockAddon()
         every { addon.isEnabled() } returns false
-        every { addon.isSupported() } returns true
         every { addon.isDisabledAsUnsupported() } returns false
         setUpFragmentForAddon(addon)
         every {
@@ -219,7 +216,6 @@ class InstalledAddonDetailsFragmentTest {
     fun `GIVEN enabling fails WHEN the addon is enabled again before tapping retry THEN the enable is not attempted again`() {
         val addon = mockAddon()
         every { addon.isEnabled() } returns false
-        every { addon.isSupported() } returns true
         every { addon.isDisabledAsUnsupported() } returns false
         setUpFragmentForAddon(addon)
         every {

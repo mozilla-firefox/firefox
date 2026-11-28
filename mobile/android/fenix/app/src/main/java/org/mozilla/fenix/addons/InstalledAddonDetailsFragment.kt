@@ -343,9 +343,9 @@ class InstalledAddonDetailsFragment : Fragment(), SystemInsetsPaddedFragment {
         onSuccess: (Addon) -> Unit,
         onError: (Throwable) -> Unit,
     ) {
-        // If the addon is migrated from Fennec and supported in Fenix, for the addon to be enabled,
+        // If the addon was disabled as unsupported by the Fennec migration, for the addon to be enabled,
         // we need to also request the addon to be enabled as supported by the app
-        if (addon.isSupported() && addon.isDisabledAsUnsupported()) {
+        if (addon.isDisabledAsUnsupported()) {
             addonManager.enableAddon(
                 addon,
                 EnableSource.APP_SUPPORT,
