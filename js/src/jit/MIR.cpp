@@ -6778,6 +6778,12 @@ MDefinition::AliasType MLoadFixedSlotAndUnbox::mightAlias(
   return AliasType::MayAlias;
 }
 
+HashNumber MLoadFixedSlotAndUnbox::valueHash() const {
+  HashNumber hash = MUnaryInstruction::valueHash();
+  hash = addU32ToHash(hash, slot());
+  return hash;
+}
+
 MDefinition* MLoadFixedSlotAndUnbox::foldsTo(TempAllocator& alloc) {
   if (MDefinition* def = foldsToStore(alloc)) {
     return def;
@@ -6815,6 +6821,12 @@ MDefinition* MLoadDynamicSlot::foldsTo(TempAllocator& alloc) {
   }
 
   return this;
+}
+
+HashNumber MLoadDynamicSlotAndUnbox::valueHash() const {
+  HashNumber hash = MUnaryInstruction::valueHash();
+  hash = addU32ToHash(hash, slot());
+  return hash;
 }
 
 #ifdef JS_JITSPEW
