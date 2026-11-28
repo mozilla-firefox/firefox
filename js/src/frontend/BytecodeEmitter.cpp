@@ -295,6 +295,8 @@ bool BytecodeEmitter::checkStrictOrSloppy(JSOp op) const {
 bool BytecodeEmitter::emit1(JSOp op) {
   MOZ_ASSERT(checkStrictOrSloppy(op));
   MOZ_ASSERT(GetOpLength(op) == 1);
+  MOZ_ASSERT_IF(op == JSOp::GetRval || op == JSOp::SetRval,
+                !sc->noScriptRval());
 
   BytecodeOffset offset;
   if (!emitCheck(op, 1, &offset)) {

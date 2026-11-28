@@ -6096,8 +6096,9 @@ bool BaselineCodeGen<Handler>::emit_IsNullOrUndefined() {
 
 template <typename Handler>
 bool BaselineCodeGen<Handler>::emit_GetRval() {
-  frame.syncStack(0);
+  MOZ_ASSERT_IF(handler.maybeScript(), !handler.maybeScript()->noScriptRval());
 
+  frame.syncStack(0);
   emitLoadReturnValue(R0);
 
   frame.push(R0);
@@ -6106,6 +6107,8 @@ bool BaselineCodeGen<Handler>::emit_GetRval() {
 
 template <typename Handler>
 bool BaselineCodeGen<Handler>::emit_SetRval() {
+  MOZ_ASSERT_IF(handler.maybeScript(), !handler.maybeScript()->noScriptRval());
+
   // Store to the frame's return value slot.
   frame.storeStackValue(-1, frame.addressOfReturnValue(), R2);
   masm.or32(Imm32(BaselineFrame::HAS_RVAL), frame.addressOfFlags());

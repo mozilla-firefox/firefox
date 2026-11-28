@@ -2460,6 +2460,9 @@
      * generators, async functions, and derived class constructors. Plain
      * functions usually use `JSOp::Return` instead.
      *
+     * This instruction must not be used in a toplevel script compiled with the
+     * `noScriptRval` option.
+     *
      *   Category: Control flow
      *   Type: Return
      *   Operands:

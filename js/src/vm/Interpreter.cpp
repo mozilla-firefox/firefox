@@ -2104,10 +2104,16 @@ bool MOZ_NEVER_INLINE JS_HAZ_JSNATIVE_CALLER js::Interpret(JSContext* cx,
     }
     END_CASE(DupAt)
 
-    CASE(SetRval) { POP_RETURN_VALUE(); }
+    CASE(SetRval) {
+      MOZ_ASSERT(!script->noScriptRval());
+      POP_RETURN_VALUE();
+    }
     END_CASE(SetRval)
 
-    CASE(GetRval) { PUSH_COPY(REGS.fp()->returnValue()); }
+    CASE(GetRval) {
+      MOZ_ASSERT(!script->noScriptRval());
+      PUSH_COPY(REGS.fp()->returnValue());
+    }
     END_CASE(GetRval)
 
     CASE(EnterWith) {
