@@ -443,6 +443,18 @@ class nsBlockFrame : public nsContainerFrame {
     AddStateBits(NS_BLOCK_HAS_LINE_CURSOR);
   }
 
+  void SetLineCursorForQuery(nsLineBox* aLine) {
+    MOZ_ASSERT(aLine, "must have a line");
+    MOZ_ASSERT(!mLines.empty(), "aLine isn't my line");
+    SetProperty(LineCursorPropertyQuery(), aLine);
+    AddStateBits(NS_BLOCK_HAS_LINE_CURSOR);
+  }
+
+  // Looks for aFrame on aNearLine, one of our normal lines, and on the lines
+  // next to it, and sets aLine to that line if found.
+  bool FindLineNear(nsLineBox* aNearLine, const nsIFrame* aFrame,
+                    LineIterator* aLine);
+
   nsLineBox* NewLineBox(nsIFrame* aFrame, bool aIsBlock) {
     return NS_NewLineBox(aFrame, aIsBlock);
   }

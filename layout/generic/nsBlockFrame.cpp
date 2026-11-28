@@ -8047,6 +8047,28 @@ bool nsBlockInFlowLineIterator::FindValidLine() {
   }
 }
 
+bool nsBlockFrame::FindLineNear(nsLineBox* aNearLine, const nsIFrame* aFrame,
+                                LineIterator* aLine) {
+  LineIterator line = LinesBeginFrom(aNearLine);
+  if (line->Contains(aFrame)) {
+    *aLine = line;
+    return true;
+  }
+  LineIterator next = line.next();
+  if (next != LinesEnd() && next->Contains(aFrame)) {
+    *aLine = next;
+    return true;
+  }
+  if (line != LinesBegin()) {
+    LineIterator prev = line.prev();
+    if (prev->Contains(aFrame)) {
+      *aLine = prev;
+      return true;
+    }
+  }
+  return false;
+}
+
 // This function removes aDeletedFrame and all its continuations.  It
 // is optimized for deleting a whole series of frames. The easy
 // implementation would invoke itself recursively on
@@ -8061,27 +8083,37 @@ void nsBlockFrame::DoRemoveFrame(DestroyContext& aContext,
              "DoRemoveFrame() does not support removing out-of-flow frames or "
              "overflow containers!");
 
-  // Find the line that contains deletedFrame. Start from the line cursor
-  // (if available) and search to the end of the normal line list, then
-  // from the start to the line cursor, and last the overflow lines.
+  // Find the line that contains aDeletedFrame. Siblings tend to be removed one
+  // after the other, e.g. when a run of them is reframed, so start around the
+  // line of the previous removal, if we left it in the query cursor. Failing
+  // that, search from the display cursor (if available) to the end of the
+  // normal line list, then from the start to the display cursor, and last the
+  // overflow lines.
   nsLineList::iterator line_start = mLines.begin(), line_end = mLines.end();
   nsLineList::iterator line = line_start;
 
-  // We use the line cursor to attempt to optimize removal, but must ensure
+  nsLineBox* const queryCursor = GetLineCursorForQuery();
+  const bool hadQueryCursor = queryCursor;
+  bool found = queryCursor && FindLineNear(queryCursor, aDeletedFrame, &line);
+  int32_t linesSearched = 0;
+
+  // We use the display cursor to attempt to optimize removal, but must ensure
   // it is cleared if lines change such that it may become invalid.
-  bool found = false;
-  if (nsLineBox* cursor = GetLineCursorForDisplay()) {
-    for (line.SetPosition(cursor); line != line_end; ++line) {
-      if (line->Contains(aDeletedFrame)) {
-        found = true;
-        break;
+  if (!found) {
+    if (nsLineBox* cursor = GetLineCursorForDisplay()) {
+      for (line.SetPosition(cursor); line != line_end; ++line) {
+        ++linesSearched;
+        if (line->Contains(aDeletedFrame)) {
+          found = true;
+          break;
+        }
       }
-    }
-    if (!found) {
-      // Setup for a shorter TryAllLines normal line search to avoid searching
-      // the [cursor .. line_end] range again.
-      line = line_start;
-      line_end.SetPosition(cursor);
+      if (!found) {
+        // Setup for a shorter TryAllLines normal line search to avoid
+        // searching the [cursor .. line_end] range again.
+        line = line_start;
+        line_end.SetPosition(cursor);
+      }
     }
   }
 
@@ -8093,6 +8125,7 @@ void nsBlockFrame::DoRemoveFrame(DestroyContext& aContext,
     TryAllLines(&line, &line_start, &line_end, &searchingOverflowList,
                 &overflowLines);
     while (line != line_end) {
+      ++linesSearched;
       if (line->Contains(aDeletedFrame)) {
         break;
       }
@@ -8294,6 +8327,16 @@ void nsBlockFrame::DoRemoveFrame(DestroyContext& aContext,
   if (!(aFlags & FRAMES_ARE_EMPTY) && line.next() != line_end) {
     line.next()->MarkDirty();
     line.next()->SetInvalidateTextRuns(true);
+  }
+
+  // Keeping the query cursor up to date only pays off when it's already in use,
+  // or when the next removal could otherwise take a long search too.
+  if (!searchingOverflowList && !mLines.empty() &&
+      (hadQueryCursor || linesSearched >= MIN_LINES_NEEDING_CURSOR)) {
+    nsLineBox* changedLine = line != mLines.end() ? line.get() : mLines.back();
+    if (changedLine != GetLineCursorForQuery()) {
+      SetLineCursorForQuery(changedLine);
+    }
   }
 
 #ifdef DEBUG
