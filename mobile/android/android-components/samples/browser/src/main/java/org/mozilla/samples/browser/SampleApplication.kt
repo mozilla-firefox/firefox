@@ -115,7 +115,6 @@ class SampleApplication : Application() {
                 onUpdatePermissionRequest = components.addonUpdater::onUpdatePermissionRequest,
                 onExtensionsLoaded = { extensions ->
                     components.addonUpdater.registerForFutureUpdates(extensions)
-                    components.supportedAddonsChecker.registerForChecks()
                 },
             )
         } catch (e: UnsupportedOperationException) {

@@ -20,6 +20,7 @@ permalink: /changelog/
   * 🆕 Added `SecureTextField`, an outlined text field for password input that masks its text through a `TextObfuscationMode`. [Bug 2094916](https://bugzilla.mozilla.org/show_bug.cgi?id=2094916)
 * **feature-addons**
   * ⚠️ **Breaking change**: Removed the "Not yet supported" section of the add-ons manager, which is no longer shown since no add-on is marked as unsupported. Removed `UnsupportedAddonsAdapter`, `UnsupportedAddonsAdapterDelegate`, `CustomViewHolder.UnsupportedSectionViewHolder` and `AddonsManagerAdapterDelegate.onNotYetSupportedSectionClicked`. Installed add-ons are now listed in the enabled or disabled section whether or not they are supported. [Bug 2095972](https://bugzilla.mozilla.org/show_bug.cgi?id=2095972)
+  * ⚠️ **Breaking change**: Removed `SupportedAddonsChecker` and `DefaultSupportedAddonsChecker`, which registered add-ons disabled as unsupported for updates. Nothing disables add-ons as unsupported any more. Apps that scheduled the checker should cancel the unique work named `mozilla.components.feature.addons.migration.DefaultSupportedAddonsChecker.periodicWork`. [Bug 2095973](https://bugzilla.mozilla.org/show_bug.cgi?id=2095973)
 * **feature-toolbar**
   * ⚠️ **Breaking change**: Removed `ContainerToolbarFeature` and `ContainerToolbarAction` with their colors. Their container icons moved to **feature-containers** as `mozac_feature_containers_ic_*`. [Bug 2097984](https://bugzilla.mozilla.org/show_bug.cgi?id=2097984)
 * **concept-engine**
