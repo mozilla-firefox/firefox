@@ -510,7 +510,7 @@
   <!-- Title of the preference to enable "HTTPS-Only" mode -->
   <string name="preference_https_only_title">HTTPS-පමණි ප්‍රකාරය</string>
   <!-- Description of the preference to enable "HTTPS-Only" mode. -->
-  <string name="preference_https_only_summary3">ඉහළ ආරක්‍ෂාවක් සඳහා HTTPS සංකේතන කෙටුම්පත භාවිතයෙන් අඩවි වෙත ස්වයංක්‍රීයව සම්බන්ධ වීමට තැත් කරයි.</string>
+  <string name="preference_https_only_summary3">ඉහළ ආරක්‍ෂාවක් සඳහා HTTPS සංකේතන කෙටුම්පත භාවිතයෙන් අඩවි වෙත ස්වයංක්‍රියව සම්බන්ධ වීමට තැත් කරයි.</string>
   <!-- Preference for exceptions tracking protection -->
   <string name="preference_exceptions">හැරදැමීම්</string>
   <!-- Description for the exceptions preference screen -->

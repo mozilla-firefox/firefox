@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<resources>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="mozac_menu_customize_reset_dialog_title">صفّر إلى القائمة المبدئية؟</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="mozac_menu_customize_reset_dialog_message">يؤدي هذا إلى إزالة التخصيصات ولا يمكن التراجع عنه.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="mozac_menu_customize_reset_dialog_reset">صفّر</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="mozac_menu_customize_reset_dialog_cancel">ألغِ</string>
+  <!-- Instruction text telling the user they can reorder menu items by dragging them -->
+  <string name="mozac_menu_customize_drag_items_to_reorder">اسحب العناصر لإعادة ترتيبها</string>
+  <!-- Header text for the section containing menu items the user removed from the menu -->
+  <string name="mozac_menu_customize_hidden_items">العناصر المخفية</string>
+  <!-- Instruction telling the user that menu items dragged to the Hidden items area will no longer appear on the menu -->
+  <string name="mozac_menu_customize_drag_items_to_hide">اسحب العناصر إلى هنا لإخفائها</string>
+  <!-- Customize menu screen: Name of the action, read by screen readers, for opening the screen where the items of a menu section can be changed. -->
+  <string name="mozac_menu_customize_edit_items">حرّر عناصر القائمة</string>
+</resources>

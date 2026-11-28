@@ -1982,6 +1982,10 @@
   <string name="debug_drawer_tab_tools_tab_quantity_empty_error">متن نا خانہ خالی اے</string>
   <!-- The privacy notice link -->
   <string name="micro_survey_privacy_notice_2">رازداری نا نوٹس</string>
+  <!-- Option for likert scale -->
+  <string name="likert_scale_option_slow_or_buggy" tools:ignore="UnusedResources">دا سست اے یا ردی ارے</string>
+  <!-- Uninstall survey answer option -->
+  <string name="uninstall_survey_option_1_v2">دا سست یا بے بھروسہ اے</string>
   <!-- Uninstall survey answer option -->
   <string name="uninstall_survey_option_6_v2">رازداری یا حفاظت نا فکراک</string>
   <!-- Content description for the survey feature icon. -->

@@ -2145,6 +2145,8 @@
   <string name="unsubmitted_crash_dialog_learn_more">تەپسىلاتى</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">تەپسىلاتى</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">تەپسىلاتى</string>
   <!--
     Bookmarks
 
@@ -2470,6 +2472,10 @@
   <string name="sync_send_to_all">ھەممە ئۈسكۈنىگە يوللا</string>
   <!-- An option from the share dialog to reconnect to sync -->
   <string name="sync_reconnect">قەدەمداشقا قايتا باغلىنىدۇ</string>
+  <!-- Label for the button in the share dialog that sends the tab to the selected sync devices -->
+  <string name="sync_send_to_selected_devices">يوللا</string>
+  <!-- Content description announced when a device is selected in the share dialog -->
+  <string name="send_to_devices_device_selected_content_description">تاللانغان</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
   <string name="sync_offline">تورسىز</string>
   <!-- An option to connect additional devices -->
@@ -2502,10 +2508,14 @@
   <string name="sync_send_tab_empty_state_title">ھېچقانداق ئۈسكۈنە باغلانمىدى</string>
   <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">ئاز دېگەندە بىر ئۈسكۈنىدە Firefox تىزىمغا كىرگەندە ئاندىن بەتكۈچ يوللىيالايدۇ.</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">ئۈسكۈنىنى قانداق باغلاشنى ئۆگىتىدۇ</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">ئىنتېرنېت باغلىنىشىڭىزنى تەكشۈرۈڭ</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
   <string name="sync_send_tab_error_connection_text">ئاندىن بەتكۈچنى قايتا يوللاشنى سىناڭ.</string>
+  <!-- Send tab to synced devices: Connectivity Error button - When tapped, refreshes the list of connected devices. -->
+  <string name="sync_send_tab_error_connection_button">قايتا سىنا</string>
   <!--
     Notifications
 
@@ -2568,6 +2578,12 @@
   <string name="snackbar_private_tab_closed">شەخسىي بەتكۈچ تاقالدى</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">يېنىۋال</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">%1$s غا قوشۇلدى</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">%1$s غا يۆتكەلدى</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">كۆرۈنۈش</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -2686,6 +2702,12 @@
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[ھېساباتىڭىز يوق؟ <u> Firefox نى ئۈسكۈنىلەر ئارا قەدەمداشلاش ئۈچۈن بىرنى قۇرۇڭ </u>.]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
   <string name="sign_out_confirmation_message_2">%s ھېساباتىڭىز بىلەن قەدەمداشلاشنى توختىتىدۇ، ئەمما بۇ ئۈسكۈنىدىكى توركۆرگۈ سانلىق مەلۇماتلىرىڭىزنى ئۆچۈرمەيدۇ.</string>
+  <!-- Title of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_title">ھېسابىڭىزدىن تىزىمدىن چىقامدۇ؟</string>
+  <!-- Body of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_message">قەدەمداشلانغان سانلىق مەلۇمات ھېسابىڭىزدا ساقلىنىدۇ.</string>
+  <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_confirm_button">تىزىمدىن چىق</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
   <string name="sign_out_disconnect">ئۇلانمىنى ئۈز</string>
   <!-- Option to cancel signing out shown in confirmation dialog to sign out of account -->
@@ -3118,6 +3140,8 @@
   <string name="ip_protection_learn_more">تەپسىلاتى</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
   <string name="ip_protection_data_limit_label">ئايلىق سانلىق مەلۇمات چەكلىمىسى</string>
+  <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
+  <string name="ip_protection_settings_message_dismiss">بولدىلا</string>
   <!--
     Data usage shown on the browser VPN settings screen.
     %1$.1f is the data remaining in GB (for example "8.3").
@@ -3185,6 +3209,13 @@
     %2$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
   <string name="ip_protection_onboarding_body_promo">زىيارەتنى تېخىمۇ مەخپىي ۋە ئىزلاشنى تەسلەشتۈرۈش ئۈچۈن ئۇنى ئېچىڭ. %1$s غىچە چەكسىز تور ئېقىمىغا ئېرىشىش ئۈچۈن ھازىر سىناڭ. %2$s</string>
+  <!--
+    The body of the VPN onboarding card when the user qualifies for using VPN without signing in to a Mozilla account
+    %1$d is the amount of free data in GB available without signing in (for example "5").
+    %2$d is the amount of data in GB available after signing in (for example "50").
+    %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
+  -->
+  <string name="ip_protection_onboarding_body_no_fxa">ئۇ ئېچىلسا توركۆرگۈڭىزنى تېخىمۇ شەخسىي ۋە ئىزلاشنى تەسلەشتۈرىدۇ. ھازىر سىنىسىڭىز %1$d GB ھەقسىز ئېقىم بار ياكى تىزىمغا كىرسە %2$d GB ئېقىم بار. %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">تەپسىلاتى</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
@@ -3244,6 +3275,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">چىقىم قىلىش ئۇسۇلىنى ساقلاپ ۋە تولدۇرىدۇ</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">سىز ساقلىغان بارلىق چىقىم قىلىش ئۇسۇللىرىنى %s شىفىرلايدۇ</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">بىخەتەرلىك كودىنى ساقلا</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">كەلگۈسىدە چىقىم قىلىشنى تېزلىتىش ئۈچۈن %s كارتا نومۇرىڭىز ۋە بىخەتەرلىك كودىنى شىفىرلايدۇ</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">كارتىنى ئۈسكۈنىلەر ئارا قەدەمداشلايدۇ</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3280,6 +3315,8 @@
   <string name="credit_cards_expiration_date_year">مۇددىتى توشىدىغان چېسلا يىل</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">كارتىدىكى ئىسىم</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (تاللاشچان)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">كارتىنى ئۆچۈر</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3296,10 +3333,16 @@
   <string name="credit_cards_cancel_button">ۋاز كەچ</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">ساقلانغان كارتا</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV ساقلاندى</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">ئىناۋەتلىك كارتا نومۇرى كىرگۈزۈلىدۇ</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">ئات قوش</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">بىخەتەرلىك كودى چوقۇم 3 خانىلىق بولۇشى كېرەك</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">American Express نىڭ بىخەتەرلىك كودى 4 خانىلىق</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">ساقلانغان كارتىلىرىڭىزنى كۆرۈش ئۈچۈن قۇلۇپ ئېچىڭ</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3310,6 +3353,10 @@
   <string name="credit_cards_warning_dialog_set_up_now">ھازىر تەڭشە</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">كېيىنچە</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">سەزگۈر سانلىق مەلۇماتىڭىزنى بىخەتەر قىلىدۇ</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">باشقا بىرسى ماشىنىڭىزنى ھەيدىگەندە ساقلانغان سەزگۈر ئۇچۇرلىرىڭىزنى قوغداش ئۈچۈن ئۈسكۈنە قۇلۇپلاش ئەندىزىسى، PIN ياكى ئىم تەڭشەڭ.</string>
   <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
   <string name="automotive_authentication_setup_dialog_set_up_now">ھازىر تەڭشە</string>
   <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->

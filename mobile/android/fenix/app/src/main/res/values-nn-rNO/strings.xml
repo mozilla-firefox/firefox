@@ -4571,7 +4571,7 @@
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Utsett</string>
   <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
-  <string name="wrex_widget_match_canceled">Avbrote</string>
+  <string name="wrex_widget_match_canceled">Avlyst</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">Oppdater</string>
   <!-- Sports widget menu item to view the team's match results. -->

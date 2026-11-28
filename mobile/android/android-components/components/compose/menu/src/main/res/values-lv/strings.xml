@@ -26,7 +26,7 @@
   <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
   <string name="mozac_menu_customize_reset_dialog_title">Atiestatīt uz noklusējuma izvēlni?</string>
   <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
-  <string name="mozac_menu_customize_reset_dialog_message">Tādējādi tiks noņemti visi pielāgojumi, un šo darbību nevarēs atsaukt.</string>
+  <string name="mozac_menu_customize_reset_dialog_message">Tas noņemts visus pielāgojumus, un to nevar atsaukt.</string>
   <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
   <string name="mozac_menu_customize_reset_dialog_reset">Atiestatīt</string>
   <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
@@ -52,11 +52,11 @@
   <!-- Announcement (not visible, for screen readers etc.) once the user showed a hidden menu section in the menu again in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
   <string name="mozac_menu_customize_section_shown">Sadaļa “%1$s” pievienota izvēlnei</string>
   <!-- Instruction text telling the user they can reorder menu items by dragging them -->
-  <string name="mozac_menu_customize_drag_items_to_reorder">Velciet vienumus, lai mainītu secību</string>
+  <string name="mozac_menu_customize_drag_items_to_reorder">Vilkt vienumus, lai pārkārtotu</string>
   <!-- Header text for the section containing menu items the user removed from the menu -->
-  <string name="mozac_menu_customize_hidden_items">Slēptie vienumi</string>
+  <string name="mozac_menu_customize_hidden_items">Paslēptie vienumi</string>
   <!-- Instruction telling the user that menu items dragged to the Hidden items area will no longer appear on the menu -->
-  <string name="mozac_menu_customize_drag_items_to_hide">Velciet vienumus šeit, lai paslēptu</string>
+  <string name="mozac_menu_customize_drag_items_to_hide">Vilkt vienumus šeit, lai paslēptu</string>
   <!-- Customize menu screen: Name of the action, read by screen readers, for opening the screen where the items of a menu section can be changed. -->
-  <string name="mozac_menu_customize_edit_items">Rediģēt izvēlnes vienumus</string>
+  <string name="mozac_menu_customize_edit_items">Pielāgot izvēlnes vienumus</string>
 </resources>

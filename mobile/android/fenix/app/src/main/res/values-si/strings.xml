@@ -70,7 +70,7 @@
 
     Text for the info message. %1$s is the name of the app (for example "Firefox").
   -->
-  <string name="open_in_app_cfr_info_message_2">යෙදුම්වල සබැඳි ස්වයංක්‍රීයව විවෘත වීමට %1$s සැකසීමට හැකිය.</string>
+  <string name="open_in_app_cfr_info_message_2">යෙදුම්වල සබැඳි ස්වයංක්‍රියව විවෘත වීමට %1$s සැකසීමට හැකිය.</string>
   <!-- Text for the positive action button -->
   <string name="open_in_app_cfr_positive_button_text">සැකසුම් වෙත යන්න</string>
   <!-- Text for the negative action button -->
@@ -82,7 +82,7 @@
   <!-- Text for the negative action button to dismiss the dialog. -->
   <string name="camera_permissions_needed_negative_button_text">ඉවතලන්න</string>
   <!-- Text for the banner message to tell users about our auto close feature. -->
-  <string name="tab_tray_close_tabs_banner_message">පසුගිය දවස, සතිය, හෝ මාසය තුළ නොබැලූ විවෘත පටිති ස්වයංක්‍රීයව වැසීමට සකසන්න.</string>
+  <string name="tab_tray_close_tabs_banner_message">පසුගිය දවස, සතිය, හෝ මාසය තුළ නොබැලූ විවෘත පටිති ස්වයංක්‍රියව වැසීමට සකසන්න.</string>
   <!-- Text for the positive action button to go to Settings for auto close tabs. -->
   <string name="tab_tray_close_tabs_banner_positive_button_text">විකල්ප බලන්න</string>
   <!-- Text for the negative action button to dismiss the Close Tabs Banner. -->
@@ -92,7 +92,7 @@
   <!-- Text for the action link to go to Settings for inactive tabs. -->
   <string name="tab_tray_inactive_onboarding_button_text">සැකසුම් තුළ අක්‍රිය කරන්න</string>
   <!-- Text for title for the auto-close dialog of the inactive tabs. -->
-  <string name="tab_tray_inactive_auto_close_title">මාසයකට පසු ස්වයංක්‍රීයව වසන්නද?</string>
+  <string name="tab_tray_inactive_auto_close_title">මාසයකට පසු ස්වයංක්‍රියව වසන්නද?</string>
   <!--
     Text for the body for the auto-close dialog of the inactive tabs.
     %1$s is the name of the app (for example "Firefox").
@@ -275,7 +275,7 @@
   -->
   <string name="onboarding_home_content_description_close_button">වසන්න</string>
   <!-- Title for the crash reporting option in the privacy preferences dialog shown during onboarding. -->
-  <string name="onboarding_preferences_dialog_crash_reporting_title">බිඳවැටුම් වාර්තා ස්වයංක්‍රීයව යවන්න</string>
+  <string name="onboarding_preferences_dialog_crash_reporting_title">බිඳවැටුම් වාර්තා ස්වයංක්‍රියව යවන්න</string>
   <!-- Learn more link for the crash reporting option in the privacy preferences dialog shown during onboarding. -->
   <string name="onboarding_preferences_dialog_crash_reporting_learn_more_2">තව දැනගන්න</string>
   <string name="onboarding_preferences_dialog_usage_data_learn_more_2">තව දැනගන්න</string>
@@ -351,7 +351,7 @@
   <!-- Preference for enabling "HTTPS-Only" mode -->
   <string name="preferences_https_only_title">HTTPS-පමණි ප්‍රකාරය</string>
   <!-- Description of the preference to enable "HTTPS-Only" mode. -->
-  <string name="preferences_https_only_summary">ඉහළ ආරක්‍ෂාවක් සඳහා HTTPS සංකේතන කෙටුම්පත භාවිතයෙන් අඩවි වෙත ස්වයංක්‍රීයව සම්බන්ධ වීමට තැත් කරයි.</string>
+  <string name="preferences_https_only_summary">ඉහළ ආරක්‍ෂාවක් සඳහා HTTPS සංකේතන කෙටුම්පත භාවිතයෙන් අඩවි වෙත ස්වයංක්‍රියව සම්බන්ධ වීමට තැත් කරයි.</string>
   <!-- Summary of https only preference if https only is set to off -->
   <string name="preferences_https_only_off">අක්‍රිය</string>
   <!-- Summary of https only preference if https only is set to on in all tabs -->
@@ -868,7 +868,7 @@
   <!-- Restore tab button text on the tab crash page -->
   <string name="tab_crash_restore">පටිත්ත ප්‍රත්‍යර්පණය</string>
   <!-- Unsubmitted crash dialog checkbox label for automatically sending reports in the future -->
-  <string name="unsubmitted_crash_dialog_checkbox_label">බිඳවැටුම් වාර්තා ස්වයංක්‍රීයව යවන්න</string>
+  <string name="unsubmitted_crash_dialog_checkbox_label">බිඳවැටුම් වාර්තා ස්වයංක්‍රියව යවන්න</string>
   <!-- Unsubmitted crash dialog negative button to dismiss the dialog -->
   <string name="unsubmitted_crash_dialog_negative_button">වසන්න</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
@@ -1200,7 +1200,7 @@
   <!-- Title for Accessibility Text Size Scaling Preference -->
   <string name="preference_accessibility_font_size_title">අකුරේ තරම</string>
   <!-- Title for Accessibility Text Automatic Size Scaling Preference -->
-  <string name="preference_accessibility_auto_size_2">ස්වයංක්‍රීය අකුරු ප්‍රමාණනය</string>
+  <string name="preference_accessibility_auto_size_2">ස්වයංක්‍රිය අකුරු ප්‍රමාණනය</string>
   <!-- Summary for Accessibility Text Automatic Size Scaling Preference -->
   <string name="preference_accessibility_auto_size_summary">අකුරු ප්‍රමාණය ඔබගේ ඇන්ඩ්‍රොයිඩ් සැකසුම් වලට ගළපනු ඇත. මෙහි අකුරු ප්‍රමාණය කළමනාකරණයට අබල කරන්න.</string>
   <!-- Title for the Delete browsing data preference -->
@@ -1237,7 +1237,7 @@
   <!-- Title for the Delete browsing data on quit preference -->
   <string name="preferences_delete_browsing_data_on_quit">ඉවත් වීමේදී පිරික්සුම් දත්ත මකන්න</string>
   <!-- Summary for the Delete browsing data on quit preference. "Quit" translation should match delete_browsing_data_on_quit_action translation. -->
-  <string name="preference_summary_delete_browsing_data_on_quit_2">ඔබ ප්‍රධාන වට්ටෝරුවෙන් \"ඉවත් වන්න\" තේරූ විට පිරික්සුම් දත්ත ස්වයංක්‍රීයව මකා දමයි</string>
+  <string name="preference_summary_delete_browsing_data_on_quit_2">ඔබ ප්‍රධාන වට්ටෝරුවෙන් “ඉවත් වන්න” තේරූ විට පිරික්සුම් දත්ත ස්වයංක්‍රියව මකා දමයි</string>
   <!-- Title text of a delete browsing data dialog. -->
   <string name="delete_history_prompt_title">මකා දමන කාල පරාසය</string>
   <!-- Body text of a delete browsing data dialog. -->
@@ -1764,7 +1764,7 @@
 
     The header text of the auto-close message when the user is asked if they want to turn on the auto-closing of inactive tabs.
   -->
-  <string name="inactive_tabs_auto_close_message_header" tools:ignore="UnusedResources">මාසයකට පසු ස්වයංක්‍රීයව වසන්නද?</string>
+  <string name="inactive_tabs_auto_close_message_header" tools:ignore="UnusedResources">මාසයකට පසු ස්වයංක්‍රියව වසන්නද?</string>
   <!-- A description below the header to notify the user what the inactive tabs auto-close feature is. -->
   <string name="inactive_tabs_auto_close_message_description" tools:ignore="BrandUsage,UnusedResources">ෆයර්ෆොක්ස් සඳහා පසුගිය මාසය තුළ ඔබ නොබැලූ පටිති වසා දැමීමට හැකිය.</string>
   <!-- A call to action below the description to allow the user to turn on the auto closing of inactive tabs. -->
@@ -1788,7 +1788,7 @@
   -->
   <string name="default_browser_experiment_card_title">පෙරනිමි අතිරික්සුව මාරු කරන්න</string>
   <!-- Default browser card text -->
-  <string name="default_browser_experiment_card_text" tools:ignore="BrandUsage">ෆයර්ෆොක්ස් අතිරික්සුවේ ස්වයංක්‍රීයව විවෘත වීමට පණිවිඩ, වි-තැපැල් සහ අඩවිවල සබැඳි සකසන්න.</string>
+  <string name="default_browser_experiment_card_text" tools:ignore="BrandUsage">ෆයර්ෆොක්ස් අතිරික්සුවේ ස්වයංක්‍රියව විවෘත වීමට පණිවිඩ, වි-තැපැල් සහ අඩවිවල සබැඳි සකසන්න.</string>
   <!-- Content description radio buttons with a link to more information -->
   <string name="radio_preference_info_content_description">වැඩි විස්තර සඳහා ඔබන්න</string>
   <!-- Content description for the action bar "up" button -->
@@ -1861,7 +1861,7 @@
 
     Title of the automatic translation preference screen that will appear on the toolbar.
   -->
-  <string name="automatic_translation_toolbar_title_preference">ස්වයංක්‍රීය පරිවර්තනය</string>
+  <string name="automatic_translation_toolbar_title_preference">ස්වයංක්‍රිය පරිවර්තනය</string>
   <!-- Preference option for always translate. Radio button title text. -->
   <string name="automatic_translation_option_always_translate_title_preference">සැමවිට පරිවර්තනය කරන්න</string>
   <!-- Preference option for never translate. Radio button title text. -->

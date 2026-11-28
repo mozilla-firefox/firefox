@@ -9,6 +9,8 @@
 <resources>
   <!-- Text shown in a menu item indicating that this is a new item in the menu. -->
   <string name="mozac_menu_item_new_indicator_label">Ny</string>
+  <!-- Text shown in a menu item indicating that this is a new item in the menu, displayed in all capital letters. -->
+  <string name="mozac_menu_item_new_indicator_label_2">NY</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">Ignorer markedsføring</string>
   <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
@@ -21,6 +23,20 @@
   <string name="mozac_menu_customize_drag_to_hide">Dra seksjoner hit for å skjule</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">Tilbakestill til standard</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="mozac_menu_customize_reset_dialog_title">Tilbakestille til standardmeny?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="mozac_menu_customize_reset_dialog_message">Dette fjerner tilpasninger og kan ikke angres.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="mozac_menu_customize_reset_dialog_reset">Tilbakestill</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="mozac_menu_customize_reset_dialog_cancel">Avbryt</string>
+  <!-- Accessibility description used in the menu customization screen, where sections of the menu can be moved around. The string describes the section the user has selected, and tells the user what position it currently occupies. %1$s is the name of the section (e.g. "VPN"). %2$d is its position, and %3$d is the total number of sections being shown. -->
+  <string name="mozac_menu_customize_shown_section">%1$s. Posisjon %2$d av %3$d</string>
+  <!-- Content description (not visible, for screen readers etc.) of a named menu section in the customize menu screen. %1$s is the name of the section, for example "Page controls", and %2$s the names of its items, for example "Back, Forward, Share, Refresh". -->
+  <string name="mozac_menu_customize_named_section">Seksjon «%1$s»: %2$s</string>
+  <!-- Content description (not visible, for screen readers etc.) of a menu section without a name in the customize menu screen. %1$s is the names of its items, for example "VPN". -->
+  <string name="mozac_menu_customize_unnamed_section">Seksjon «%1$s»</string>
   <!-- Name of the action (used by screen readers, etc.) that moves a menu section up one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
   <string name="mozac_menu_customize_move_up">Flytt opp</string>
   <!-- Name of the action (used by screen readers, etc.) that moves a menu section down one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
@@ -31,4 +47,16 @@
   <string name="mozac_menu_customize_unhide">Vis seksjon</string>
   <!-- Announcement (not visible, for screen readers etc.) once the user moved a menu section up or down in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward", %2$d its new position, from 1, and %3$d the number of sections shown in the menu. -->
   <string name="mozac_menu_customize_section_moved">Seksjonen «%1$s» er flyttet til posisjon %2$d av %3$d</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user hid a menu section in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
+  <string name="mozac_menu_customize_section_hidden">Seksjon «%1$s» fjernet</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user showed a hidden menu section in the menu again in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
+  <string name="mozac_menu_customize_section_shown">Seksjon «%1$s» lagt til i menyen</string>
+  <!-- Instruction text telling the user they can reorder menu items by dragging them -->
+  <string name="mozac_menu_customize_drag_items_to_reorder">Dra elementer for å endre rekkefølgen</string>
+  <!-- Header text for the section containing menu items the user removed from the menu -->
+  <string name="mozac_menu_customize_hidden_items">Skjulte elementer</string>
+  <!-- Instruction telling the user that menu items dragged to the Hidden items area will no longer appear on the menu -->
+  <string name="mozac_menu_customize_drag_items_to_hide">Dra elementer hit for å skjule dem</string>
+  <!-- Customize menu screen: Name of the action, read by screen readers, for opening the screen where the items of a menu section can be changed. -->
+  <string name="mozac_menu_customize_edit_items">Rediger menyelementer</string>
 </resources>

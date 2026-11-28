@@ -9,6 +9,8 @@
 <resources>
   <!-- Text shown in a menu item indicating that this is a new item in the menu. -->
   <string name="mozac_menu_item_new_indicator_label">新機能</string>
+  <!-- Text shown in a menu item indicating that this is a new item in the menu, displayed in all capital letters. -->
+  <string name="mozac_menu_item_new_indicator_label_2">新機能</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">宣伝を閉じる</string>
   <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
@@ -21,4 +23,12 @@
   <string name="mozac_menu_customize_drag_to_hide">非表示にするセクションをここにドラッグしてください</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">初期設定に戻す</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="mozac_menu_customize_reset_dialog_title">既定のメニューに戻しますか？</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="mozac_menu_customize_reset_dialog_message">カスタマイズした内容がリセットされます。この操作は取り消せません。</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="mozac_menu_customize_reset_dialog_reset">リセット</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="mozac_menu_customize_reset_dialog_cancel">キャンセル</string>
 </resources>

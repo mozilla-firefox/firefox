@@ -3277,6 +3277,8 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s kaydettiğiniz tüm ödeme yöntemlerini şifreler</string>
   <!-- Preference for saving the security codes of credit cards. -->
   <string name="preferences_credit_cards_save_security_codes">Güvenlik kodlarını kaydet</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s, sonraki ödemelerinizi hızlandırmak için kart numaranızı ve güvenlik kodunuzu şifreleyerek kaydeder</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Kartları cihazlar arasında eşitle</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->

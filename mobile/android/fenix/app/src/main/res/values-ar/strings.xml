@@ -180,6 +180,8 @@
   <string name="customize_menu">خصّص القائمة</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">لا يمكن إخفاء هذا القسم</string>
+  <!-- Title of the screen where the user chooses which items of a menu section are shown in the menu and in which order. -->
+  <string name="edit_menu_items">حرّر عناصر القائمة</string>
   <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
   <string name="menu_customize_reset_dialog_title">صفّر إلى القائمة المبدئية؟</string>
   <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
