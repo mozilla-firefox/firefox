@@ -9,6 +9,8 @@
 <resources>
   <!-- Text shown in a menu item indicating that this is a new item in the menu. -->
   <string name="mozac_menu_item_new_indicator_label">Nové</string>
+  <!-- Text shown in a menu item indicating that this is a new item in the menu, displayed in all capital letters. -->
+  <string name="mozac_menu_item_new_indicator_label_2">NOVINKA</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">Odmítnout propagaci</string>
   <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
@@ -21,6 +23,16 @@
   <string name="mozac_menu_customize_drag_to_hide">Přetažením sem sekce skryjete</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">Obnovit výchozí nastavení</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="mozac_menu_customize_reset_dialog_title">Obnovit výchozí nabídku?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="mozac_menu_customize_reset_dialog_message">Tímto odstraníte vlastní nastavení a tuto akci nelze vrátit.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="mozac_menu_customize_reset_dialog_reset">Obnovit</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="mozac_menu_customize_reset_dialog_cancel">Zrušit</string>
+  <!-- Content description (not visible, for screen readers etc.) of a menu section without a name in the customize menu screen. %1$s is the names of its items, for example "VPN". -->
+  <string name="mozac_menu_customize_unnamed_section">Sekce „%1$s“</string>
   <!-- Name of the action (used by screen readers, etc.) that moves a menu section up one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
   <string name="mozac_menu_customize_move_up">Posunout výše</string>
   <!-- Name of the action (used by screen readers, etc.) that moves a menu section down one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
@@ -35,4 +47,10 @@
   <string name="mozac_menu_customize_section_hidden">Sekce „%1$s“ byla odebrána</string>
   <!-- Announcement (not visible, for screen readers etc.) once the user showed a hidden menu section in the menu again in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
   <string name="mozac_menu_customize_section_shown">Sekce „%1$s“ byla přidána do nabídky</string>
+  <!-- Instruction text telling the user they can reorder menu items by dragging them -->
+  <string name="mozac_menu_customize_drag_items_to_reorder">Pořadí položek změníte přetažením</string>
+  <!-- Header text for the section containing menu items the user removed from the menu -->
+  <string name="mozac_menu_customize_hidden_items">Skryté položky</string>
+  <!-- Customize menu screen: Name of the action, read by screen readers, for opening the screen where the items of a menu section can be changed. -->
+  <string name="mozac_menu_customize_edit_items">Upravit položky nabídky</string>
 </resources>

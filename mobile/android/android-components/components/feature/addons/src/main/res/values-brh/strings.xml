@@ -7,6 +7,8 @@
 -->
 
 <resources xmlns:tools="http://schemas.android.com/tools">
+  <!-- Description for giving an add-on access to users's data on one site. %1$s  will be replaced by the DNS host name for which a web extension is requesting access (e.g., www.mozilla.org). -->
+  <string name="mozac_feature_addons_permissions_one_site_description">%1$s کن نما ڈیٹا اے ہننگ</string>
   <!-- Description for the "privacy" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_privacy_description">رازداری نا سیٹنگاتے خواننگ و بدل کننگ</string>
   <!-- Description for the "bookmarks" WebExtensions API permission. -->
@@ -133,4 +135,6 @@
   <string name="mozac_feature_addons_status_learn_more">پین ہیل کبو</string>
   <!-- "See details" link displayed below an add-on status message. -->
   <string name="mozac_feature_addons_status_see_details">تفصیل اتے ہربو</string>
+  <!-- Status message below an add-on in the add-ons manager when this add-on isn't compatible with the application version. %1$s is the add-on name, %2$s is the app name and %3$s is the app version. -->
+  <string name="mozac_feature_addons_status_incompatible">دا %1$s نما %2$s نا ورژن (ورژن %3$s) تون موافق اف.</string>
 </resources>

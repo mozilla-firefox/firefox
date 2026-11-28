@@ -149,6 +149,8 @@
     in the Recently visited section
   -->
   <string name="recently_visited_menu_item_remove">مٹائفبو</string>
+  <!-- Content description for the button which navigates the user to show all of their history. -->
+  <string name="past_explorations_show_all_content_description_2">گدرینگوکا کل ہننگ اتے نشان ایت</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
   <string name="browser_menu_section_library">لائبریری</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
@@ -196,6 +198,8 @@
   <string name="browser_menu_add_to_homescreen">ہوم اسکرین اے ات</string>
   <!-- Browser menu toggle that adds a PWA of the site on the device home screen. -->
   <string name="browser_menu_add_app_to_homescreen">ایپ اے ہوم اسکرین اے ات</string>
+  <!-- Text for notifying users that Xiaomi devices require additional permissions to add to home screen -->
+  <string name="browser_menu_add_to_homescreen_xiaomi">Xiaomi ڈیوائس اتے ہوم اسکرین ٹی شارٹ کٹ شاغنگ کن پین اجازت اتا ضرورت مننگ کیک. بشخنداری تینا سیٹنگاتے ہربو.</string>
   <!-- Content description (not visible, for screen readers etc.) for the Resync tabs button -->
   <string name="resync_button_content_description">وا ہمگام کبو</string>
   <!-- Browser menu button that opens the find in page menu -->
@@ -310,6 +314,8 @@
   <string name="preferences_page_summaries">پنہ غاتا گونڈیک</string>
   <!-- Link text for learning more about AI controls -->
   <string name="ai_controls_learn_more">پین ہیل کبو</string>
+  <!-- Description for the block AI enhancements toggle. %s is the name of the app (for example "Firefox"). -->
+  <string name="ai_controls_block_ai_description">توننگ نا مطلب اے کہ نم %s ٹی پوسکنا یا داسکان نا AI نا بہتری تے، یا اوفتا بابت پاپ اپ اتے خنپرے.</string>
   <!-- Title for the translations AI feature toggle -->
   <string name="ai_controls_translations_title">مٹ اک</string>
   <!-- Title for the voice search AI feature toggle -->
@@ -318,6 +324,8 @@
   <string name="ai_controls_voice_search_description">توار اے Google Speech Services متن ٹی بدل کیک.</string>
   <!-- Title for the listen to page AI feature toggle -->
   <string name="ai_controls_listen_to_page_title">صفحہ اے بنبو</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">نما ڈیوائس توار تون خواننگ کن AI اے استعمال کننگ کیک. متن و توار رازداری ٹی سلیرہ.</string>
   <!-- Label shown above the list of features that will be blocked in the block AI dialog -->
   <string name="ai_controls_block_dialog_what_will_be_blocked">انت توننگو:</string>
   <!-- Cancel button text in the block AI enhancements confirmation dialog -->
@@ -375,6 +383,8 @@
   <string name="onboarding_preferences_dialog_title" tools:ignore="BrandUsage">Firefox اے بہتر کننگ کن نن تون کمک کبو</string>
   <!-- Title for the crash reporting option in the privacy preferences dialog shown during onboarding. -->
   <string name="onboarding_preferences_dialog_crash_reporting_title">تینٹ پننگ نا رپورٹ اتے رائ کے</string>
+  <!-- Description for the crash reporting option in the privacy preferences dialog shown during onboarding. -->
+  <string name="onboarding_preferences_dialog_crash_reporting_description">پننگ نا رپورٹ اک ننے ویبگشت کروک نا ویل اتا تشخیص و جوان کننگ کن الرہ. رپورٹ اتیٹی ذاتی یا حساس ڈیٹا مننگ کیک.</string>
   <!-- Learn more link for the crash reporting option in the privacy preferences dialog shown during onboarding. -->
   <string name="onboarding_preferences_dialog_crash_reporting_learn_more_2">پین ہیل کبو</string>
   <!-- Title for the startup crash page. %s is the name of the app (for example "Firefox") -->
@@ -411,8 +421,12 @@
   <string name="onboarding_marketing_redesign_learn_more" tools:ignore="UnusedResources">نن ڈیٹا اے امر کاریم ٹی اتینا</string>
   <!-- Marketing onboarding page button label. Button to confirm choice and start browsing. -->
   <string name="onboarding_marketing_redesign_positive_button" tools:ignore="UnusedResources">پکا</string>
+  <!-- Set to default browser onboarding redesign body. -->
+  <string name="onboarding_redesign_set_default_browser_body" tools:ignore="UnusedResources">اسہ دو خلنگ اس کمپنی تے نما کلک اتا جاسوسی کننگ ان توننگ ٹی کمک کیک.</string>
   <!-- Sync onboarding redesign title. 'Firefox' is intentionally hardcoded. -->
   <string name="onboarding_redesign_sync_title" tools:ignore="BrandUsage,UnusedResources">ہر جا کہ Firefox استعمال کیرے ہمگام کبو</string>
+  <!-- Sync onboarding redesign body. -->
+  <string name="onboarding_redesign_sync_body" tools:ignore="UnusedResources">نشانیک، ٹیباک، و کلیت لوزاتے ہر ڈیوائس ٹی البو. کل انکریپشن تون محفوظ.</string>
   <!-- Sync onboarding redesign positive button text. -->
   <string name="onboarding_redesign_sync_positive_button" tools:ignore="UnusedResources">ہمگام کننگ شروع کبو</string>
   <!-- Sync onboarding redesign negative button text. -->
@@ -436,8 +450,14 @@
   <string name="nova_onboarding_tou_body_line_2" tools:ignore="BrandUsage">دا Firefox نما رازداری نا خیال تخک. ننا %1$s ٹی پین ہیل کبو.</string>
   <!-- Terms of use (ToU) onboarding body line two link text for nova_onboarding_tou_body_line_2. -->
   <string name="nova_onboarding_tou_body_line_2_link_text">رازداری نا نوٹس</string>
+  <!-- "Set to default" onboarding title. -->
+  <string name="nova_onboarding_set_to_default_title" tools:ignore="UnusedResources">خطرناک ٹریکراتے خدا حافظ پابو</string>
+  <!-- "Set to default" onboarding subtitle. -->
+  <string name="nova_onboarding_set_to_default_subtitle">نن نما ڈیٹا اے محفوظ کینہ و کمپنیک نما کلک اتا جاسوسی ان تینٹ توننگرہ.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">اصل ویبگشت کروک سیٹ کبو</string>
+  <!-- Sync onboarding subtitle. -->
+  <string name="nova_onboarding_sync_subtitle">نشانیک، کلیت لوزاک، و پین ہر ڈیوائس ٹی زوت البو. نما ذاتی ڈیٹا انکریپشن تون محفوظ سلیک.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">ہمگام کننگ شروع کبو</string>
   <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
@@ -471,6 +491,8 @@
     <item quantity="one">نما ویبگشت ٹی %1$s %2$,d ٹریکر اس تورے.</item>
     <item quantity="other">نما ویبگشت ٹی %1$s %2$,d ٹریکر تورے.</item>
   </plurals>
+  <!-- App icon onboarding title. -->
+  <string name="nova_onboarding_app_icon_prompt_title" tools:ignore="UnusedResources">ایپ کن تینا نشان اس گچین کبو</string>
   <!--
     Widget Picker
 
@@ -507,6 +529,10 @@
   <string name="preferences_search">پٹبو</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">پٹ و پول نا اینجناک</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">پٹنگ نا ویجٹ اے ہوم اسکرین ٹی شاغبو</string>
+  <!-- Settings item to add a search widget on the device's homescreen. -->
+  <string name="preferences_add_search_widget_from_settings">ہوم اسکرین نا ویجٹ</string>
   <!-- Preference link to rating Fenix on the Play Store -->
   <string name="preferences_rate">استار ایتبو Google Play ٹی</string>
   <!--
@@ -522,10 +548,22 @@
   <string name="preferences_site_settings">ویبڈس سیٹنگاک</string>
   <!-- Preference for private browsing options -->
   <string name="preferences_private_browsing_options">ڈکوئ ویبگشت</string>
+  <!-- Preference for allowing screenshots to be taken while in a private tab -->
+  <string name="preferences_allow_screenshots_in_private_mode">ڈکوئ ویبگشت ٹی اسکرین شاٹ نا اجازت ایتبو</string>
+  <!-- Preference for adding private browsing shortcut -->
+  <string name="preferences_add_private_browsing_shortcut">ڈکوئ ویبگشت نا شارٹ کٹ شاغبو</string>
+  <!-- Preference title for using the screen lock to hide tabs in private browsing -->
+  <string name="preferences_pbm_lock_screen_title">ڈکوئ ویبگشت ٹی ٹیباتے ڈکنگ کن اسکرین قلف اے استعمال کبو</string>
+  <!-- Informs the user how to access the tabs when "Use screen lock to hide tabs in private browsing" is enabled -->
+  <string name="preferences_pbm_lock_screen_summary_3">ٹیباتے تینا فنگر پرنٹ، PIN، یا مون تون بے قلف کریسہ ہربو. دادے ملنگ اسکرین کیپچر و بشخنگ اے ہم تورک.</string>
   <!-- Summary of https only preference if https only is set to off -->
   <string name="preferences_https_only_off">بند</string>
   <!-- Text displayed that links to website containing documentation about "HTTPS-Only" mode -->
   <string name="preferences_http_only_learn_more">پین ہیل کبو</string>
+  <!-- Message shown in the error page for when trying to access a http website while https only mode is enabled. The message has two paragraphs. This is the first. -->
+  <string name="errorpage_httpsonly_message_title">زیات امکان اے کہ ویبڈس HTTPS اے سپورٹ کپک.</string>
+  <!-- Message shown in the error page for when trying to access a http website while https only mode is enabled. The message has two paragraphs. This is the second. -->
+  <string name="errorpage_httpsonly_message_summary">ولے دا ہم ممکن اے کہ جلہو کروک اس دا ٹی شامل مرے. اگہ نم ویبڈس برجا کیرے، تو ہچو حساس معلومات اس لکھپبو. اگہ نم برجا کیرے، تو HTTPS-Only موڈ دا ویبڈس کن عارضی طور ٹی بند مریک.</string>
   <!-- Preference to override the Sync token server -->
   <string name="preferences_override_sync_tokenserver">تینا ہمگام سرور</string>
   <!-- Preference category for account information -->
@@ -540,6 +578,14 @@
   <string name="preferences_theme">تیم</string>
   <!-- Preference for customizing the home screen -->
   <string name="preferences_home_2">مون پنہ</string>
+  <!-- Preference for customizing the app icon -->
+  <string name="preferences_app_icon">ایپ نا نشان</string>
+  <!-- Preference for gestures based actions -->
+  <string name="preferences_toolbar_shortcut">ٹول بار ٹی شارٹ کٹ</string>
+  <!-- Preference for gestures based actions -->
+  <string name="preferences_toolbar_select_shortcut">شارٹ کٹ اس گچین کبو</string>
+  <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
+  <string name="toolbar_shortcut_menu_edit_option">شارٹ کٹ ٹی ترمیم کبو</string>
   <!-- Preference description shown in the banner prompting the user to sign in for sync features -->
   <string name="preferences_sign_in_description">ٹیباک، نشانیک، کلیت لوزاک، و پین ہمگام کبو.</string>
   <!-- Preference shown instead of account display name while account profile information isn't available yet. -->
@@ -560,6 +606,8 @@
   <string name="preferences_show_search_suggestions_in_private">ڈکوئ سیشن اتیٹی نشان ایتنگے</string>
   <!-- Preference title for switch preference to show trending search suggestions -->
   <string name="preferences_show_trending_search_suggestions">مشہور تجویزاک نشان ایتنگر</string>
+  <!-- Preference title for switch preference to show recent search suggestions -->
+  <string name="preferences_show_recent_search_suggestions">زوتیاٹ نا پٹنگاک نشان ایتنگر</string>
   <!-- Preference title for switch preference to show a clipboard suggestion when searching -->
   <string name="preferences_show_clipboard_suggestions">کلپ بورڈ نا تجویزاک نشان ایتنگر</string>
   <!-- Preference title for switch preference to suggest bookmarks when searching -->
@@ -636,6 +684,8 @@
   <string name="customize_toggle_pocket_3">قصہ غاک</string>
   <!-- Title for the opening wallpaper settings screen -->
   <string name="customize_wallpapers">وال پیپراک</string>
+  <!-- Title for the customize home screen section with sponsored shortcuts. -->
+  <string name="customize_toggle_contile">سرپرستی والا شارٹ کٹ اک</string>
   <!-- Snackbar message for when wallpaper couldn't be downloaded -->
   <string name="wallpaper_download_error_snackbar_message">وال پیپر ڈاونلوڈ کننگ متو</string>
   <!-- Text displayed that links to website containing documentation about the "Limited Edition" wallpapers. -->
@@ -674,10 +724,24 @@
   <string name="alternative_app_icon_option_pixelated">پکسلی</string>
   <!-- Title for the "Cool" themed alternative app icon variant in the icon picker screen. The app icon uses a warm orange-to-yellow gradient background with a sleek, modern twist on the Firefox logo, giving it a fresh and stylish appearance. -->
   <string name="alternative_app_icon_option_cool">یخ</string>
+  <!-- Title to show in alert when user selects an alternative app icon -->
+  <string name="restart_warning_dialog_title">ایپ نا نشان اے بدل کیرے؟</string>
+  <!-- Message to warn users that applying an alternative app icon may require an app restart. Whether or not the app closes depends on what version of Android it is, so we use the word "may" instead of "will". %1$s is replaced by the brand name (e.g. Firefox). -->
+  <string name="restart_warning_dialog_body_2">ایپ بند مننگ کیک. %1$s اے پدا ملنگ کن تینا پوسکنا نشان اے دو خلبو.</string>
+  <!-- Message to warn users that applying an alternative app icon may require an app restart and will remove existing shortcuts because of the OS limitations. Whether or not the app closes depends on what version of Android it is, so we use the word "may" instead of "will". %1$s is replaced by the brand name (e.g. Firefox). -->
+  <string name="restart_and_shortcuts_removal_warning_dialog_body">نشان اے بدل کننگ ہوم اسکرین ٹی نما خوندی کروکا کل ویبڈس و شارٹ کٹ اتے کشک. \n\nدا %1$s بند مرو. پدا ملنگ کن تینا پوسکنا نشان آ دو خلبو.</string>
   <!-- Dialog button text for confirming the possible app restart and new icon selection -->
   <string name="restart_warning_dialog_button_positive_2">نشان اے بدل کبو</string>
   <!-- Dialog button text for cancelling app icon change -->
   <string name="restart_warning_dialog_button_negative">کینسل</string>
+  <!-- Error message snackbar shown after the user tried to apply the new icon but the Android OS threw an error while updating existing app shortcuts (e.g. private mode shortcut) -->
+  <string name="shortcuts_update_error">ایپ نا نشان اے اپڈیٹ کننگ ناکام مس. موجود شارٹ کٹ اتے کشبو و پدا واراس خلبو.</string>
+  <!--
+    This is a message shown to the user when too many errors have occurred with the extensions process and they have been disabled.
+    The user can decide if they would like to continue trying to start extensions or if they'd rather continue without them.
+    %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="extension_process_crash_dialog_message">اسہ یا زیات ودنگاک کاریم کننگ الار، و نما سسٹم اے ناپائدار کریر. %1$s ودنگ(اتے) پدا ملنگ نا کوشست کننگ ٹی ناکام مس.\n\nنما دا سیشن ٹی ودنگاک پدا ملنگپرور.\n\nودنگ اتے کشنگ یا نالائخ کننگ دا ویل اے جوڑ کننگ کرو.</string>
   <!--
     Account Preferences
 
@@ -752,6 +816,7 @@
   <string name="crash_reporting_snack_bar_message">رپورٹ رائ مس</string>
   <!-- Title Headers for data collection settings screen -->
   <string name="crash_reports_data_category">پننگ نا رپورٹاک</string>
+  <string name="crash_reporting_description">پننگ نا رپورٹ اک ننے ویبگشت کروک نا ویل اتا تشخیص و جوان کننگ الرہ. رپورٹ اتیٹی ذاتی یا حساس ڈیٹا مننگ کیک.</string>
   <!--
     Turn On Sync Preferences
 
@@ -797,6 +862,12 @@
   <!-- Back shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_back">پدی</string>
   <!--
+    App icon Preferences
+
+    Title for the preference that lets the user pick a new app icon
+  -->
+  <string name="preference_select_app_icon_title">ایپ نا نشان گچین کبو</string>
+  <!--
     Theme Preferences
 
     Preference for using light theme
@@ -826,8 +897,12 @@
   <string name="library_downloads">ڈاونلوڈآک</string>
   <!-- Option in library to open Bookmarks page -->
   <string name="library_bookmarks">نشانیک</string>
+  <!-- Option in library to open Desktop Bookmarks root page -->
+  <string name="library_desktop_bookmarks_root">ڈیسک ٹاپ نشانیک</string>
   <!-- Option in library to open Desktop Bookmarks "menu" page -->
   <string name="library_desktop_bookmarks_menu">نشانی تا مینو</string>
+  <!-- Option in library to open Desktop Bookmarks "toolbar" page -->
+  <string name="library_desktop_bookmarks_toolbar">نشانی تا ٹولبار</string>
   <!-- Option in library to open Desktop Bookmarks "unfiled" page -->
   <string name="library_desktop_bookmarks_unfiled">ایلو بکمارکاک</string>
   <!-- Option in Library to open History page -->
@@ -838,6 +913,11 @@
   <string name="settings_title">سیٹنگاک</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
   <string name="content_description_close_button">بند</string>
+  <!--
+    Message to warn users that a large number of tabs will be opened
+    %s will be replaced by app name.
+  -->
+  <string name="open_all_warning_message">داخس ٹیب ملنگ ان صفحہ غاتا لوڈ مننگ اسکان %s سست کننگ کیک. پکا ارے کہ برجا کننگ خوارے؟</string>
   <!-- Dialog button text for canceling open all tabs -->
   <string name="open_all_warning_cancel">کینسل</string>
   <!-- Option in library to open Recently Closed Tabs page -->
@@ -880,16 +960,26 @@
   <string name="preference_auto_close_tabs" tools:ignore="UnusedResources">ملوکا ٹیباک تینٹ بند مریر</string>
   <!-- Content description (not visible, for screen readers etc.): Close tab button -->
   <string name="tab_manager_close_tabs">بند</string>
+  <!--
+    Opening screen
+
+    Title of a preference that allows a user to choose what screen to show after opening the app
+  -->
+  <string name="preferences_opening_screen">ملنگ نا اسکرین</string>
   <!-- Option for always opening the homepage when re-opening the app -->
   <string name="opening_screen_homepage">مون پنہ</string>
   <!-- Option for always opening the user's last-open tab when re-opening the app -->
   <string name="opening_screen_last_tab">گڈیکو ٹیب</string>
+  <!-- Option for always opening the homepage when re-opening the app after four hours of inactivity -->
+  <string name="opening_screen_after_four_hours_of_inactivity">چار گھنٹہ نا بیکاری انپد مون پنہ</string>
   <!-- Summary for tabs preference when auto closing tabs setting is set to auto close tabs after one day -->
   <string name="close_tabs_after_one_day_summary">دے اسے انپد بند مریر</string>
   <!-- Summary for tabs preference when auto closing tabs setting is set to auto close tabs after one week -->
   <string name="close_tabs_after_one_week_summary">ہفتہ اسے انپد بند مریر</string>
   <!-- Summary for tabs preference when auto closing tabs setting is set to auto close tabs after one month -->
   <string name="close_tabs_after_one_month_summary">تو اسے انپد بند مریر</string>
+  <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
+  <string name="opening_screen_after_four_hours_of_inactivity_summary">چار گھنٹہ انپد مون منہ غئے ملنگک</string>
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">بےکار ٹیباک</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
@@ -995,6 +1085,11 @@
   <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">کینسل</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">پین اپشن</string>
+  <!--
+    Content description for the Expand button on the contracted menu for a tab group:
+    when tapped, tabs are displayed in an expanded grid or list view, taking up the full screen.
+  -->
+  <string name="tab_groups_strip_expand_group_content_description">ٹیباتے پورہ اسکرین ٹی نشان تننگ کن تالان کبو</string>
   <!-- Text shown on the edit button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_edit">بدلی</string>
   <!-- Text shown on the share button for a tab group on the three dot menu -->
@@ -1040,6 +1135,8 @@
   <string name="download_completed_snackbar">ڈاونلوڈ پورہ مس</string>
   <!-- Text for the snackbar action button to open a completed download. -->
   <string name="download_completed_snackbar_action_open">ملبو</string>
+  <!-- Text for the snackbar action button to undo deleting a download. -->
+  <string name="download_undo_delete_snackbar_action">ناکروک</string>
   <!-- Text shown when no download exists -->
   <string name="download_empty_message_2">داسکان ہچو ڈاونلوڈ اف</string>
   <!--
@@ -1084,6 +1181,7 @@
   <string name="download_rename_dialog_cancel_button">کینسل</string>
   <!-- Error message shown when a user tries to rename a downloaded file but only changes the casing (e.g., "file.txt" to "File.txt"). -->
   <string name="download_rename_error_case_only_error">نما لکھوکا پن صرف مستر یا چنکا حرف اتے بدل کیک. فائل نا پین پن اس ہربو.</string>
+  <string name="change_file_extension_description">دا فائل اے پین ایپ اسیٹی ملنگ کیک و نما ڈیوائس کن خطرناک مننگ کیک.</string>
   <string name="change_file_extension_cancel_button">کینسل</string>
   <!--
     Time period headers for downloads
@@ -1120,6 +1218,8 @@
   <string name="download_content_type_filter_image">تصویراک</string>
   <!-- Text for the filter button to show only video files in the downloads list -->
   <string name="download_content_type_filter_video">ویڈیوک</string>
+  <!-- The description of the Web Compat Reporter feature, which has a "learn more" button text for navigating to a SUMO link to learn more about reporting a broken site. %1$s is the name of the app (for example "Firefox") and %2$s is the learn more button. -->
+  <string name="webcompat_reporter_description_3">نما رپورٹ %1$s نا ویل اتے سرپند مننگ و جوڑ کننگ ٹی ننے کمک کیک تاکہ کل کن جوان مرے. %2$s</string>
   <!-- The button text for navigating to the SUMO link to learn more about reporting a broken site. -->
   <string name="webcompat_reporter_learn_more">پین ہیل کبو</string>
   <!-- The button text for the send button to submit the provided form data. -->
@@ -1128,8 +1228,22 @@
   <string name="webcompat_reporter_success_snackbar_text_2">رپورٹ رائ مس</string>
   <!-- Text shown on the dismiss button for the Edit URL confirmation dialog in the WebCompatReporter. -->
   <string name="webcompat_reporter_edit_url_dialog_dismiss">خلاس</string>
+  <!--
+    These reason strings are dropdown options on a WebCompat reporter form, indicating what is broken on the site.
+
+    Broken site reason text for site doesn’t load
+  -->
+  <string name="webcompat_reporter_reason_load">ویبڈس لوڈ مفک</string>
+  <!-- Broken site reason text for can’t pay, check out or shop -->
+  <string name="webcompat_reporter_reason_checkout">پیسہ تننگ، چیک آؤٹ یا خریداری مننگ کپک</string>
+  <!-- Broken site reason text for site is slow -->
+  <string name="webcompat_reporter_reason_slow2">ویبڈس سست اے</string>
   <!-- Broken site reason text for video isn’t playing or loading -->
   <string name="webcompat_reporter_reason_media2">ویڈیو چلینگسہ یا لود کرسہ اف</string>
+  <!-- Broken site reason text for browser isn’t supported or blocked -->
+  <string name="webcompat_reporter_reason_notsupported_2">ویبگشت کروک توننگوک یا سپورٹ اف</string>
+  <!-- Broken site reason text for the site being deceptive -->
+  <string name="webcompat_reporter_reason_site_is_deceptive">دا ویبڈس گمراہ کروک اوسے</string>
   <!-- Close tab button text on the tab crash page -->
   <string name="tab_crash_close">ٹیباتے بند کبو</string>
   <!-- Unsubmitted crash dialog title, %s is the name of the app (for example "Firefox"). -->
@@ -1142,6 +1256,8 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">بند</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">پننگ نا رپورٹ اے رائی کبو</string>
+  <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
+  <string name="unsubmitted_crash_dialog_body">پننگ نا رپورٹ اک ویبگشت کروک نا ویل اتا تشخیص و جوڑ کننگ ٹی ننے کمک کیرہ. رپورٹ اتیٹی ذاتی یا حساس ڈیٹا مننگ کیک. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">پین ہیل کبو</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">پین ہیل کبو</string>
@@ -1149,6 +1265,8 @@
   <string name="bookmark_delete_negative">کینسل</string>
   <!-- Snackbar title that confirms a bookmark was saved into a folder. %s is the name of the folder the bookmark was saved into. -->
   <string name="bookmark_saved_in_folder_snackbar">“%s” ٹی خوندی اے</string>
+  <!-- Snackbar title describing failure to edit a bookmark -->
+  <string name="bookmark_error_edit_bookmark">نشانی ٹی بدلی مننگ متو</string>
   <!-- Bookmark menu move button -->
   <string name="bookmark_menu_move_button">سرفبو</string>
   <!-- Bookmark overflow menu share button -->
@@ -1207,10 +1325,14 @@
   <string name="bookmark_close_button_content_description">نشانی تے بند کبو</string>
   <!-- Title for the bookmark list empty state -->
   <string name="bookmark_empty_list_title">داساکن ہچو نشانی اف</string>
+  <!-- Title for the bookmark list empty state at the root level. -->
+  <string name="bookmark_empty_list_root_title">تینا کل دوست انگا نشانی تے اوار تخبو</string>
   <!-- Bookmark screen folder description. %s is the count of bookmark folder children -->
   <string name="bookmarks_folder_description">فولڈر ٹی نشانیک: %s</string>
   <!-- Text for the button to navigate to sync authentication -->
   <string name="bookmark_empty_list_guest_cta">ہمگام کننگ کن سائن ان کبو</string>
+  <!-- Description for the bookmark list empty state when you're in an empty folder. -->
+  <string name="bookmark_empty_list_folder_description">ویبگشت نا وخت نشانی شاغبو تاکہ پدان تینا دوست انگا ویبڈس اتے پٹنگ کیرے.</string>
   <!-- Bookmark snackbar message for moving a single item. %1$s is the title of the item being moved and %2$s is the new parent folder of the bookmark -->
   <string name="bookmark_moved_single_item">دا %1$s %2$s اے سرفنگا</string>
   <!-- Text for bookmark search page when there are no results. -->
@@ -1249,6 +1371,12 @@
   <string name="tracking_protection_off">بند</string>
   <!-- Summary of tracking protection preference if tracking protection is set to strict -->
   <string name="tracking_protection_strict">سخت</string>
+  <!-- Label for global setting that indicates that all video and audio autoplay is allowed -->
+  <string name="preference_option_autoplay_allowed2">توار و ویڈیو نا اجازت مرے</string>
+  <!-- Label for site specific setting that indicates that all video and audio autoplay is allowed -->
+  <string name="quick_setting_option_autoplay_allowed">توار و ویڈیو نا اجازت مرے</string>
+  <!-- Label that indicates that video and audio autoplay is only allowed over Wi-Fi -->
+  <string name="preference_option_autoplay_allowed_wifi_only2">توار و ویڈیو صرف موبائل ڈیٹا ٹی توننگر</string>
   <!-- Subtext that explains 'autoplay on Wi-Fi only' option -->
   <string name="preference_option_autoplay_allowed_wifi_subtext">توار و ویڈیو Wi-Fi تون چلینگرہ</string>
   <!-- Label for global setting that indicates that video autoplay is allowed, but audio autoplay is blocked -->
@@ -1373,12 +1501,24 @@
   <string name="snackbar_added_to_shortcuts">شارٹ کٹ تے ٹی شاغنگا!</string>
   <!-- Text shown in snackbar when user closes a private tab -->
   <string name="snackbar_private_tab_closed">ڈکوئ ٹیب بند مس</string>
+  <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
+  <string name="snackbar_deleted_undo">ناکروک</string>
   <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
   <string name="snackbar_tab_added_to_group">شاغنگا %1$s ٹی</string>
   <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
   <string name="snackbar_tab_moved_to_group">دا %1$s اے سرفنگا</string>
   <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
   <string name="snackbar_action_view">ہربو</string>
+  <!-- Sample text for accessibility font size -->
+  <string name="accessibility_text_size_sample_text_1">دا متن نمونہ اسے. دا داڑے اندا ڑن ارے تاکہ خننگے ہرا وخت نم متن نا کچ اے ودفرے یا کم کیرے او امر خننگک.</string>
+  <!-- Summary for Accessibility Text Size Scaling Preference -->
+  <string name="preference_accessibility_text_size_summary">ویبڈس اتیا متن اے بھلن یا چنک کبو</string>
+  <!-- Title for Accessibility Text Size Scaling Preference -->
+  <string name="preference_accessibility_font_size_title">فانٹ نا کچ</string>
+  <!-- Title for Accessibility Text Automatic Size Scaling Preference -->
+  <string name="preference_accessibility_auto_size_2">تینٹ فونٹ نا کچ بدل مرے</string>
+  <!-- Summary for Accessibility Text Automatic Size Scaling Preference -->
+  <string name="preference_accessibility_auto_size_summary">فونٹ نا کچ نما Android نا سیٹنگا تون برابر مریک. داڑے فونٹ نا کچ \u0020اے نظم کننگ کن دادے نالائخ کبو.</string>
   <!-- Radio button in the delete browsing data dialog to delete history items for the last hour. -->
   <string name="delete_history_prompt_button_last_hour">گدرینگوکا گھنٹہ</string>
   <!-- Radio button in the delete browsing data dialog to delete history items for today and yesterday. -->
@@ -1434,6 +1574,14 @@
   <string name="preference_enhanced_tracking_protection_strict">سخت</string>
   <!-- Learn more text for the enhanced tracking protection options to fix issues caused by tracker blocking -->
   <string name="preference_enhanced_tracking_protection_allow_list_learn_more">پین ہیل کبو</string>
+  <!-- Message for the dialog that appears after disabling the baseline exceptions preference under Strict or Custom tracking protection. %1$s is the name of the application (e.g. Fenix). -->
+  <string name="preference_enhanced_tracking_protection_allow_list_dialog_message">دا سیٹنگ ویبڈس نا کل ان زیات مروکا ویل اتے جوڑ کننگ ٹی کمک کیک. اگہ نم دادے بند کیرے، تو چندی ویبڈس اک کاریم کپرور، و %1$s او ویل اتے حل کننگ ٹی کمک کننگ کپرو.</string>
+  <!--
+    Header for categories that are being blocked by current Enhanced Tracking Protection settings
+
+    Preference for enhanced tracking protection for the custom protection settings for cookies
+  -->
+  <string name="preference_enhanced_tracking_protection_custom_cookies">کوکیز</string>
   <!-- Preference for Global Privacy Control for the custom privacy settings for Global Privacy Control. '&amp;' is replaced with the ampersand symbol: & -->
   <string name="preference_enhanced_tracking_protection_custom_global_privacy_control">ویبڈس اتے پاننگے کہ ہچو ڈیٹا بشخپس و بحا کپس</string>
   <!-- Preference for enhanced tracking protection for the custom protection settings -->
@@ -1442,6 +1590,11 @@
   <string name="enhanced_tracking_protection_blocked">توننگوک</string>
   <!-- Category of trackers (fingerprinters) that can be blocked by Enhanced Tracking Protection -->
   <string name="etp_known_fingerprinters_title">چاہوکا فنگر پرنٹراک</string>
+  <!--
+    Content description (not visible, for screen readers etc.):
+    Enhanced tracking protection exception preference icon for ETP settings.
+  -->
+  <string name="preference_etp_exceptions_icon_description">جواننگا ٹریکنگ سوگوئی نا استثنا نا ترجیح نا نشان</string>
   <!-- Used as text for the link in `preference_doh_title`, points to documentation about "DNS over HTTPS" -->
   <string name="preference_doh_learn_more">پین ہیل کبو</string>
   <!-- Summary displayed for "Default Protection" option under "DNS over HTTPS". %1$s is the name of the application (e.g. Fenix). -->
@@ -1482,6 +1635,8 @@
   <string name="add_to_homescreen_cancel">کینسل</string>
   <!-- Add button text for the Add to Homescreen dialog -->
   <string name="add_to_homescreen_add">شاغبو</string>
+  <!-- Placeholder text for the TextView in the Add to Homescreen dialog -->
+  <string name="add_to_homescreen_text_placeholder">شارٹ کٹ نا پن</string>
   <!-- Preference for managing the settings for logins and passwords in Fenix -->
   <string name="preferences_passwords_logins_and_passwords_2">کلیت لوزاک</string>
   <!-- Preference option for adding a password -->
@@ -1506,6 +1661,8 @@
   <string name="logins_username_copied">باسک پن کلپ بورڈ ٹی کاپی مس</string>
   <!-- Content description, used by tools like screenreaders, to press on the save new login button. -->
   <string name="add_login_save_new_login_button_content_description">پوسکن سائن ان اے خوندی کبو</string>
+  <!-- Content description, used by tools like screenreaders, to press on the clear search text button. -->
+  <string name="saved_logins_clear_search_text_button_content_description">پٹنگ نا متن اے صفا کبو</string>
   <!-- Content Description (for screenreaders etc) read for the button to reveal a password in logins -->
   <string name="saved_login_reveal_password">کلیت لوز اے نشان ایت</string>
   <!-- Content Description (for screenreaders etc) read for the button to hide a password in logins -->
@@ -1520,8 +1677,14 @@
   <string name="logins_warning_dialog_title_2">تینا خوندی کلیت لوزاتے محفوظ کبو</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="logins_warning_dialog_later">پین وخت اس</string>
+  <!-- Title for Accessibility Force Enable Zoom Preference -->
+  <string name="preference_accessibility_force_enable_zoom">کل ویبڈس اتیا زوم</string>
+  <!-- Summary for Accessibility Force Enable Zoom Preference -->
+  <string name="preference_accessibility_force_enable_zoom_summary">پنچ و زوم نا اجازت کن لائخ کبو، او ویبڈس اتیا ہم ہراکہ دا اشارہ اے تورور.</string>
   <!-- Saved logins sorting strategy menu item -by name- (if selected, it will sort saved logins alphabetically) -->
   <string name="saved_logins_sort_strategy_alphabetically">پن (A-Z)</string>
+  <!-- Content description (not visible, for screen readers etc.) -->
+  <string name="saved_logins_menu_dropdown_chevron_icon_content_description_2">کلیت لوزاتا ترتیب نا مینو</string>
   <!--
     Email Masks
 
@@ -1538,6 +1701,8 @@
   <string name="preferences_email_masks_manage_title">ای میل ماسکاتے نظم کبو</string>
   <!-- Link text that opens additional information about the browser VPN -->
   <string name="ip_protection_learn_more">پین ہیل کبو</string>
+  <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
+  <string name="ip_protection_data_limit_label">تو نا ڈیٹا نا حد</string>
   <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
   <string name="ip_protection_settings_message_dismiss">خلاس</string>
   <!-- Header for the browser VPN `location` section -->
@@ -1618,6 +1783,10 @@
   <string name="homepage_shortcuts_show_less">کم نشان ایت</string>
   <!-- Label for the "Add shortcut" button displayed as a tile. -->
   <string name="homepage_shortcuts_add_shortcut">شارٹ کٹ اس شاغبو</string>
+  <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
+  <string name="top_sites_toggle_top_recent_sites_4">شارٹ کٹ اک</string>
+  <!-- Hint for renaming title of a shortcut -->
+  <string name="shortcut_name_hint">شارٹ کٹ نا پن</string>
   <!-- Dialog button text for canceling the rename top site prompt. -->
   <string name="top_sites_rename_dialog_cancel">کینسل</string>
   <!-- Text for the menu button to navigate to sponsors and privacy support articles. '&amp;' is replaced with the ampersand symbol: & -->
@@ -1719,6 +1888,13 @@
   <string name="protection_panel_banner_not_secure_title">دا ویبڈس اے محتاط مریرے</string>
   <!-- Description text for the protection panel banner when the site is not secure. -->
   <string name="protection_panel_banner_not_secure_description">نما کنیکشن محفوظ اف.</string>
+  <!-- Title text for the protection panel banner when tracking protection is disabled. -->
+  <string name="protection_panel_banner_not_protected_title">نم سوگوئی اے بند کرینورے</string>
+  <!--
+    Description text for the protection panel banner when tracking protection is disabled.
+    %s is the name of the app (for example "Firefox").
+  -->
+  <string name="protection_panel_banner_not_protected_description">%s چھٹی اٹے. نن مشورہ ایتنہ کہ سوگوئی اے پدا ملبو.</string>
   <!--
     Title text for the protection panel banner when tracking protection is enabled.
     %s is the name of the app (for example "Firefox").
@@ -1751,6 +1927,8 @@
   <string name="protection_panel_privacy_and_security_settings_2">رازداری نا سیٹنگاک</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">محفوظ کنیکشن</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">سرٹیفکیٹ دادے جاری مس:</string>
   <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
   <string name="certificate_details_panel_verified_by_label">تصدیق کروک:</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -1760,6 +1938,14 @@
     -->
     <item quantity="one">دا ویبڈس ٹی %1$d ٹریکر اس توننگا</item>
     <item quantity="other">دا ویبڈس ٹی %1$d ٹریکراک توننگار</item>
+  </plurals>
+  <plurals name="trackers_blocked_panel_num_cross_site_cookies">
+    <!--
+      Text for displaying in the trackers blocked panel the total number of blocked cross-site tracking cookies.
+      %1$d is a placeholder for the number of cross-site tracking cookies blocked.
+    -->
+    <item quantity="one">%1$d کراس سائٹ ٹریکنگ کوکی اس</item>
+    <item quantity="other">%1$d کراس سائٹ ٹریکنگ کوکی</item>
   </plurals>
   <plurals name="trackers_blocked_panel_num_trackers_blocked_this_week_2">
     <!--
@@ -1787,10 +1973,19 @@
   <string name="connection_security_panel_verified_by">دا %s ان تصدیق مروک اے</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the protections dashboard to the bottom of the screen and close it. -->
   <string name="tracker_protections_dashboard_close_handlebar_content_description">ڈیش بورڈ اے بند کبو</string>
+  <!--
+    Text for the connection security panel when the site uses a QWAC.
+    %s is a placeholder for the organization for which the certificate was issued.
+  -->
+  <string name="connection_security_panel_issued_to">%s کن جاری مس</string>
+  <!-- The error message of the text field in the tab creation tool when the text field is empty -->
+  <string name="debug_drawer_tab_tools_tab_quantity_empty_error">متن نا خانہ خالی اے</string>
   <!-- The privacy notice link -->
   <string name="micro_survey_privacy_notice_2">رازداری نا نوٹس</string>
   <!-- Uninstall survey answer option -->
   <string name="uninstall_survey_option_6_v2">رازداری یا حفاظت نا فکراک</string>
+  <!-- Content description for the survey feature icon. -->
+  <string name="microsurvey_feature_icon_content_description">سروے نا نشان</string>
   <!-- Content description for "X" button that is closing microsurvey. -->
   <string name="microsurvey_close_button_content_description">بند</string>
   <!-- The title of the header for the section for managing addresses. -->
@@ -1805,14 +2000,26 @@
   <string name="certificate_warning_homepage_card_update_now_button" tools:ignore="UnusedResources">داسہ اپڈیٹ کبو</string>
   <!-- Push notification title about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
   <string name="certificate_warning_push_notification_pnw2_title" tools:ignore="BrandUsage,UnusedResources">نم Firefox نا متکنو ورژن اسیٹی ارے</string>
+  <!-- Subtitle for a setup checklist with 3 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_3_steps_first_step">جوان شروع! نم 3 قدم ان 1 اس پورہ کرینورے.</string>
   <!-- Subtitle for a setup checklist with 3 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
   <string name="setup_checklist_subtitle_3_steps_completed_state">نم کل 3 قدم اتے پورہ کرینورے. %1$s نا تیزی، رازداری، و حفاظت نا مزہ البو.</string>
+  <!-- Subtitle for a setup checklist with 6 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_first_step">جوان شروع! نم 6 قدم ان 1 پورہ کرینورے.</string>
+  <!-- Subtitle for the setup checklist when the second task is completed. -->
+  <string name="setup_checklist_subtitle_6_steps_second_step">نم 6 قدم ان 2 پورہ کرینورے. جوان ترقی!</string>
   <!-- Subtitle for a setup checklist with 6 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
   <string name="setup_checklist_subtitle_6_steps_completed_state">نم سیٹ اپ نا کل 6 قدم اتے پورہ کرینورے. %1$s نا تیزی، رازداری، و حفاظت نا مزہ البو.</string>
+  <!-- Subtitle for a setup checklist with 5 steps when the first task is completed. -->
+  <string name="setup_checklist_subtitle_5_steps_first_step">جوان شروع! نم 5 قدم ان 1 اس پورہ کرینورے.</string>
+  <!-- Subtitle for the setup checklist when the second task is completed. -->
+  <string name="setup_checklist_subtitle_5_steps_second_step">نم 5 قدم ان 2 پورہ کرینورے. جوان ترقی!</string>
   <!-- Subtitle for a setup checklist with 5 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
   <string name="setup_checklist_subtitle_5_steps_completed_state">نم سیٹ اپ نا کل 5 قدم اتے پورہ کرینورے. %1$s نا تیزی، رازداری، و حفاظت نا مزہ البو.</string>
   <!-- The title of the sign-in task for the setup checklist -->
   <string name="setup_checklist_task_account_sync">تینا اکاونٹ ٹی سائن ان کبو</string>
+  <!-- Accessibility description for the task icon -->
+  <string name="a11y_task_icon_description">کاریم نا نشان</string>
   <!--
     Review prompt
 

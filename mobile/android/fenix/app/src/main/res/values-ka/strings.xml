@@ -186,6 +186,8 @@
   <string name="customize_menu">მენიუს მორგება</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">ეს არე ვერ დაიმალება</string>
+  <!-- Title of the screen where the user chooses which items of a menu section are shown in the menu and in which order. -->
+  <string name="edit_menu_items">მენიუს ერთეულების ჩასწორება</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
   <string name="browser_menu_section_page_controls">გვერდის მართვა</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
@@ -1752,6 +1754,14 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">ჯგუფის წაშლა</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">გაუქმება</string>
+  <!-- Title of the confirmation dialog shown when moving the last tab out of a group will delete the group. %s is the group name, which defaults to a value such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_title">ბოლო ჩანართისგანაც დაცარიელდეს %s?</string>
+  <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">ამ ჩანართს დაიმატებს %1$s. %2$s კი წაიშლება დაცარიელების გამო.</string>
+  <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">ჩანართის გადატანა</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">გაუქმება</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">დამატებით</string>
   <!--
@@ -3130,6 +3140,8 @@
   <string name="ip_protection_learn_more">ვრცლად</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
   <string name="ip_protection_data_limit_label">ყოველთვიური მოცულობის ზღვარი</string>
+  <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
+  <string name="ip_protection_settings_message_dismiss">აცილება</string>
   <!--
     Data usage shown on the browser VPN settings screen.
     %1$.1f is the data remaining in GB (for example "8.3").
@@ -3197,6 +3209,13 @@
     %2$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
   <string name="ip_protection_onboarding_body_promo">ჩართეთ, რომ გვერდების მონახულება იყოს მეტად პირადი და ძნელად მისადევნებელი. გამოცადეთ ახლავე და მიიღეთ შეუზღუდავი გამტარუნარიანობა თარიღამდე %1$s. %2$s</string>
+  <!--
+    The body of the VPN onboarding card when the user qualifies for using VPN without signing in to a Mozilla account
+    %1$d is the amount of free data in GB available without signing in (for example "5").
+    %2$d is the amount of data in GB available after signing in (for example "50").
+    %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
+  -->
+  <string name="ip_protection_onboarding_body_no_fxa">ჩართეთ, რომ გვერდების მონახულება იყოს მეტად პირადი და ძნელად მისადევნებელი. გამოცადეთ %1$d ᲒᲑ გამტარუნარიანობა უფასოდ ან შედით ანგარიშზე და მიიღეთ %2$d ᲒᲑ. %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">ვრცლად</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->

@@ -186,6 +186,8 @@
   <string name="customize_menu">Tilpass meny</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">Kan ikkje skjule denne seksjonen</string>
+  <!-- Title of the screen where the user chooses which items of a menu section are shown in the menu and in which order. -->
+  <string name="edit_menu_items">Rediger menyelement</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
   <string name="browser_menu_section_page_controls">Sidekontrollar</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
@@ -1750,6 +1752,10 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Slett gruppe</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Avbryt</string>
+  <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">Flytt fane</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">Avbryt</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">Fleire innstillingar</string>
   <!--
@@ -3128,6 +3134,8 @@
   <string name="ip_protection_learn_more">Les meir</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
   <string name="ip_protection_data_limit_label">Månadleg datagrense</string>
+  <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
+  <string name="ip_protection_settings_message_dismiss">Ignorer</string>
   <!--
     Data usage shown on the browser VPN settings screen.
     %1$.1f is the data remaining in GB (for example "8.3").
