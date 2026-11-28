@@ -979,7 +979,13 @@ bool BaselineCodeGen<Handler>::emitStackCheck(RetAddrEntry::Kind kind,
           ? runtime->addressOfJitStackLimitNoInterrupt()
           : runtime->addressOfJitStackLimit();
 
+  // The prologue stack check skips a fixed-size VM-call sequence; the
+  // generator-resume check runs a caller-supplied emitAfterCall with no size
+  // bound, so it keeps the rel32 form.
   Label skipCall;
+  if (kind == RetAddrEntry::Kind::StackCheck) {
+    skipCall.setNear();
+  }
   if (handler.mustIncludeSlotsInStackCheck()) {
     // Subtract the size of script->nslots() first.
     Label underflow;
@@ -1662,7 +1668,7 @@ template <typename Handler>
 bool BaselineCodeGen<Handler>::emitInterruptCheck() {
   frame.syncStack(0);
 
-  Label done;
+  NearLabel done;
   masm.branch32(Assembler::Equal,
                 AbsoluteAddress(runtime->addressOfInterruptBits()), Imm32(0),
                 &done);
@@ -1723,7 +1729,7 @@ bool BaselineCompilerCodeGen::emitWarmUpCounterIncrement() {
     // Note: unlike other warmup thresholds, where we try to enter a
     // higher tier whenever we are higher than a given warmup count,
     // trial inlining triggers once when reaching the threshold.
-    Label noTrialInlining;
+    NearLabel noTrialInlining;
     masm.branch32(Assembler::NotEqual, countReg,
                   Imm32(JitOptions.trialInliningWarmUpThreshold),
                   &noTrialInlining);
@@ -1750,7 +1756,13 @@ bool BaselineCompilerCodeGen::emitWarmUpCounterIncrement() {
     }
   }
 
+  // At function entry the skipped region is a fixed-size VM-call sequence,
+  // within rel8 range. The LoopHead OSR path is too large (it includes a
+  // DEBUG-only profiler check), so it keeps the rel32 form.
   Label done;
+  if (JSOp(*pc) != JSOp::LoopHead) {
+    done.setNear();
+  }
 
   uint32_t warmUpThreshold = OptimizationInfo::warmUpThresholdForPC(
       script, pc, handler.baseWarmUpThreshold());
@@ -1893,6 +1905,8 @@ bool BaselineInterpreterCodeGen::emitWarmUpCounterIncrement() {
     // Note: unlike other warmup thresholds, where we try to enter a
     // higher tier whenever we are higher than a given warmup count,
     // trial inlining triggers once when reaching the threshold.
+    // Unlike the compiler variant, this skipped region exceeds rel8 range in
+    // DEBUG builds (interpreter frame-size bookkeeping), so no NearLabel.
     Label noTrialInlining;
     masm.branch32(Assembler::NotEqual, countReg,
                   Imm32(JitOptions.trialInliningWarmUpThreshold),
@@ -2743,7 +2757,7 @@ bool BaselineCodeGen<Handler>::emit_FunctionThis() {
 
   auto boxThis = [this]() {
     // Load |thisv| in R0. Skip the call if it's already an object.
-    Label skipCall;
+    NearLabel skipCall;
     frame.popRegsAndSync(1);
     masm.branchTestObject(Assembler::Equal, R0, &skipCall);
 
@@ -3183,13 +3197,13 @@ bool BaselineCompilerCodeGen::emitConstantStrictEq(JSOp op) {
   frame.popRegsAndSync(1);
 
   ValueOperand value = R0;
-  Label pass, done;
+  NearLabel pass, done;
 
   switch (data.type()) {
     case ConstantCompareOperand::EncodedType::Int32: {
       int32_t constantVal = data.toInt32();
 
-      Label fail;
+      NearLabel fail;
       masm.branchTestValue(Assembler::Equal, value, Int32Value(constantVal),
                            op == JSOp::StrictEq ? &pass : &fail);
       if (constantVal != 0) {
@@ -3324,7 +3338,7 @@ template <typename Handler>
 bool BaselineCodeGen<Handler>::emit_Case() {
   frame.popRegsAndSync(1);
 
-  Label done;
+  NearLabel done;
   masm.branchTestBooleanTruthy(/* branchIfTrue */ false, R0, &done);
   {
     // Pop the switch value if the case matches.
@@ -3454,7 +3468,7 @@ bool BaselineCompilerCodeGen::emit_InitElemArray() {
   if (knownValue) {
     MOZ_ASSERT(JS::GCPolicy<Value>::isTenured(*knownValue));
   } else {
-    Label skipBarrier;
+    NearLabel skipBarrier;
     Register scratch = R1.scratchReg();
     masm.branchValueIsNurseryCell(Assembler::NotEqual, R0, scratch,
                                   &skipBarrier);
@@ -4167,7 +4181,7 @@ bool BaselineCompilerCodeGen::emit_SetAliasedVar() {
   // Only R0 and R2 are live at this point.
   // R2.scratchReg() has the scope coordinate object.
 
-  Label skipBarrier;
+  NearLabel skipBarrier;
   masm.branchValueIsNurseryCell(Assembler::NotEqual, R0, temp, &skipBarrier);
   masm.branchPtrInNurseryChunk(Assembler::Equal, objReg, temp, &skipBarrier);
 
@@ -5646,7 +5660,7 @@ bool BaselineCodeGen<Handler>::emit_RetRval() {
 
   if (!handler.maybeScript() || !handler.maybeScript()->noScriptRval()) {
     // Return the value in the return value slot, if any.
-    Label done;
+    NearLabel done;
     Address flags = frame.addressOfFlags();
     masm.branchTest32(Assembler::Zero, flags, Imm32(BaselineFrame::HAS_RVAL),
                       &done);
@@ -5996,7 +6010,7 @@ template <typename Handler>
 bool BaselineCodeGen<Handler>::emitIsMagicValue(JSWhyMagic why) {
   frame.syncStack(0);
 
-  Label isMagic, done;
+  NearLabel isMagic, done;
   masm.branchTestMagic(Assembler::Equal, frame.addressOfStackValue(-1), why,
                        &isMagic);
   masm.moveValue(BooleanValue(false), R0);
