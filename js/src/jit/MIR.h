@@ -4454,7 +4454,7 @@ class MMinMax : public MBinaryInstruction, public ArithPolicy::Data {
   bool isMax() const { return isMax_; }
 
   bool congruentTo(const MDefinition* ins) const override {
-    if (!congruentIfOperandsEqual(ins)) {
+    if (!binaryCongruentTo(ins)) {
       return false;
     }
     const MMinMax* other = ins->toMinMax();
