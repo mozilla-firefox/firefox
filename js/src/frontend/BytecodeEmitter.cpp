@@ -3070,7 +3070,7 @@ bool BytecodeEmitter::emitIteratorCloseInScope(EmitterScope& currentScope,
   if (iterKind == IteratorKind::Async) {
     if (completionKind != CompletionKind::Throw) {
       // Await clobbers rval, so save the current rval.
-      if (!emit1(JSOp::GetRval)) {
+      if (!emitSaveRvalForAwait()) {
         //          [stack] ... RESULT RVAL
         return false;
       }
@@ -3090,7 +3090,7 @@ bool BytecodeEmitter::emitIteratorCloseInScope(EmitterScope& currentScope,
         //          [stack] ... RESULT RVAL
         return false;
       }
-      if (!emit1(JSOp::SetRval)) {
+      if (!emitRestoreRvalAfterAwait()) {
         //          [stack] ... RESULT
         return false;
       }
@@ -6836,6 +6836,22 @@ bool BytecodeEmitter::emitAwaitInInnermostScope(UnaryNode* awaitNode) {
     return false;
   }
   return emitAwaitInInnermostScope();
+}
+
+bool BytecodeEmitter::emitSaveRvalForAwait() {
+  if (sc->noScriptRval()) {
+    // Push |undefined| to keep the same stack layout.
+    return emit1(JSOp::Undefined);
+  }
+  return emit1(JSOp::GetRval);
+}
+
+bool BytecodeEmitter::emitRestoreRvalAfterAwait() {
+  if (sc->noScriptRval()) {
+    // Pop the |undefined| value pushed in |emitSaveRvalForAwait|.
+    return emit1(JSOp::Pop);
+  }
+  return emit1(JSOp::SetRval);
 }
 
 bool BytecodeEmitter::emitAwaitInScope(EmitterScope& currentScope) {

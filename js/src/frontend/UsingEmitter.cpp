@@ -1021,7 +1021,7 @@ bool ForOfDisposalEmitter::prepareForForOfIteratorClose() {
   // [stack] EXC THROWING
 
   if (hasAwaitUsing()) {
-    if (!bce_->emit1(JSOp::GetRval)) {
+    if (!bce_->emitSaveRvalForAwait()) {
       // [stack] EXC THROWING RVAL
       return false;
     }
@@ -1046,7 +1046,7 @@ bool ForOfDisposalEmitter::prepareForForOfIteratorClose() {
       // [stack] EXC THROWING RVAL
       return false;
     }
-    if (!bce_->emit1(JSOp::SetRval)) {
+    if (!bce_->emitRestoreRvalAfterAwait()) {
       // [stack] EXC THROWING
       return false;
     }
@@ -1155,7 +1155,7 @@ bool NonLocalIteratorCloseUsingEmitter::prepareForIteratorClose(
     // Since in case of for-of loop the disposals are wrapped in a try-catch,
     // and await-using would suspend the frame causing the rval to be lost,
     // we need to preserve the rval and restore it after the disposal.
-    if (!bce_->emit1(JSOp::GetRval)) {
+    if (!bce_->emitSaveRvalForAwait()) {
       // [stack] ITER RVAL
       return false;
     }
@@ -1189,7 +1189,7 @@ bool NonLocalIteratorCloseUsingEmitter::prepareForIteratorClose(
       return false;
     }
 
-    if (!bce_->emit1(JSOp::SetRval)) {
+    if (!bce_->emitRestoreRvalAfterAwait()) {
       // [stack] EXC-DISPOSE DISPOSE-THROWING ITER
       return false;
     }

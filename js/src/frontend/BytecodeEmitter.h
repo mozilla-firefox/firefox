@@ -752,6 +752,10 @@ struct MOZ_STACK_CLASS BytecodeEmitter {
   [[nodiscard]] bool emitAwaitInInnermostScope(UnaryNode* awaitNode);
   [[nodiscard]] bool emitAwaitInScope(EmitterScope& currentScope);
 
+  // Save and restore the frame's return value across an await.
+  [[nodiscard]] bool emitSaveRvalForAwait();
+  [[nodiscard]] bool emitRestoreRvalAfterAwait();
+
   [[nodiscard]] bool emitPushResumeKind(GeneratorResumeKind kind);
 
   [[nodiscard]] bool emitPropLHS(NonOptionalPropertyAccessBase* prop);
