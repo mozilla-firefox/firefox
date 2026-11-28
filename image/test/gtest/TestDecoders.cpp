@@ -1394,6 +1394,32 @@ TEST_F(ImageDecoders, CorruptJXLSingleChunk) {
 }
 #endif
 
+static void CheckTruncatedMultiScanNoLeak(const ImageTestCase& aTestCase) {
+  WithSingleChunkDecode(
+      aTestCase, Nothing(), /* aUseDecodePool = */ false,
+      [&](image::Decoder* aDecoder) {
+        EXPECT_TRUE(aDecoder->GetDecodeDone());
+
+        RawAccessFrameRef frame = aDecoder->GetCurrentFrameRef();
+        ASSERT_TRUE(frame);
+        RefPtr<SourceSurface> surface = frame->GetSourceSurface();
+        ASSERT_TRUE(surface);
+        EXPECT_TRUE(IsSolidColor(surface, BGRAColor(0xFF, 0xFF, 0xFF, 0xFF)));
+      });
+}
+
+TEST_F(ImageDecoders, LosslessNonInterleavedSingleChunk) {
+  CheckDecoderSingleChunk(LosslessNonInterleavedJPGTestCase());
+}
+
+TEST_F(ImageDecoders, LosslessNonInterleavedMultiChunk) {
+  CheckDecoderMultiChunk(LosslessNonInterleavedJPGTestCase());
+}
+
+TEST_F(ImageDecoders, TruncatedLosslessNonInterleavedNoLeak) {
+  CheckTruncatedMultiScanNoLeak(TruncatedLosslessNonInterleavedJPGTestCase());
+}
+
 TEST_F(ImageDecoders, CorruptSingleChunk) {
   CheckDecoderSingleChunk(CorruptTestCase());
 }

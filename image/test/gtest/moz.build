@@ -106,6 +106,8 @@ TEST_HARNESS_FILES.gtest += [
     "large.jxl",
     "large.webp",
     "long-animated.jxl",
+    "lossless_noninterleaved.jpg",
+    "lossless_noninterleaved_truncated.jpg",
     "multilayer.avif",
     "no-frame-delay.gif",
     "perf_cmyk.jpg",

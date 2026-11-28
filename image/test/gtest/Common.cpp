@@ -414,6 +414,21 @@ ImageTestCase GreenJPGTestCase() {
                        TEST_CASE_IS_FUZZY);
 }
 
+ImageTestCase LosslessNonInterleavedJPGTestCase() {
+  // Lossless (SOF3), non-interleaved: one scan per component. Exercises the
+  // coef_bits == null buffered-image path (bug 2067971) with complete input;
+  // we only check it decodes fully, not the exact (gray) pixels.
+  return ImageTestCase("lossless_noninterleaved.jpg", "image/jpeg",
+                       IntSize(16, 16), TEST_CASE_IGNORE_OUTPUT);
+}
+
+ImageTestCase TruncatedLosslessNonInterleavedJPGTestCase() {
+  // The same image cut off right after the third component's SOS marker, with
+  // no scan data and no EOI (bug 2067971).
+  return ImageTestCase("lossless_noninterleaved_truncated.jpg", "image/jpeg",
+                       IntSize(16, 16));
+}
+
 ImageTestCase GreenBMPTestCase() {
   return ImageTestCase("green.bmp", "image/bmp", IntSize(100, 100));
 }

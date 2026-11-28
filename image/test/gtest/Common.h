@@ -475,6 +475,8 @@ class MOZ_STACK_CLASS DecoderTestHelper final {
 ImageTestCase GreenPNGTestCase();
 ImageTestCase GreenGIFTestCase();
 ImageTestCase GreenJPGTestCase();
+ImageTestCase LosslessNonInterleavedJPGTestCase();
+ImageTestCase TruncatedLosslessNonInterleavedJPGTestCase();
 ImageTestCase GreenBMPTestCase();
 ImageTestCase GreenICOTestCase();
 ImageTestCase GreenIconTestCase();
