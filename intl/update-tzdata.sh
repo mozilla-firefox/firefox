@@ -128,11 +128,17 @@ if [ $dry = false ]; then
   # Remove intl/tzdata/source, then replace it with a clean export.
   rm -r "${tzdata_dir}"/source
   git clone --depth 1 "${tzdata_url}" "${tzdata_dir}"/source
+  tzdata_revision=$(git -C "${tzdata_dir}"/source rev-parse HEAD)
+  cp "${tzdata_dir}"/source/LICENSE "${tzdata_dir}"/LICENSE
   git -C "${tzdata_dir}"/source filter-branch --prune-empty --subdirectory-filter tzdata/icunew/${tzdata_version}/44 HEAD
 
   # Record `git log` and the tzdata version.
   git -C "${tzdata_dir}"/source log -1 > "${tzdata_dir}"/GIT-INFO
   echo "${tzdata_version}" > "${tzdata_dir}"/VERSION
+  sed -e "s/^  release: .*/  release: \"${tzdata_version}\"/" \
+      -e "s/^  revision: .*/  revision: \"${tzdata_revision}\"/" \
+      "${tzdata_dir}"/moz.yaml > "${tzdata_dir}"/moz.yaml.new
+  mv "${tzdata_dir}"/moz.yaml.new "${tzdata_dir}"/moz.yaml
 
   # Remove the .git directory.
   rm -rf "${tzdata_dir}"/source/.git
@@ -165,7 +171,7 @@ if [ $dry = false ]; then
     update_icu_data "be" "${icudata_file_be}"
   fi
 
-  git -C "${topsrcdir}" add --all "intl/tzdata/source" "intl/tzdata/GIT-INFO" "intl/tzdata/VERSION" "${icudata_file_le}"
+  git -C "${topsrcdir}" add --all "intl/tzdata/source" "intl/tzdata/GIT-INFO" "intl/tzdata/VERSION" "intl/tzdata/LICENSE" "intl/tzdata/moz.yaml" "${icudata_file_le}"
   if [ -n "${icudata_file_be}" ]; then
     git -C "${topsrcdir}" add --all "${icudata_file_be}"
   fi

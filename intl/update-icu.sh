@@ -34,12 +34,14 @@ rm -rf ${icu_dir}/source
 tmpclonedir=$(mktemp -d)
 git clone --depth 1 --branch $2 $1 ${tmpclonedir}
 cp -r ${tmpclonedir}/icu4c/source ${icu_dir}/source
+cp ${tmpclonedir}/LICENSE ${icu_dir}/LICENSE
 
 # Record `git log`.
 # (This ensures that if ICU modifications are performed properly, it's always
 # possible to run the command at the top of this script and make no changes to
 # the tree.)
 git -C ${tmpclonedir} log -1 > ${icu_dir}/GIT-INFO
+icu_revision=$(git -C ${tmpclonedir} rev-parse HEAD)
 
 # Clean up after ourselves.
 rm -rf ${tmpclonedir}
@@ -86,7 +88,14 @@ python3 ${topsrcdir}/js/src/tests/non262/String/make-normalize-generateddata-inp
 # file.
 python3 `dirname $0`/icu_sources_data.py $topsrcdir
 
-git -C "${topsrcdir}" add --all "intl/icu/source" "intl/icu/GIT-INFO" "config/external/icu"
+# Record the release and revision for the SBOM.
+icu_version=$(sed -n 's/^#define U_ICU_VERSION "\(.*\)"$/\1/p' ${icu_dir}/source/common/unicode/uvernum.h)
+sed -e "s/^  release: .*/  release: \"${icu_version}\"/" \
+    -e "s/^  revision: .*/  revision: \"${icu_revision}\"/" \
+    ${icu_dir}/moz.yaml > ${icu_dir}/moz.yaml.new
+mv ${icu_dir}/moz.yaml.new ${icu_dir}/moz.yaml
+
+git -C "${topsrcdir}" add --all "intl/icu/source" "intl/icu/GIT-INFO" "intl/icu/LICENSE" "intl/icu/moz.yaml" "config/external/icu"
 
 # Check local tzdata version.
 `dirname $0`/update-tzdata.sh -c

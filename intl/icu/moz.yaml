@@ -1,0 +1,24 @@
+# Version of this schema
+schema: 1
+
+bugzilla:
+  # Bugzilla product and component for this directory and subdirectories
+  product: "Core"
+  component: "JavaScript: Internationalization API"
+
+# intl/update-icu.sh updates the library and rewrites release and revision.
+origin:
+  name: "icu"
+  description: "International Components for Unicode"
+  url: "https://icu.unicode.org/"
+  license: "Unicode"
+  release: "78.3"
+  revision: "21d1eb0f306e1141c10931e914dfc038c06121da"
+
+# The update script, not `mach vendor`, updates this directory.
+vendoring:
+  url: https://github.com/unicode-org/icu
+  source-hosting: github
+  skip-vendoring-steps:
+    - fetch
+    - update-moz-yaml

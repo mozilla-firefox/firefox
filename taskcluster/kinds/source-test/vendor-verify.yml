@@ -76,6 +76,8 @@ data:
     treeherder:
         symbol: vendor(data)
     members:
+        - intl/icu/moz.yaml
+        - intl/tzdata/moz.yaml
         - mozglue/misc/decimal/moz.yaml
         - parser/expat/moz.yaml
         - third_party/msgpack/moz.yaml

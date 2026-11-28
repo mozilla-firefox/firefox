@@ -1,0 +1,24 @@
+# Version of this schema
+schema: 1
+
+bugzilla:
+  # Bugzilla product and component for this directory and subdirectories
+  product: "Core"
+  component: "JavaScript: Internationalization API"
+
+# intl/update-tzdata.sh updates the data and rewrites release and revision.
+origin:
+  name: "tzdata"
+  description: "Time zone data, as ICU packages it"
+  url: "https://github.com/unicode-org/icu-data"
+  license: "Unicode"
+  release: "2026f"
+  revision: "6eac2f4d349d9f4a0825103bb41845d8e5ab7add"
+
+# The update script, not `mach vendor`, updates this directory.
+vendoring:
+  url: https://github.com/unicode-org/icu-data
+  source-hosting: github
+  skip-vendoring-steps:
+    - fetch
+    - update-moz-yaml
