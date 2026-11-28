@@ -4,10 +4,14 @@
 
 package org.mozilla.fenix.home.sports
 
+import android.net.Uri
 import androidx.navigation.NavController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import mozilla.components.concept.engine.prompt.ShareData
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.share.ShareSource
+import org.mozilla.fenix.components.share.isSystemShareSheetSupported
 import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
 import org.mozilla.fenix.components.usecases.ShareUseCases
 import org.mozilla.fenix.ext.nav
@@ -26,6 +30,9 @@ internal const val WREXHAM_MATCHES_URL = "https://www.$WREXHAM_WEBSITE_DOMAIN/ma
  * @param shareUseCases [ShareUseCases] used for sharing the club's matches page.
  * @param settings [Settings] used to check whether the homepage is shown as a new tab.
  * @param shareTitle Title used when sharing the club's matches page.
+ * @param createShareThumbnail Creates the thumbnail shown in the system share sheet preview. Only invoked when the
+ *   system share sheet is used.
+ * @param scope [CoroutineScope] used to create the share thumbnail.
  */
 class SportsWidgetController(
     private val navController: NavController,
@@ -33,6 +40,8 @@ class SportsWidgetController(
     private val shareUseCases: ShareUseCases,
     private val settings: Settings,
     private val shareTitle: String,
+    private val createShareThumbnail: suspend () -> Uri?,
+    private val scope: CoroutineScope,
 ) {
     /** Handles the user selecting the "Matches and Results" menu item by opening the club's matches page. */
     fun handleSportsWidgetMatchesAndResultsClicked() {
@@ -69,21 +78,31 @@ class SportsWidgetController(
     fun handleSportsWidgetShareClicked(label: String?) {
         val shareData = ShareData(title = shareTitle, text = label, url = WREXHAM_MATCHES_URL, private = false)
 
-        shareUseCases.shareItems(
-            items = listOf(shareData),
-            source = ShareSource.HOME,
-            subject = shareTitle,
-            text = label,
-            navigateToShareFragment = {
-                navController.nav(
-                    R.id.homeFragment,
-                    HomeFragmentDirections.actionGlobalShareFragment(
-                        shareSubject = shareTitle,
-                        data = arrayOf(shareData),
-                    ),
-                )
-            },
-        )
+        scope.launch {
+            val thumbnailUri =
+                if (settings.nativeShareSheetEnabled && isSystemShareSheetSupported) {
+                    createShareThumbnail()
+                } else {
+                    null
+                }
+
+            shareUseCases.shareItems(
+                items = listOf(shareData),
+                source = ShareSource.HOME,
+                subject = shareTitle,
+                thumbnailUri = thumbnailUri,
+                text = label,
+                navigateToShareFragment = {
+                    navController.nav(
+                        R.id.homeFragment,
+                        HomeFragmentDirections.actionGlobalShareFragment(
+                            shareSubject = shareTitle,
+                            data = arrayOf(shareData),
+                        ),
+                    )
+                },
+            )
+        }
     }
 
     /** Handles the user removing the sports widget from the homepage. */
