@@ -47,7 +47,15 @@ RUN set -ex; \
     echo 'APT::Get::Assume-Yes "true";'; \
     echo 'APT::Install-Recommends "false";'; \
     echo 'Acquire::Check-Valid-Until "false";'; \
-    echo 'Acquire::Retries "5";'; \
+    case "$DIST" in \
+    bookworm|trixie|jammy|noble) \
+      echo 'Acquire::Retries "5";' ; \
+      ;; \
+    *) \
+      : Work around CVE-2026-109518 ; \
+      echo 'Acquire::Retries "0";' ; \
+      ;; \
+    esac; \
     if [ "$DIST" = "jessie" ]; then \
       echo 'Dir::Bin::gpg "/usr/local/sbin/gpgvnoexpkeysig";'; \
     fi; \
