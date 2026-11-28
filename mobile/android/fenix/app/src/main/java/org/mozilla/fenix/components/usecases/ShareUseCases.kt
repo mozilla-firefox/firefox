@@ -87,6 +87,7 @@ class ShareUseCases(
      * @param isPrivate Whether the items belong to private browsing mode.
      * @param subject Optional subject for the share. When `null`, the underlying launcher defaults to the first item's
      *   title.
+     * @param text Optional text to share alongside the urls in the system share sheet.
      * @param chooserActions An array of chooser actions that will be added to the share intent chooser in the native
      *   share sheet.
      * @param thumbnailUri Optional thumbnail shown in the system share sheet preview.
@@ -98,6 +99,7 @@ class ShareUseCases(
         source: ShareSource,
         isPrivate: Boolean = false,
         subject: String? = null,
+        text: String? = null,
         chooserActions: List<ShareSheetChooserAction> = listOf(),
         thumbnailUri: Uri? = null,
         navigateToShareFragment: () -> Unit,
@@ -108,6 +110,7 @@ class ShareUseCases(
                 items = items,
                 isPrivate = isPrivate,
                 subject = subject,
+                text = text,
                 chooserActions = chooserActions,
                 thumbnailUri = thumbnailUri,
             )

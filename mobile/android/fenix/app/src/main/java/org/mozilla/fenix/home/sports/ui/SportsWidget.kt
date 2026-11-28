@@ -40,7 +40,7 @@ private const val FULL_WIDTH_FRACTION = 1f
  * @param onMatchClicked Invoked when the match is clicked.
  * @param onMatchesAndResults Invoked when "Matches and Results" menu item is selected.
  * @param onWallpapers Invoked when "Wallpapers" menu item is selected.
- * @param onShare Invoked when "Share" menu item is selected.
+ * @param onShare Invoked with the label of the visible match card when "Share" menu item is selected.
  * @param onRemove Invoked when "Remove widget" menu item is selected.
  */
 @Suppress("LongParameterList")
@@ -52,7 +52,7 @@ fun SportsWidget(
     onMatchClicked: () -> Unit = {},
     onMatchesAndResults: () -> Unit = {},
     onWallpapers: () -> Unit = {},
-    onShare: () -> Unit = {},
+    onShare: (label: String?) -> Unit = {},
     onRemove: () -> Unit = {},
 ) {
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -71,13 +71,13 @@ fun SportsWidget(
 
     SportsCardPager(
         pages = pages.pages,
-        header = {
+        header = { currentPage ->
             SportsWidgetHeader(
                 teamName = stringResource(R.string.wrex_widget_team_name),
                 drawableResId = R.drawable.team_badge_wrexham,
                 onMatchesAndResults = onMatchesAndResults,
                 onWallpapers = onWallpapers,
-                onShare = onShare,
+                onShare = { onShare(currentPage?.label) },
                 onRemove = onRemove,
             )
         },
@@ -125,7 +125,9 @@ internal fun sportsWidgetPages(
     return SportsWidgetPages(
         pages =
             matchCards.map { card ->
-                SportsPage(type = SportsCardType.MATCH, key = card.pagerKey()) { pageNumber, pageCount ->
+                SportsPage(type = SportsCardType.MATCH, key = card.pagerKey(), label = card.label) {
+                    pageNumber,
+                    pageCount ->
                     MatchCard(
                         state = card,
                         errorState = errorState,

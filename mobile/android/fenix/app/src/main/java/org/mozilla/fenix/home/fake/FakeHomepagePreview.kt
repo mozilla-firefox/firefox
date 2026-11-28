@@ -122,6 +122,10 @@ internal object FakeHomepagePreview {
                     /* no op */
                 }
 
+                override fun onSportsWidgetShareClicked(label: String?) {
+                    /* no op */
+                }
+
                 override fun onSportsWidgetRemoveClicked() {
                     /* no op */
                 }

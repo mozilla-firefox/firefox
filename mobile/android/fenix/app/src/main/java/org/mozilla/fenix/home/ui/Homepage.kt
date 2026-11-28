@@ -282,6 +282,7 @@ internal fun Homepage(
                                     onMatchClicked = interactor::onSportsWidgetMatchClicked,
                                     onMatchesAndResults = interactor::onSportsWidgetMatchesAndResultsClicked,
                                     onWallpapers = interactor::onSportsWidgetWallpapersClicked,
+                                    onShare = interactor::onSportsWidgetShareClicked,
                                     onRemove = interactor::onSportsWidgetRemoveClicked,
                                 )
                             }

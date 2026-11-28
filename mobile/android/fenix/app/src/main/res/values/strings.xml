@@ -4167,6 +4167,8 @@
     <string name="wrex_widget_wallpapers">Wallpapers</string>
     <!-- Sports widget menu item to remove the widget from the homepage. -->
     <string name="wrex_widget_remove_widget">Remove widget</string>
+    <!-- Title used when sharing the team's matches page from the sports widget. %1$s is the app name (for example, "Firefox") and %2$s is the team name (for example, "Wrexham AFC"). -->
+    <string name="wrex_widget_share_title">%1$s - %2$s</string>
   <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
     <string name="wrex_widget_match_full_time_short">FT</string>
     <!-- Sports widget match status label shown during half-time of a match. -->

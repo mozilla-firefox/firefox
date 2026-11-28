@@ -383,6 +383,10 @@ class SessionControlInteractor(
         sportsWidgetController.handleSportsWidgetWallpapersClicked()
     }
 
+    override fun onSportsWidgetShareClicked(label: String?) {
+        sportsWidgetController.handleSportsWidgetShareClicked(label)
+    }
+
     override fun onSportsWidgetRemoveClicked() {
         sportsWidgetController.handleSportsWidgetRemoved()
     }

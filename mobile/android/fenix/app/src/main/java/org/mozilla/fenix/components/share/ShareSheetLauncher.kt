@@ -143,6 +143,7 @@ interface ShareSheetLauncher {
      * @param items The list of [ShareData] items to share.
      * @param isPrivate Whether the tabs are in private browsing mode.
      * @param subject Optional explicit subject for the share. When `null`, defaults to the first item's title.
+     * @param text Optional text to share alongside the urls. When non-empty it is prepended to the shared text.
      * @param chooserActions An array of [ChooserAction] that will be added to the share intent chooser in the native
      *   share sheet.
      * @param thumbnailUri Optional thumbnail shown in the share sheet preview.
@@ -151,6 +152,7 @@ interface ShareSheetLauncher {
         items: List<ShareData>,
         isPrivate: Boolean = false,
         subject: String? = null,
+        text: String? = null,
         chooserActions: List<ShareSheetChooserAction> = listOf(ShareSheetChooserAction.SEND_TO_DEVICES),
         thumbnailUri: Uri? = null,
     )
@@ -265,6 +267,7 @@ class DefaultShareSheetLauncher(
         items: List<ShareData>,
         isPrivate: Boolean,
         subject: String?,
+        text: String?,
         chooserActions: List<ShareSheetChooserAction>,
         thumbnailUri: Uri?,
     ) {
@@ -272,12 +275,13 @@ class DefaultShareSheetLauncher(
         val urls = itemsWithUrl.map { it.url.orEmpty() }
         val titles = itemsWithUrl.map { it.title.orEmpty() }
 
-        val text =
+        val urlText =
             if (urls.size == 1) {
                 urls[0]
             } else {
                 urls.mapIndexed { i, url -> "${i + 1}. $url" }.joinToString("\n")
             }
+        val shareText = listOfNotNull(text, urlText).filter { it.isNotEmpty() }.joinToString("\n")
         val shareSubject = subject ?: items.firstOrNull()?.title ?: ""
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -295,7 +299,7 @@ class DefaultShareSheetLauncher(
                     }
 
                 shareDelegate.shareWithChooserActions(
-                    text = text,
+                    text = shareText,
                     subject = shareSubject,
                     actions =
                         chooserActions
@@ -313,7 +317,7 @@ class DefaultShareSheetLauncher(
                 )
             }
         } else {
-            shareDelegate.share(text = text, subject = shareSubject)
+            shareDelegate.share(text = shareText, subject = shareSubject)
         }
     }
 

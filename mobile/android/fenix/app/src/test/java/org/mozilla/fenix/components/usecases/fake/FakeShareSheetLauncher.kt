@@ -28,6 +28,7 @@ class FakeShareSheetLauncher : ShareSheetLauncher {
         val subject: String?,
         val chooserActions: List<ShareSheetChooserAction> = listOf(),
         val thumbnailUri: Uri? = null,
+        val text: String? = null,
     )
 
     val urlShares: MutableList<UrlShare> = mutableListOf()
@@ -50,9 +51,10 @@ class FakeShareSheetLauncher : ShareSheetLauncher {
         items: List<ShareData>,
         isPrivate: Boolean,
         subject: String?,
+        text: String?,
         chooserActions: List<ShareSheetChooserAction>,
         thumbnailUri: Uri?,
     ) {
-        itemsShares += ItemsShare(items, isPrivate, subject, chooserActions, thumbnailUri)
+        itemsShares += ItemsShare(items, isPrivate, subject, chooserActions, thumbnailUri, text)
     }
 }

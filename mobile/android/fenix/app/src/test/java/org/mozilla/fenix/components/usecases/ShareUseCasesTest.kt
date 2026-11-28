@@ -263,7 +263,7 @@ class ShareUseCasesTest {
 
     @Config(sdk = [34])
     @Test
-    fun `GIVEN chooserActions and a thumbnailUri WHEN shareItems is called THEN they are forwarded to the system share sheet`() {
+    fun `GIVEN chooserActions, a thumbnailUri and text WHEN shareItems is called THEN they are forwarded to the system share sheet`() {
         val items = listOf(ShareData(url = "https://mozilla.org", title = "Mozilla", private = false))
         val thumbnailUri = "content://thumbnail".toUri()
 
@@ -273,6 +273,7 @@ class ShareUseCasesTest {
             subject = "My tab group",
             chooserActions = ShareSheetChooserAction.tabChooserActions,
             thumbnailUri = thumbnailUri,
+            text = "Check this out",
             navigateToShareFragment = navigateToShareFragment,
         )
 
@@ -284,6 +285,7 @@ class ShareUseCasesTest {
                     subject = "My tab group",
                     chooserActions = ShareSheetChooserAction.tabChooserActions,
                     thumbnailUri = thumbnailUri,
+                    text = "Check this out",
                 )
             ),
             shareSheetLauncher.itemsShares,

@@ -309,6 +309,22 @@ class ShareSheetLauncherTest {
 
     @Config(sdk = [34])
     @Test
+    fun `GIVEN text WHEN showSystemShareSheet is called with a single item THEN chooser actions share is invoked with the text and url`() {
+        val items = listOf(ShareData(url = "https://mozilla.org", title = "Mozilla", private = false))
+
+        launcher.showSystemShareSheet(items = items, text = "Check this out")
+
+        verify {
+            mockShareDelegate.shareWithChooserActions(
+                text = "Check this out\nhttps://mozilla.org",
+                subject = "Mozilla",
+                actions = any(),
+            )
+        }
+    }
+
+    @Config(sdk = [34])
+    @Test
     fun `WHEN showSystemShareSheet is called with items containing null urls THEN null urls are excluded from share text`() {
         val items =
             listOf(

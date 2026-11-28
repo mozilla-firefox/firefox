@@ -5,6 +5,7 @@
 package org.mozilla.fenix.home.sports.ui
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.mozilla.fenix.home.sports.Match
 import org.mozilla.fenix.home.sports.MatchCard
@@ -25,6 +26,7 @@ class SportsWidgetPagesTest {
 
         assertEquals(List(3) { SportsCardType.MATCH }, pages.pages.map { it.type })
         assertEquals(matchweek.map { it.pageKey }, pages.pages.map { it.key })
+        assertEquals(matchweek.map { it.label }, pages.pages.map { it.label })
     }
 
     @Test
@@ -81,6 +83,7 @@ class SportsWidgetPagesTest {
 
         assertEquals(listOf(SportsCardType.ERROR_RESULTS_LOAD_FAILED), pages.pages.map { it.type })
         assertEquals(SportsCardType.ERROR_RESULTS_LOAD_FAILED, pages.openedPage.type)
+        assertNull(pages.openedPage.label)
     }
 
     @Test

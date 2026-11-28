@@ -163,6 +163,12 @@ class SessionControlInteractorTest {
     }
 
     @Test
+    fun `WHEN onSportsWidgetShareClicked is called THEN handleSportsWidgetShareClicked is called`() {
+        interactor.onSportsWidgetShareClicked("FA Cup")
+        verify { sportsWidgetController.handleSportsWidgetShareClicked("FA Cup") }
+    }
+
+    @Test
     fun `WHEN onSportsWidgetRemoveClicked is called THEN handleSportsWidgetRemoved is called`() {
         interactor.onSportsWidgetRemoveClicked()
         verify { sportsWidgetController.handleSportsWidgetRemoved() }

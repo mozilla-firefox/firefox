@@ -16,6 +16,13 @@ interface SportsWidgetInteractor {
     /** Called when the user selects the "Wallpapers" menu item of the sports widget. */
     fun onSportsWidgetWallpapersClicked()
 
+    /**
+     * Called when the user selects the "Share" menu item of the sports widget.
+     *
+     * @param label Label of the visible match card, or null when no match card is shown.
+     */
+    fun onSportsWidgetShareClicked(label: String?)
+
     /** Called when the user removes the sports widget. */
     fun onSportsWidgetRemoveClicked()
 }

@@ -1732,7 +1732,14 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                     SportsWidgetController(
                         navController = findNavController(),
                         fenixBrowserUseCases = requireComponents.useCases.fenixBrowserUseCases,
+                        shareUseCases = requireComponents.useCases.shareUseCases,
                         settings = requireComponents.settings,
+                        shareTitle =
+                            getString(
+                                R.string.wrex_widget_share_title,
+                                getString(R.string.firefox),
+                                getString(R.string.wrex_widget_team_name),
+                            ),
                     ),
             )
     }

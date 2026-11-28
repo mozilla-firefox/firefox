@@ -74,11 +74,13 @@ private var sessionSportsPagerCardKey: String? = null
  * Pairs a [SportsCardType] with its rendering composable so the pager can identify which card is settled on each page
  * without a parallel list that could drift from [pages]. [key] is a stable identity for the card, used to restore the
  * user's position across widget rebuilds and to detect when the remembered card no longer exists (e.g. a round
- * transition); match-backed cards key on their set of match ids, promo/error cards on their [type].
+ * transition); match-backed cards key on their set of match ids, promo/error cards on their [type]. [label] is the
+ * competition name of match-backed cards, or null for promo/error cards.
  */
 data class SportsPage(
     val type: SportsCardType,
     val key: String,
+    val label: String? = null,
     val content: @Composable (pageNumber: Int, pageCount: Int) -> Unit,
 )
 
@@ -93,7 +95,8 @@ data class SportsPage(
  * @param pages Pages to display, paired with their [SportsCardType] so the pager can emit card-typed telemetry without
  *   a parallel structure. Order determines swipe order. Each [SportsPage.content] is invoked with `(pageNumber,
  *   pageCount)` where `pageNumber` is 1-based.
- * @param header Header displayed above the pages, which stays in place while swiping (e.g. [SportsWidgetHeader]).
+ * @param header Header displayed above the pages, which stays in place while swiping (e.g. [SportsWidgetHeader]). It
+ *   receives the current [SportsPage], or null when there are no pages.
  * @param modifier [Modifier] to apply to the outer container.
  * @param onCardShown Invoked once per pages-list mount for the initially-visible card
  *   ([SportsCardImpressionSource.IMPRESSION]) and once per subsequent settle on a different page
@@ -104,7 +107,7 @@ data class SportsPage(
 @Composable
 fun SportsCardPager(
     pages: List<SportsPage>,
-    header: @Composable () -> Unit,
+    header: @Composable (currentPage: SportsPage?) -> Unit,
     modifier: Modifier = Modifier,
     onCardShown: (SportsCardType, SportsCardImpressionSource) -> Unit = { _, _ -> },
     initialPage: Int = 0,
@@ -137,7 +140,7 @@ fun SportsCardPager(
     val showIndicator = pages.size > 1
 
     Column(modifier = modifier.sportsCardPagerContainer(showIndicator = showIndicator)) {
-        header()
+        header(pages.getOrNull(pagerState.currentPage))
 
         Box(
             modifier =
@@ -401,7 +404,7 @@ private fun SportsCardPagerPreview() {
                             )
                         }
                     },
-                header = { SportsCardPagerPreviewHeader() },
+                header = { _ -> SportsCardPagerPreviewHeader() },
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -432,7 +435,7 @@ private fun SportsCardPagerErrorPreview(
                             )
                         }
                     ),
-                header = { SportsCardPagerPreviewHeader() },
+                header = { _ -> SportsCardPagerPreviewHeader() },
                 modifier = Modifier.fillMaxWidth(),
             )
         }
