@@ -6426,8 +6426,7 @@ bool BaselineCodeGen<Handler>::emit_FinalYieldRval() {
     return false;
   }
 
-  masm.loadValue(frame.addressOfReturnValue(), JSReturnOperand);
-  return emitReturn();
+  return emit_RetRval();
 }
 
 template <>
