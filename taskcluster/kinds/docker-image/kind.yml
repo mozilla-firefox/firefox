@@ -541,4 +541,4 @@ tasks:
         parent: debian13-base
     android-ui-tests:
         symbol: I(android-ui-tests)
-        parent: ubuntu2204-base
+        parent: ubuntu2404-base

@@ -45,7 +45,7 @@ RUN apt-get update && \
       zip \
       zstd
 
-RUN pip3 install taskcluster==102.0.1
+RUN pip3 install --break-system-packages taskcluster==117.2.0
 
 RUN locale-gen "$LANG"
 
@@ -58,7 +58,7 @@ RUN chown -R worker:worker ${HOME}/.config
 USER worker:worker
 
 ENV GOOGLE_SDK_DOWNLOAD ./gcloud.tar.gz
-ENV GOOGLE_SDK_VERSION 577
+ENV GOOGLE_SDK_VERSION 594
 
 ENV TEST_TOOLS /builds/worker/test-tools
 ENV PATH ${PATH}:${TEST_TOOLS}:${TEST_TOOLS}/google-cloud-sdk/bin
@@ -77,12 +77,8 @@ ENV FLANK_VERSION 23.10.1
 RUN curl -L https://github.com/Flank/flank/releases/download/v${FLANK_VERSION}/flank.jar --output ${FLANK_DOWNLOAD} \
     && chmod +x ${FLANK_DOWNLOAD}
 
-# Used in taskcluster/scripts/tests/parse-junit-results.py for parsing and displaying JUnit XML results
-# junitparser 5.x requires Python >=3.10 (satisfied by ubuntu2204-base)
-RUN pip3 install junitparser==5.0.1 beautifultable==1.1.0
-
-# Used for env var ingest in testrail.py
-RUN pip3 install python-dotenv==1.2.2
+# Used in taskcluster/scripts/tests/parse-junit-results.py and generate-flaky-report-from-ftl.py
+RUN pip3 install --break-system-packages junitparser==5.0.3 beautifultable==1.1.0
 
 # run-task expects to run as root
 USER root
