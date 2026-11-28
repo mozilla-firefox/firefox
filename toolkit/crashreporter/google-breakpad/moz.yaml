@@ -1,0 +1,25 @@
+# Version of this schema
+schema: 1
+
+bugzilla:
+  # Bugzilla product and component for this directory and subdirectories
+  product: "Toolkit"
+  component: "Crash Reporting"
+
+# toolkit/crashreporter/update-breakpad.sh updates the library and rewrites
+# release and revision.
+origin:
+  name: "breakpad"
+  description: "Google Breakpad crash reporting library"
+  url: "https://chromium.googlesource.com/breakpad/breakpad"
+  license: "BSD-3-Clause"
+  release: "5bba75bfd6ec386b8e3af0b91332388a378135bf"
+  revision: "5bba75bfd6ec386b8e3af0b91332388a378135bf"
+
+# The update script, not `mach vendor`, updates this directory.
+vendoring:
+  url: https://chromium.googlesource.com/breakpad/breakpad
+  source-hosting: googlesource
+  skip-vendoring-steps:
+    - fetch
+    - update-moz-yaml

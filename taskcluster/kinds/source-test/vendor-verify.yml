@@ -186,6 +186,7 @@ misc:
         - toolkit/components/content-classifier/etp_engine/moz.yaml
         - toolkit/components/ml/vendor/openai/moz.yaml
         - toolkit/components/nimbus/schemas/moz.yaml
+        - toolkit/crashreporter/google-breakpad/moz.yaml
         - tools/lint/eslint/eslint-plugin-sdl-vendored/moz.yaml
 
 sandbox:

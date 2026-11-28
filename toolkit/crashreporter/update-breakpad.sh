@@ -14,6 +14,8 @@ fi
 
 crashreporter_dir=`realpath $(dirname $0)`
 repo=${crashreporter_dir}/../..
+moz_yaml=$(mktemp)
+cp ${crashreporter_dir}/google-breakpad/moz.yaml ${moz_yaml}
 rm -rf ${crashreporter_dir}/google-breakpad
 
 breakpad_repo=$1
@@ -49,7 +51,12 @@ hg -R ${repo} st -n | grep "moz\.build$" | xargs hg revert --no-backup
 hg -R ${repo} st -n | grep "objs\.mozbuild$" | xargs hg revert --no-backup
 
 # Record git rev
-(cd $breakpad_repo; git rev-parse $rev) > ${crashreporter_dir}/google-breakpad/GIT-INFO
+breakpad_revision=$(cd $breakpad_repo; git rev-parse $rev)
+echo ${breakpad_revision} > ${crashreporter_dir}/google-breakpad/GIT-INFO
+sed -e "s/^  release: .*/  release: \"${breakpad_revision}\"/" \
+    -e "s/^  revision: .*/  revision: \"${breakpad_revision}\"/" \
+    ${moz_yaml} > ${crashreporter_dir}/google-breakpad/moz.yaml
+rm ${moz_yaml}
 
 # Apply any local patches
 shopt -s nullglob
