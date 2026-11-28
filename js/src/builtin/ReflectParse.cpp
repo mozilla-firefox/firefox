@@ -3868,7 +3868,9 @@ static bool reflect_parse(JSContext* cx, uint32_t argc, Value* vp) {
   CompileOptions options(cx);
   options.setFileAndLine(filename.get(), lineno);
   options.setForceFullParse();
-  options.allowHTMLComments = target == ParseGoal::Script;
+  if (target == ParseGoal::Module) {
+    options.setModule();
+  }
   mozilla::Range<const char16_t> chars = linearChars.twoByteRange();
 
   Rooted<CompilationInput> input(cx, CompilationInput(options));

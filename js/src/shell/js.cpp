@@ -6449,9 +6449,7 @@ static bool FrontendTest(JSContext* cx, unsigned argc, Value* vp,
   size_t length = scriptContents->length();
 
   if (goal == frontend::ParseGoal::Module) {
-    // See frontend::CompileModule.
-    options.setForceStrictMode();
-    options.allowHTMLComments = false;
+    options.setModule();
   }
 
   if (dumpType == DumpType::Stencil) {

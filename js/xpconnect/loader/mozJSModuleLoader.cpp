@@ -676,7 +676,6 @@ nsresult mozJSModuleLoader::LoadSingleModuleOnWorker(
       //       Accessing the source requires the synchronous communication with
       //       the main thread, and supporting it requires too much complexity
       //       compared to the benefit.
-      options.setNoScriptRval(true);
       options.setFileAndLine(location.get(), 1);
       SetModuleOptions(options);
 

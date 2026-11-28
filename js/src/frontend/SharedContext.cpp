@@ -48,6 +48,9 @@ SharedContext::SharedContext(FrontendContext* fc, Kind kind,
     setFlag(ImmutableFlags::IsFunction);
   } else if (kind == Kind::Module) {
     MOZ_ASSERT(!options.nonSyntacticScope);
+    MOZ_ASSERT(options.noScriptRval && options.isRunOnce &&
+                   options.forceStrictMode() && !options.allowHTMLComments,
+               "must use CompileOptions::setModule");
     setFlag(ImmutableFlags::IsModule);
   } else if (kind == Kind::Eval) {
     setFlag(ImmutableFlags::IsForEval);

@@ -513,6 +513,7 @@ class JS_PUBLIC_API OwningCompileOptions final : public ReadOnlyCompileOptions {
     // ES6 10.2.1 Module code is always strict mode code.
     setForceStrictMode();
     setIsRunOnce(true);
+    noScriptRval = true;
     allowHTMLComments = false;
     return *this;
   }
@@ -693,6 +694,7 @@ class MOZ_STACK_CLASS JS_PUBLIC_API CompileOptions final
     // ES6 10.2.1 Module code is always strict mode code.
     setForceStrictMode();
     setIsRunOnce(true);
+    noScriptRval = true;
     allowHTMLComments = false;
     return *this;
   }
