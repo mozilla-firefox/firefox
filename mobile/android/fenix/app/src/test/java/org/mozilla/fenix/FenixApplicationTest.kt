@@ -16,7 +16,6 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.spyk
-import io.mockk.verify
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.runBlocking
@@ -26,10 +25,6 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.ai.controls.AIFeatureBlock
 import mozilla.components.concept.ai.controls.AIFeatureRegistry
 import mozilla.components.concept.engine.Engine.HttpsOnlyMode
-import mozilla.components.concept.engine.webextension.DisabledFlags
-import mozilla.components.concept.engine.webextension.Metadata
-import mozilla.components.concept.engine.webextension.WebExtension
-import mozilla.components.feature.addons.migration.DefaultSupportedAddonsChecker
 import mozilla.components.support.base.android.PowerManagerInfoProvider
 import mozilla.components.support.test.robolectric.DefaultBrowserUtils
 import mozilla.components.support.test.robolectric.testContext
@@ -111,34 +106,6 @@ class FenixApplicationTest {
                 distributionSettings = testDistributionSettings,
                 metricController = FakeMetricController(),
             )
-    }
-
-    @Test
-    fun `GIVEN there are unsupported addons installed WHEN subscribing for new add-ons checks THEN register for checks`() {
-        val checker = mockk<DefaultSupportedAddonsChecker>(relaxed = true)
-        val unSupportedExtension: WebExtension = mockk()
-        val metadata: Metadata = mockk()
-
-        every { unSupportedExtension.getMetadata() } returns metadata
-        every { metadata.disabledFlags } returns DisabledFlags.select(DisabledFlags.APP_SUPPORT)
-
-        application.subscribeForNewAddonsIfNeeded(checker, listOf(unSupportedExtension))
-
-        verify { checker.registerForChecks() }
-    }
-
-    @Test
-    fun `GIVEN there are no unsupported addons installed WHEN subscribing for new add-ons checks THEN unregister for checks`() {
-        val checker = mockk<DefaultSupportedAddonsChecker>(relaxed = true)
-        val unSupportedExtension: WebExtension = mockk()
-        val metadata: Metadata = mockk()
-
-        every { unSupportedExtension.getMetadata() } returns metadata
-        every { metadata.disabledFlags } returns DisabledFlags.select(DisabledFlags.USER)
-
-        application.subscribeForNewAddonsIfNeeded(checker, listOf(unSupportedExtension))
-
-        verify { checker.unregisterForChecks() }
     }
 
     @Test

@@ -52,10 +52,7 @@ import mozilla.components.browser.storage.sync.GlobalPlacesDependencyProvider
 import mozilla.components.compose.base.theme.Theme
 import mozilla.components.concept.ai.controls.isEnabled
 import mozilla.components.concept.base.crash.Breadcrumb
-import mozilla.components.concept.engine.webextension.WebExtension
-import mozilla.components.concept.engine.webextension.isUnsupported
 import mozilla.components.concept.push.PushProcessor
-import mozilla.components.feature.addons.migration.DefaultSupportedAddonsChecker
 import mozilla.components.feature.addons.update.GlobalAddonDependencyProvider
 import mozilla.components.feature.autofill.AutofillUseCases
 import mozilla.components.feature.automotive.isAndroidAutomotiveAvailable
@@ -109,6 +106,7 @@ import org.mozilla.fenix.GleanMetrics.SearchDefaultEngineForPrivate
 import org.mozilla.fenix.GleanMetrics.TabStrip
 import org.mozilla.fenix.GleanMetrics.TermsOfUse
 import org.mozilla.fenix.GleanMetrics.UserAiSummarize
+import org.mozilla.fenix.addons.cancelSupportedAddonsChecks
 import org.mozilla.fenix.autofill.AutofillService
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
 import org.mozilla.fenix.components.Components
@@ -913,6 +911,7 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
     }
 
     private fun initializeWebExtensionSupport() {
+        cancelSupportedAddonsChecks(this)
         try {
             GlobalAddonDependencyProvider.initialize(
                 components.addonManager,
@@ -941,27 +940,11 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
                 },
                 onExtensionsLoaded = { extensions ->
                     components.addonUpdater.registerForFutureUpdates(extensions)
-                    subscribeForNewAddonsIfNeeded(components.supportedAddonsChecker, extensions)
                 },
                 onUpdatePermissionRequest = components.addonUpdater::onUpdatePermissionRequest,
             )
         } catch (e: UnsupportedOperationException) {
             logger.error("Failed to initialize web extension support", e)
-        }
-    }
-
-    @VisibleForTesting
-    internal fun subscribeForNewAddonsIfNeeded(
-        checker: DefaultSupportedAddonsChecker,
-        installedExtensions: List<WebExtension>,
-    ) {
-        val hasUnsupportedAddons = installedExtensions.any { it.isUnsupported() }
-        if (hasUnsupportedAddons) {
-            checker.registerForChecks()
-        } else {
-            // As checks are a persistent subscriptions, we have to make sure
-            // we remove any previous subscriptions.
-            checker.unregisterForChecks()
         }
     }
 

@@ -19,7 +19,6 @@ import mozilla.components.concept.ai.controls.AIFeatureRegistry
 import mozilla.components.concept.integrity.RequestHashProvider
 import mozilla.components.feature.addons.AddonManager
 import mozilla.components.feature.addons.amo.AMOAddonsProvider
-import mozilla.components.feature.addons.migration.DefaultSupportedAddonsChecker
 import mozilla.components.feature.addons.update.DefaultAddonUpdater
 import mozilla.components.feature.autofill.AutofillConfiguration
 import mozilla.components.feature.summarize.PageSummaryFeature
@@ -228,14 +227,6 @@ class Components(
     @Suppress("MagicNumber")
     val addonUpdater by lazy {
         DefaultAddonUpdater(context, Frequency(12, TimeUnit.HOURS), core.store)
-    }
-
-    @Suppress("MagicNumber")
-    val supportedAddonsChecker by lazy {
-        DefaultSupportedAddonsChecker(
-            context,
-            Frequency(12, TimeUnit.HOURS),
-        )
     }
 
     @Suppress("MagicNumber")
