@@ -57,13 +57,9 @@ RUN set -ex; \
     echo 'Pin-Priority: 1001'; \
   ) > /etc/apt/preferences.d/99taskcluster
 
-# Because upgrading the base image snapshot upgrades mesa-libgallium and this has consequences on
-# webgl tests, for the moment, we update ca-certificates manually.
+# Update ca-certificates manually on older distros without an update.
 RUN set -ex; \
   case "$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release)" in \
-  noble) \
-    /usr/lib/apt/apt-helper -o Acquire::https::Verify-Peer=false download-file \
-      https://launchpad.net/ubuntu/+archive/primary/+files/ca-certificates_20260816ubuntu0.24.04.1_all.deb /tmp/ca-certificates.deb SHA256:8a0a754aaafed72cc8efb8c1731808133284a84fbfc76a4fcc73fce9e01b4187 ;; \
   focal|bionic) \
     /usr/lib/apt/apt-helper -o Acquire::https::Verify-Peer=false download-file \
       https://launchpad.net/ubuntu/+archive/primary/+files/ca-certificates_20260816ubuntu0.22.04.1_all.deb /tmp/ca-certificates.deb SHA256:29ca037f49f7a4b41d67ad72946c2e541f3ae52d8f6ab1495d2af09aa391144b ;; \

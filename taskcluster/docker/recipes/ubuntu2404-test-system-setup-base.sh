@@ -96,6 +96,18 @@ apt_packages+=('x11-xserver-utils')
 # Build a list of packages to install from the multiverse repo.
 apt_packages+=('ubuntu-restricted-extras')
 
+# Keep mesa packages on an older snapshot until webgl tests pass with
+# a newer version
+cat > /etc/apt/sources.list.d/extra.list <<EOF
+deb [snapshot=no] https://snapshot.ubuntu.com/ubuntu/20250716T072533Z/ noble-updates main universe
+EOF
+
+cat > /etc/apt/preferences.d/99extra <<EOF
+Package: src:mesa:any
+Pin: version 24.2.8-1ubuntu1~24.04.1
+Pin-Priority: 1002
+EOF
+
 # APT update takes very long on Ubuntu. Run it at the last possible minute.
 apt-get update
 
