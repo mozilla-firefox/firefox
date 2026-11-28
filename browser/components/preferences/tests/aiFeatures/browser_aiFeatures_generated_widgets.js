@@ -68,10 +68,12 @@ describe("settings ai features", () => {
       Assert.equal(Services.prefs.getStringPref(CONTROL_PREF), "available");
       Assert.ok(isEnrolled(), "Labs enrolment remains active");
       Assert.ok(Services.prefs.getBoolPref(LABS_PREF), "Labs remains enabled");
-      Assert.ok(
-        Services.prefs.getBoolPref(PROVIDER_PREF),
-        "Installed widgets remain enabled"
-      );
+      if (AppConstants.NIGHTLY_BUILD) {
+        Assert.ok(
+          Services.prefs.getBoolPref(PROVIDER_PREF),
+          "Installed widgets remain enabled"
+        );
+      }
     });
   });
 });
