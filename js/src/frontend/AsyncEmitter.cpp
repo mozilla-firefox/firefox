@@ -155,7 +155,7 @@ bool AsyncEmitter::emitFinalYield() {
     return false;
   }
 
-  if (!bce_->emit1(JSOp::SetRval)) {
+  if (!bce_->emit1(bce_->sc->noScriptRval() ? JSOp::Pop : JSOp::SetRval)) {
     //              [stack]
     return false;
   }
@@ -189,7 +189,7 @@ bool AsyncEmitter::emitRejectCatch() {
     return false;
   }
 
-  if (!bce_->emit1(JSOp::SetRval)) {
+  if (!bce_->emit1(bce_->sc->noScriptRval() ? JSOp::Pop : JSOp::SetRval)) {
     //              [stack]
     return false;
   }

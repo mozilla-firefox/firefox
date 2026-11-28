@@ -2018,9 +2018,10 @@
      * frame's return value slot is returned to the caller. It should be an
      * object of the form `{value: returnValue, done: true}`.
      *
-     * If the current function is an async function or async generator, the
+     * If the current script is an async function or async generator, the
      * frame's return value slot must contain the current frame's result
-     * promise, which must already be resolved or rejected.
+     * promise, which must already be resolved or rejected. This doesn't apply
+     * to async modules because they're compiled with `noScriptRval`.
      *
      *   Category: Functions
      *   Type: Generators and async functions

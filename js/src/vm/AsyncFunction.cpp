@@ -129,6 +129,12 @@ static bool AsyncFunctionResume(JSContext* cx,
   MOZ_ASSERT(generator->isSuspended(),
              "non-suspended generator when resuming async function");
 
+#ifdef DEBUG
+  // Check isModuleGenerator before resuming because setClosed clears the module
+  // slot.
+  bool isModule = generator->isModuleGenerator();
+#endif
+
   // Step {3,5}.a. Let prevContext be the running execution context.
   // Step {3,5}.b. Suspend prevContext.
   // Step {3,5}.c. Push asyncContext onto the execution context stack;
@@ -172,9 +178,11 @@ static bool AsyncFunctionResume(JSContext* cx,
   //               been removed from the execution context stack and
   //               prevContext is the currently running execution context.
   // Step {3,f}.f. Return undefined.
-  MOZ_ASSERT_IF(generator->isClosed(), generatorOrValue.isObject());
-  MOZ_ASSERT_IF(generator->isClosed(),
-                &generatorOrValue.toObject() == resultPromise);
+  //
+  // Modules are compiled with noScriptRval so they don't return the promise.
+  MOZ_ASSERT_IF(generator->isClosed() && !isModule,
+                generatorOrValue.isObject() &&
+                    &generatorOrValue.toObject() == resultPromise);
   MOZ_ASSERT_IF(!generator->isClosed(), generator->suspendOp() == JSOp::Await);
 
   return true;
