@@ -7398,6 +7398,21 @@ static bool ShouldPutNextSiblingOnNewLine(nsIFrame* aLastFrame) {
 
 void nsBlockFrame::AddFrames(nsFrameList&& aFrameList, nsIFrame* aPrevSibling,
                              const nsLineList::iterator* aPrevSiblingLine) {
+  // Frames tend to be added next to the previous change to our lines, e.g.
+  // when siblings are reframed one after the other, so look for aPrevSibling
+  // there first rather than searching the line list from the end. That search
+  // finds our last frame right away though.
+  nsLineBox* const queryCursor = GetLineCursorForQuery();
+  const bool hadQueryCursor = queryCursor;
+  LineIterator lineNearCursor;
+  const bool prevSiblingLineIsNearCursor =
+      aFrameList.NotEmpty() && !aPrevSiblingLine && aPrevSibling &&
+      queryCursor && aPrevSibling != mFrames.LastChild() &&
+      FindLineNear(queryCursor, aPrevSibling, &lineNearCursor);
+  if (prevSiblingLineIsNearCursor) {
+    aPrevSiblingLine = &lineNearCursor;
+  }
+
   // Clear our line cursor, since our lines may change.
   ClearLineCursors();
 
@@ -7410,6 +7425,7 @@ void nsBlockFrame::AddFrames(nsFrameList&& aFrameList, nsIFrame* aPrevSibling,
   nsFrameList* frames = &mFrames;
   nsLineList::iterator prevSibLine;
   int32_t prevSiblingIndex;
+  bool searchWasLong = false;
   if (aPrevSiblingLine) {
     MOZ_ASSERT(aPrevSibling);
     prevSibLine = *aPrevSiblingLine;
@@ -7418,7 +7434,8 @@ void nsBlockFrame::AddFrames(nsFrameList&& aFrameList, nsIFrame* aPrevSibling,
                    (overflowLines &&
                     prevSibLine.IsInSameList(overflowLines->mLines.begin())),
                "must be one of our line lists");
-    if (overflowLines) {
+    // The query cursor is always on one of our normal lines.
+    if (overflowLines && !prevSiblingLineIsNearCursor) {
       // We need to find out which list it's actually in.  Assume that
       // *if* we have overflow lines, that our primary lines aren't
       // huge, but our overflow lines might be.
@@ -7452,9 +7469,18 @@ void nsBlockFrame::AddFrames(nsFrameList&& aFrameList, nsIFrame* aPrevSibling,
       // which is appending content.
 
       // Find the line that contains the previous sibling
-      if (!nsLineBox::RFindLineContaining(aPrevSibling, lineList->begin(),
-                                          prevSibLine, mFrames.LastChild(),
-                                          &prevSiblingIndex)) {
+      if (nsLineBox::RFindLineContaining(aPrevSibling, lineList->begin(),
+                                         prevSibLine, mFrames.LastChild(),
+                                         &prevSiblingIndex)) {
+        int32_t linesSearched = 0;
+        for (LineIterator line = prevSibLine;
+             line != lineList->end() &&
+             linesSearched < MIN_LINES_NEEDING_CURSOR;
+             ++line) {
+          ++linesSearched;
+        }
+        searchWasLong = linesSearched >= MIN_LINES_NEEDING_CURSOR;
+      } else {
         // Not in mLines - try overflow lines.
         FrameLines* overflowLines = GetOverflowLines();
         bool found = false;
@@ -7546,6 +7572,12 @@ void nsBlockFrame::AddFrames(nsFrameList&& aFrameList, nsIFrame* aPrevSibling,
     }
 
     aPrevSibling = newFrame;
+  }
+
+  // Keeping the query cursor up to date only pays off when it's already in use,
+  // or when the next insertion could otherwise take a long search too.
+  if (lineList == &mLines && (hadQueryCursor || searchWasLong)) {
+    SetLineCursorForQuery(prevSibLine.get());
   }
 
 #ifdef DEBUG
@@ -8085,10 +8117,10 @@ void nsBlockFrame::DoRemoveFrame(DestroyContext& aContext,
 
   // Find the line that contains aDeletedFrame. Siblings tend to be removed one
   // after the other, e.g. when a run of them is reframed, so start around the
-  // line of the previous removal, if we left it in the query cursor. Failing
-  // that, search from the display cursor (if available) to the end of the
-  // normal line list, then from the start to the display cursor, and last the
-  // overflow lines.
+  // line of the previous change to our lines, if we left it in the query
+  // cursor. Failing that, search from the display cursor (if available) to the
+  // end of the normal line list, then from the start to the display cursor, and
+  // last the overflow lines.
   nsLineList::iterator line_start = mLines.begin(), line_end = mLines.end();
   nsLineList::iterator line = line_start;
 
