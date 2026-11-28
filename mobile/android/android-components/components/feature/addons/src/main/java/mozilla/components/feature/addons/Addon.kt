@@ -140,7 +140,6 @@ data class Addon(
      * @property id The ID of the installed web extension.
      * @property version The installed version.
      * @property enabled Indicates if this [Addon] is enabled to interact with web content or not, defaults to false.
-     * @property supported Indicates if this [Addon] is supported by the browser or not, defaults to true.
      * @property disabledReason Indicates why the [Addon] was disabled.
      * @property optionsPageUrl the URL of the page displaying the options page (options_ui in the extension's
      *   manifest).
@@ -155,7 +154,6 @@ data class Addon(
         val optionsPageUrl: String?,
         val openOptionsPageInTab: Boolean = false,
         val enabled: Boolean = false,
-        val supported: Boolean = true,
         val disabledReason: DisabledReason? = null,
         val allowedInPrivateBrowsing: Boolean = false,
         val icon: Bitmap? = null,
@@ -237,13 +235,9 @@ data class Addon(
     /** Returns whether or not this [Addon] is currently enabled. */
     fun isEnabled() = installedState?.enabled == true
 
-    /** Returns whether or not this [Addon] is currently supported by the browser. */
-    fun isSupported() = installedState?.supported == true
-
     /**
      * Returns whether or not this [Addon] is currently disabled because it is not supported. This is based on the
-     * installed extension state in the engine. An addon can be disabled as unsupported and later become supported, so
-     * both [isSupported] and [isDisabledAsUnsupported] can be true.
+     * installed extension state in the engine.
      */
     fun isDisabledAsUnsupported() = installedState?.disabledReason == DisabledReason.UNSUPPORTED
 

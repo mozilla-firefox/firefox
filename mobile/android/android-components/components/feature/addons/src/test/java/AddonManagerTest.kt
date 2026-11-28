@@ -118,16 +118,16 @@ class AddonManagerTest {
             WebExtensionSupport.installedExtensions["ext1"] = ext1
 
             // Make `ext3` an extension that is disabled because it wasn't supported.
-            val newlySupportedExtension: WebExtension = mock()
+            val unsupportedExtension: WebExtension = mock()
             val metadata: Metadata = mock()
-            whenever(newlySupportedExtension.isEnabled()).thenReturn(false)
+            whenever(unsupportedExtension.isEnabled()).thenReturn(false)
             whenever(metadata.disabledFlags).thenReturn(DisabledFlags.select(APP_SUPPORT))
             whenever(metadata.optionsPageUrl).thenReturn("http://options-page.moz")
             whenever(metadata.openOptionsPageInTab).thenReturn(true)
-            whenever(newlySupportedExtension.id).thenReturn("ext3")
-            whenever(newlySupportedExtension.url).thenReturn("site_url")
-            whenever(newlySupportedExtension.getMetadata()).thenReturn(metadata)
-            WebExtensionSupport.installedExtensions["ext3"] = newlySupportedExtension
+            whenever(unsupportedExtension.id).thenReturn("ext3")
+            whenever(unsupportedExtension.url).thenReturn("site_url")
+            whenever(unsupportedExtension.getMetadata()).thenReturn(metadata)
+            WebExtensionSupport.installedExtensions["ext3"] = unsupportedExtension
 
             val ext4: WebExtension = mock()
             whenever(ext4.id).thenReturn("ext4")
@@ -181,12 +181,11 @@ class AddonManagerTest {
             assertEquals("ext2", addon2.id)
             assertNull(addon2.installedState)
 
-            // ext3 should now be marked as supported but still be disabled as unsupported.
+            // ext3 should still be disabled as unsupported.
             val addon3 = addons.find { it.id == "ext3" }!!
             assertEquals("ext3", addon3.id)
             assertNotNull(addon3.installedState)
             assertEquals("ext3", addon3.installedState.id)
-            assertTrue(addon3.isSupported())
             assertFalse(addon3.isEnabled())
             assertTrue(addon3.isDisabledAsUnsupported())
             assertEquals("http://options-page.moz", addon3.installedState.optionsPageUrl)
@@ -224,7 +223,7 @@ class AddonManagerTest {
         }
 
     @Test
-    fun `getAddons - returns temporary add-ons as supported`() =
+    fun `getAddons - returns temporary add-ons`() =
         runTest(dispatcher) {
             val addonsProvider: AddonsProvider = mock()
             whenever(addonsProvider.getFeaturedAddons(anyBoolean(), eq(null), language = anyString()))
@@ -258,13 +257,12 @@ class AddonManagerTest {
             val addons = addonManager.getAddons()
             assertEquals(1, addons.size)
 
-            // Temporary extension should be returned and marked as supported
+            // Temporary extension should be returned
             assertEquals("temp_ext", addons[0].id)
             assertEquals(1, addons[0].translatableName.size)
             assertNotNull(addons[0].translatableName[addons[0].defaultLocale])
             assertTrue(addons[0].translatableName.containsValue("name"))
             assertNotNull(addons[0].installedState)
-            assertTrue(addons[0].isSupported())
             assertEquals(temporaryExtensionIcon, addons[0].installedState!!.icon)
         }
 
