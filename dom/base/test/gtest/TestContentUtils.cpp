@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <cstdint>
+
 #include "gtest/gtest.h"
 #include "js/PropertyAndElement.h"  // JS_DefineProperty
 #include "jsapi.h"
@@ -16,6 +18,8 @@
 #include "mozilla/dom/IPCTransferable.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/SimpleGlobalObject.h"
+#include "mozilla/gfx/Point.h"
+#include "mozilla/gfx/Types.h"
 #include "nsCOMPtr.h"
 #include "nsComponentManagerUtils.h"
 #include "nsContentUtils.h"
@@ -270,6 +274,65 @@ TEST(DOM_Base_ContentUtils, MaybeFixIPv6Host)
     ASSERT_TRUE(host.Equals(testCase.expectedOutput))
     << "Input: '" << testCase.input << "', Expected: '"
     << testCase.expectedOutput << "', Got: '" << host.get() << "'";
+  }
+}
+
+TEST(DOM_Base_ContentUtils, CalculateBufferSizeForImage)
+{
+  using mozilla::gfx::IntSize;
+  using mozilla::gfx::SurfaceFormat;
+
+  // B8G8R8A8 is 4 bytes/pixel, R5G6B5_UINT16 is 2 bytes/pixel.
+  const SurfaceFormat bgra = SurfaceFormat::B8G8R8A8;
+  const SurfaceFormat rgb565 = SurfaceFormat::R5G6B5_UINT16;
+
+  struct TestCase {
+    uint32_t stride;
+    IntSize size;
+    SurfaceFormat format;
+    nsresult expectedRv;
+    // Only checked when expectedRv == NS_OK.
+    size_t expectedMax;
+    size_t expectedUsed;
+  };
+
+  const TestCase cases[] = {
+      // Valid, tightly packed (stride == width * bpp).
+      {512, IntSize(128, 80), bgra, NS_OK, 512 * 80, 512 * 80},
+      // Valid, with row padding (used excludes the last row's padding).
+      {512, IntSize(100, 10), bgra, NS_OK, 512 * 10, 512 * 9 + 100 * 4},
+      // Stride exactly one row.
+      {400, IntSize(100, 10), bgra, NS_OK, 400 * 10, 400 * 10},
+      // INT32_MAX is the largest representable stride; it validates
+      // arithmetically here (a real buffer-size check happens downstream).
+      {uint32_t(INT32_MAX), IntSize(1, 1), bgra, NS_OK, size_t(INT32_MAX), 4},
+      // Bug 2060106: a stride with bit 31 set would narrow to a negative
+      // int32_t downstream and drive an out-of-bounds read.
+      {0x80000000u, IntSize(32768, 2), rgb565, NS_ERROR_FAILURE, 0, 0},
+      {0xFFFFFFFFu, IntSize(32768, 2), rgb565, NS_ERROR_FAILURE, 0, 0},
+      // requiredBytes (stride * height) overflows int32_t.
+      {uint32_t(INT32_MAX), IntSize(1, 2), bgra, NS_ERROR_FAILURE, 0, 0},
+      // Bug 2054740: stride smaller than one row of pixels.
+      {4, IntSize(128, 80), bgra, NS_ERROR_FAILURE, 0, 0},
+      // Non-positive dimensions.
+      {512, IntSize(0, 80), bgra, NS_ERROR_FAILURE, 0, 0},
+      {512, IntSize(128, 0), bgra, NS_ERROR_FAILURE, 0, 0},
+      {512, IntSize(-1, 80), bgra, NS_ERROR_FAILURE, 0, 0},
+      {512, IntSize(128, -1), bgra, NS_ERROR_FAILURE, 0, 0},
+  };
+
+  for (const auto& c : cases) {
+    size_t maxSize = 0;
+    size_t usedSize = 0;
+    nsresult rv = nsContentUtils::CalculateBufferSizeForImage(
+        c.stride, c.size, c.format, &maxSize, &usedSize);
+    EXPECT_EQ(rv, c.expectedRv)
+        << "stride=" << c.stride << " size=" << c.size.width << "x"
+        << c.size.height;
+    if (NS_SUCCEEDED(c.expectedRv)) {
+      EXPECT_EQ(maxSize, c.expectedMax) << "stride=" << c.stride;
+      EXPECT_EQ(usedSize, c.expectedUsed) << "stride=" << c.stride;
+    }
   }
 }
 
