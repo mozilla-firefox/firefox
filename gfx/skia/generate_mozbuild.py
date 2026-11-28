@@ -141,6 +141,30 @@ if CONFIG['TARGET_CPU'] == 'loongarch64':
     SOURCES['skia/src/opts/SkOpts_lasx.cpp'].flags += CONFIG['LASX_FLAGS']
 """
 
+licenses = '''
+LICENSES += ["android"]
+LICENSES["android"].title = "Android Open Source License"
+LICENSES["android"].text = "LICENSE-NOTICE-android.txt"
+LICENSES["android"].spdx = "BSD-2-Clause"
+LICENSES["android"].notice = """
+<p>This license applies to various files in the Mozilla codebase, including those in the directory <code>gfx/skia/</code>.</p>
+            <!-- This is the wrong directory, what was intended? -->
+"""
+
+LICENSES += ["skia"]
+LICENSES["skia"].title = "Skia License"
+LICENSES["skia"].text = "LICENSE-NOTICE-skia.txt"
+LICENSES["skia"].spdx = "BSD-3-Clause"
+LICENSES["skia"].notice = """
+<p>This license applies to certain files in the directory <code>gfx/skia/</code>.</p>
+"""
+
+LICENSED_UNDER += [
+    "android",
+    "skia",
+]
+'''
+
 import json
 
 platforms = ['linux', 'mac', 'android', 'win']
@@ -454,6 +478,7 @@ def write_mozbuild(sources):
     write_sources(f, sources['none'], 4)
 
   f.write(footer)
+  f.write(licenses)
 
   f.close()
 
