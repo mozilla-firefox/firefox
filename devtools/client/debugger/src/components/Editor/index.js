@@ -9,7 +9,11 @@ import { bindActionCreators } from "devtools/client/shared/vendor/redux";
 import ReactDOM from "devtools/client/shared/vendor/react-dom";
 import { connect } from "devtools/client/shared/vendor/react-redux";
 
-import { getLineText, isLineBlackboxed } from "./../../utils/source";
+import {
+  getLineText,
+  isLineBlackboxed,
+  isVueSingleFileComponent,
+} from "./../../utils/source";
 import { createLocation } from "./../../utils/location";
 import { asSettled, isFulfilled, isRejected } from "../../utils/async-value";
 
@@ -748,6 +752,8 @@ class Editor extends PureComponent {
       mode = SourceEditor.modes.css;
     } else if (selectedSource.isHTML) {
       mode = SourceEditor.modes.html;
+    } else if (isVueSingleFileComponent(selectedSourceTextContent.value)) {
+      mode = SourceEditor.modes.vue;
     } else {
       mode = SourceEditor.modes.javascript;
     }

@@ -167,6 +167,32 @@ export function isJavaScript(source, content) {
   );
 }
 
+// Keep in sync with VUE_COMPONENT_START in workers/parser/utils/ast.js
+const VUE_COMPONENT_START = /^\s*</;
+
+/**
+ * Returns true if the content is a Vue single-file component.
+ *
+ * Some bundlers also generate JavaScript modules for .vue files which share
+ * the "text/vue" content type (e.g. webpack vue-loader's `App.vue?12ab`
+ * virtual modules). A real single-file component always starts with a
+ * top-level block or comment. This uses the same heuristic as `parseVueScript`
+ * in the parser worker.
+ *
+ * @return boolean
+ *         True if the source is likely a Vue single-file component.
+ *
+ * @memberof utils/source
+ * @static
+ */
+export function isVueSingleFileComponent(content) {
+  return (
+    content.type === "text" &&
+    content.contentType === "text/vue" &&
+    VUE_COMPONENT_START.test(content.value)
+  );
+}
+
 export function isNotPrettyPrintable(source, sourceContent) {
   return (
     !isJavaScript(source, sourceContent) &&

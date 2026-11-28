@@ -198,6 +198,7 @@ class Editor extends EventEmitter {
     json: { name: "json" },
     text: { name: "text" },
     vs: { name: "x-shader/x-vertex" },
+    vue: { name: "vue" },
     wasm: { name: "wasm" },
   };
 
@@ -766,6 +767,7 @@ class Editor extends EventEmitter {
       codemirrorLangHtml,
       codemirrorLangXml,
       codemirrorLangCss,
+      codemirrorLangVue,
     } = this.#CodeMirror6;
 
     this.#languageModes.set(
@@ -776,6 +778,7 @@ class Editor extends EventEmitter {
     this.#languageModes.set(Editor.modes.html, codemirrorLangHtml.html());
     this.#languageModes.set(Editor.modes.xml, codemirrorLangXml.xml());
     this.#languageModes.set(Editor.modes.css, codemirrorLangCss.css());
+    this.#languageModes.set(Editor.modes.vue, codemirrorLangVue.vue());
   }
 
   /**
