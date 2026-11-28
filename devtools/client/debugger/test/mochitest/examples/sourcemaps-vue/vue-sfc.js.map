@@ -1,0 +1,11 @@
+{
+  "version": 3,
+  "file": "vue-sfc.js",
+  "sources": ["App.vue", "Virtual.vue?12ab"],
+  "sourcesContent": [
+    "<template>\n  <div class=\"hello\">\n    <h1>{{ msg }}</h1>\n  </div>\n</template>\n\n<script>\nvar moduleVar = \"data\";\nvar greeting = `Hello ${moduleVar}`;\n\nexport default {\n  name: 'HelloWorld',\n  data () {\n    var fnVar = 4;\n\n    return {\n      msg: 'Welcome to Your Vue.js App'\n    };\n  }\n};\n</script>\n\n<style scoped>\na {\n  color: red;\n}\n</style>\n",
+    "export { default } from \"./App.vue?vue&type=script&lang=js\";\n"
+  ],
+  "names": [],
+  "mappings": "AAAA;ACAA"
+}

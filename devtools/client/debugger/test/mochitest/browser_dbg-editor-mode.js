@@ -22,3 +22,33 @@ add_task(async function () {
   await selectSource(dbg, "simple1.js");
   is(getEditorFileMode(dbg), "javascript", "Mode is correct");
 });
+
+add_task(async function testVueSingleFileComponent() {
+  const dbg = await initDebugger(
+    "doc-sourcemaps-vue.html",
+    "App.vue",
+    "Virtual.vue?12ab"
+  );
+
+  await selectSource(dbg, "App.vue");
+  is(
+    getEditorFileMode(dbg),
+    "vue",
+    "Vue single-file components are highlighted with the Vue mode"
+  );
+
+  await selectSource(dbg, "Virtual.vue?12ab");
+  is(
+    getEditorFileMode(dbg),
+    "javascript",
+    "Generated JavaScript modules with a .vue extension use the JavaScript mode"
+  );
+
+  await selectSource(dbg, "App.vue");
+  await selectSource(dbg, "vue-sfc.js");
+  is(
+    getEditorFileMode(dbg),
+    "javascript",
+    "Mode is reset to JavaScript when switching from a Vue source"
+  );
+});
