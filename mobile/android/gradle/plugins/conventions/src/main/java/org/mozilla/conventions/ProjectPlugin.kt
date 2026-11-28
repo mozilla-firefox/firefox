@@ -650,6 +650,14 @@ class ProjectPlugin : Plugin<Project> {
     private fun configureUnitTests(project: Project) {
         val automation = project.providers.environmentVariable("MOZ_AUTOMATION").isPresent
         val fetches = project.providers.environmentVariable("MOZ_FETCHES_DIR")
+        project.tasks.withType(Test::class.java).configureEach {
+            // Loads the test classpath's Mockito as an agent at JVM startup instead of letting it
+            // self-attach at runtime, which JDK 21+ warns about and a future JDK will refuse.
+            val testClasspath = project.files(Callable { classpath })
+            jvmArgumentProviders.add(CommandLineArgumentProvider {
+                testClasspath.filter { it.name.startsWith("mockito-core-") }.map { "-javaagent:${it.absolutePath}" }
+            })
+        }
         project.pluginManager.withPlugin("com.android.base") {
             project.tasks.withType(Test::class.java).configureEach {
                 systemProperty("robolectric.logging", "stdout")

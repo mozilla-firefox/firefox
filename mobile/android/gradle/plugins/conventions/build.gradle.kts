@@ -58,4 +58,8 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    val testClasspath = files(provider { classpath })
+    jvmArgumentProviders.add(CommandLineArgumentProvider {
+        testClasspath.filter { it.name.startsWith("mockito-core-") }.map { "-javaagent:${it.absolutePath}" }
+    })
 }
