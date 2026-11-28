@@ -1,0 +1,15 @@
+# Version of this schema
+schema: 1
+
+bugzilla:
+  # Bugzilla product and component for this directory and subdirectories
+  product: "Core"
+  component: "Graphics: Skia"
+
+# generate_mozbuild.py rewrites release from skia/include/core/SkMilestone.h.
+origin:
+  name: "skia"
+  description: "Skia 2D graphics library"
+  url: "https://skia.org/"
+  license: "BSD-3-Clause"
+  release: "m149"

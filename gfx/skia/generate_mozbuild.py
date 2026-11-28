@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import locale
+import re
 import subprocess
 from collections import defaultdict
 locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
@@ -458,10 +459,19 @@ def write_mozbuild(sources):
 
   print('Wrote ' + filename)
 
+def write_moz_yaml():
+  with open('skia/include/core/SkMilestone.h') as f:
+    milestone = re.search(r'^#define SK_MILESTONE (\d+)', f.read(), re.M).group(1)
+  with open('moz.yaml') as f:
+    manifest = f.read()
+  with open('moz.yaml', 'w') as f:
+    f.write(re.sub(r'^  release: .*$', '  release: "m%s"' % milestone, manifest, flags=re.M))
+
 def main():
   platform_sources = generate_platform_sources()
   separated_sources = generate_separated_sources(platform_sources)
   write_mozbuild(separated_sources)
+  write_moz_yaml()
 
 
 if __name__ == '__main__':
