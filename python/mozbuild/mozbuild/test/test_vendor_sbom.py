@@ -2,6 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import os
+import shutil
+import tempfile
 import unittest
 
 from mozunit import main
@@ -14,6 +17,7 @@ from mozbuild.vendor.sbom import (
     load_license_notices,
     manifest_to_record,
     merge_license_notices,
+    prebuilt_records,
     purl_slug,
     unattached_notices,
 )
@@ -567,6 +571,75 @@ class TestIsToolingPath(unittest.TestCase):
             "third_party/js/testlib",
         ):
             self.assertFalse(is_tooling_path(path), path)
+
+
+class TestPrebuiltRecords(unittest.TestCase):
+    def setUp(self):
+        self.topsrcdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.topsrcdir)
+        self.path = os.path.join(
+            self.topsrcdir, "taskcluster/kinds/fetch/toolchains.yml"
+        )
+        os.makedirs(os.path.dirname(self.path))
+        with open(self.path, "w") as fh:
+            fh.write(
+                "dxc-src:\n"
+                "    fetch:\n"
+                "        repo: https://github.com/example/DXC\n"
+                "        revision: 9c26d961\n"
+                "windowsappsdk-redist:\n"
+                "    fetch:\n"
+                "        url: https://aka.ms/windowsappsdk/2.5/2.5.1/Redist.2.5.zip\n"
+            )
+
+    def records(self, notices=()):
+        return {r["bom_ref"]: r for r in prebuilt_records(self.topsrcdir, notices)}
+
+    def test_binaries_follow_the_notices(self):
+        self.assertEqual(self.records(), {})
+        notices = [
+            {"id": "llvm", "paths": ["dxcompiler.dll", "dxil.dll"]},
+            {"id": "mit", "paths": ["Microsoft.UI.Input.dll"]},
+        ]
+        records = self.records(notices)
+        dxc = records["binary:DirectXShaderCompiler"]
+        self.assertEqual(dxc["version"], "9c26d961")
+        self.assertEqual(dxc["occurrences"], ["dxcompiler.dll", "dxil.dll"])
+        self.assertEqual(dxc["vcs"], "https://github.com/example/DXC")
+        self.assertEqual(
+            dxc["purl"][4]["vcs_url"], "git+https://github.com/example/DXC@9c26d961"
+        )
+        self.assertEqual(
+            records["binary:WindowsAppSDK"]["vcs"],
+            "https://github.com/microsoft/WindowsAppSDK",
+        )
+        self.assertEqual(records["binary:WindowsAppSDK"]["version"], "2.5.1")
+        self.assertEqual(
+            records["binary:WindowsAppSDK"]["occurrences"], ["Microsoft.UI.Input.dll"]
+        )
+
+    def test_notices_attach_to_the_binaries(self):
+        notices = [
+            {
+                "id": "llvm",
+                "title": "LLVM",
+                "spdx": "NCSA",
+                "url": None,
+                "paths": ["dxcompiler.dll"],
+            }
+        ]
+        records = list(self.records(notices).values())
+        merge_license_notices(records, notices)
+        self.assertEqual(records[0]["licenses"], ["NCSA"])
+        self.assertEqual(components_for_unmatched(records, notices), [])
+
+    def test_missing_fetch_task_is_logged(self):
+        os.remove(self.path)
+        logged = []
+        notices = [{"id": "llvm", "paths": ["dxil.dll"]}]
+        records = prebuilt_records(self.topsrcdir, notices, log=logged.append)
+        self.assertIsNone(records[0]["version"])
+        self.assertEqual(len(logged), 1)
 
 
 if __name__ == "__main__":

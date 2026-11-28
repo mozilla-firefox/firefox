@@ -14,6 +14,7 @@ import json
 import re
 
 import mozpack.path as mozpath
+import yaml
 
 from mozbuild.vendor.moz_yaml import MozYamlVerifyError, load_moz_yaml
 
@@ -242,6 +243,91 @@ def load_license_notices(path):
             return json.load(fh)["licenses"]
     except FileNotFoundError:
         return []
+
+
+FETCH_TASKS = "taskcluster/kinds/fetch/toolchains.yml"
+
+# Prebuilt libraries the package bundles, which no moz.yaml can describe
+# because nothing of them is vendored into the tree. Each is reported where a
+# license notice names a file matching its `files`, with the repository, the
+# revision or the URL version of its `fetch` task, so they cannot go stale.
+# `vcs` is only used where the fetch task names no `repo`.
+PREBUILT_LIBRARIES = (
+    {
+        "bom_ref": "binary:DirectXShaderCompiler",
+        "files": ("dxcompiler.dll", "dxil.dll"),
+        "name": "DirectXShaderCompiler",
+        "description": "DirectX Shader Compiler, built from Mozilla's fork",
+        "website": "https://github.com/microsoft/DirectXShaderCompiler",
+        "vcs": "https://github.com/FirefoxGraphics/DirectXShaderCompiler",
+        "bugzilla": ("Core", "Graphics: WebGPU"),
+        "fetch": "dxc-src",
+    },
+    {
+        "bom_ref": "binary:WindowsAppSDK",
+        "files": ("CoreMessagingXP.dll", "Microsoft.*.dll", "marshal.dll"),
+        "name": "Windows App SDK runtime",
+        "description": "Windows App SDK redistributable runtime libraries",
+        "website": "https://learn.microsoft.com/windows/apps/windows-app-sdk/",
+        "vcs": "https://github.com/microsoft/WindowsAppSDK",
+        "bugzilla": ("Core", "Widget: Win32"),
+        "fetch": "windowsappsdk-redist",
+    },
+)
+
+
+def _fetch(topsrcdir, task):
+    """The `fetch` section of ``task`` in FETCH_TASKS, empty if it is missing."""
+    try:
+        with open(mozpath.join(topsrcdir, FETCH_TASKS), encoding="utf-8") as fh:
+            return (yaml.safe_load(fh).get(task) or {}).get("fetch") or {}
+    except (OSError, AttributeError, yaml.YAMLError):
+        return {}
+
+
+def prebuilt_records(topsrcdir, notices, log=None):
+    """Records for the PREBUILT_LIBRARIES whose files ``notices`` name.
+
+    A library with no release of its own is known by its revision.
+    """
+    noticed = {path.rstrip("/") for notice in notices for path in notice["paths"]}
+    records = []
+    for library in PREBUILT_LIBRARIES:
+        occurrences = sorted(
+            path
+            for path in noticed
+            if any(fnmatch.fnmatch(path, pattern) for pattern in library["files"])
+        )
+        if not occurrences:
+            continue
+        fetch = _fetch(topsrcdir, library["fetch"])
+        revision = fetch.get("revision")
+        versions = re.findall(r"/(\d+(?:\.\d+)+)(?=/)", fetch.get("url", ""))
+        version = versions[-1] if versions else revision
+        if not version and log:
+            log(f"{library['name']}: no version found in {FETCH_TASKS}.")
+        vcs = fetch.get("repo", library["vcs"])
+        vcs_url = f"git+{vcs}" + (f"@{revision}" if revision else "")
+        records.append({
+            "bom_ref": library["bom_ref"],
+            "name": library["name"],
+            "version": version,
+            "description": library["description"],
+            "purl": (
+                "generic",
+                None,
+                purl_slug(library["name"]),
+                version,
+                {"vcs_url": vcs_url},
+            ),
+            "licenses": [],
+            "website": library["website"],
+            "vcs": vcs,
+            "bugzilla": library["bugzilla"],
+            "occurrences": occurrences,
+            "properties": {"moz:origin.revision": revision} if revision else {},
+        })
+    return records
 
 
 def _covers(notice_path, component_dir):

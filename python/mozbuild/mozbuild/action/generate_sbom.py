@@ -321,6 +321,7 @@ def build_document(
         components_for_unmatched,
         load_license_notices,
         merge_license_notices,
+        prebuilt_records,
         unattached_notices,
     )
     from mozbuild.vendor.sbom_gradle import (
@@ -405,6 +406,7 @@ def build_document(
     # declarations. It is absent in an unconfigured tree, in which case the
     # SBOM is built from moz.yaml alone.
     notices = load_license_notices(os.path.join(topobjdir, "licenses.json"))
+    records.extend(prebuilt_records(topsrcdir, notices, log=log))
     if notices:
         merge_license_notices(records, notices)
         # Licensed code with no moz.yaml still has to appear, or the SBOM would

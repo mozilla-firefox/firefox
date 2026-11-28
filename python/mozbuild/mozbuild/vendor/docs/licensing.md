@@ -261,6 +261,11 @@ Components come from four sources, because none alone covers the tree:
   closure, in which GeckoView is a single component whose own SBOM describes
   its contents.
 
+- **`PREBUILT_LIBRARIES`** (`sbom.py`) describes the prebuilt libraries the
+  Windows package bundles, which nothing vendors into the tree: the DirectX
+  Shader Compiler and the Windows App SDK runtime. Each is reported where a
+  license notice names one of its files, with the version or revision of its
+  fetch task in `taskcluster/kinds/fetch/toolchains.yml`.
 - **`LICENSES` declarations** cover everything else: one component per notice
   whose paths no manifest or crate already covers, carrying the notice id and
   the SPDX expression where one is known.
