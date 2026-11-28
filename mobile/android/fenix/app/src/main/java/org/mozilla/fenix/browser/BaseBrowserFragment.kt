@@ -243,7 +243,9 @@ import org.mozilla.fenix.pbmlock.observePrivateModeLock
 import org.mozilla.fenix.pdf.PdfToolsIntegration
 import org.mozilla.fenix.perf.MarkersFragmentLifecycleCallbacks
 import org.mozilla.fenix.search.awesomebar.AwesomeBarComposable
+import org.mozilla.fenix.settings.biometric.AutomotiveSensitiveDataAuthenticator
 import org.mozilla.fenix.settings.biometric.BiometricPromptFeature
+import org.mozilla.fenix.settings.biometric.DefaultAutomotiveSensitiveDataAuthenticator
 import org.mozilla.fenix.settings.downloads.DownloadLocationManager
 import org.mozilla.fenix.snackbar.FenixSnackbarDelegate
 import org.mozilla.fenix.snackbar.SnackbarBinding
@@ -327,7 +329,7 @@ abstract class BaseBrowserFragment :
     private val browserFirstHosts by lazy { BrowserFirstHosts(requireComponents.settings) }
     private val shareResourceFeature = ViewBoundFeatureWrapper<ShareResourceFeature>()
     private val copyDownloadsFeature = ViewBoundFeatureWrapper<CopyDownloadFeature>()
-    private val promptsFeature = ViewBoundFeatureWrapper<PromptFeature>()
+    @VisibleForTesting internal val promptsFeature = ViewBoundFeatureWrapper<PromptFeature>()
 
     @VisibleForTesting internal val findInPageIntegration = ViewBoundFeatureWrapper<FindInPageIntegration>()
     private val toolbarsIntegration = ViewBoundFeatureWrapper<ToolbarsIntegration>()
@@ -362,6 +364,10 @@ abstract class BaseBrowserFragment :
     }
 
     private var pipFeature: PictureInPictureFeature? = null
+
+    @VisibleForTesting
+    internal var automotiveAuthenticator: AutomotiveSensitiveDataAuthenticator =
+        DefaultAutomotiveSensitiveDataAuthenticator()
 
     var customTabSessionId: String? = null
         private set
@@ -1834,8 +1840,22 @@ abstract class BaseBrowserFragment :
         }
     }
 
-    /** Shows a biometric prompt and fallback to prompting for the password. */
-    private fun showBiometricPrompt(context: Context) {
+    /**
+     * Uses [AutomotiveSensitiveDataAuthenticator] on Android Automotive OS, or shows a biometric prompt and fallback to
+     * prompting for the password elsewhere.
+     */
+    @VisibleForTesting
+    internal fun showBiometricPrompt(context: Context) {
+        if (automotiveAuthenticator.isRequired(context)) {
+            automotiveAuthenticator.authenticate(
+                activity = requireActivity(),
+                title = getString(R.string.credit_cards_biometric_prompt_unlock_message_2),
+                onAuthenticated = { promptsFeature.get()?.onBiometricResult(isAuthenticated = true) },
+                onBlocked = { promptsFeature.get()?.onBiometricResult(isAuthenticated = false) },
+            )
+            return
+        }
+
         if (BiometricPromptFeature.canUseFeature(BiometricManager.from(context))) {
             biometricPromptFeature
                 .get()
