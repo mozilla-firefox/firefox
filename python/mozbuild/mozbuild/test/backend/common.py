@@ -440,6 +440,17 @@ CONFIGS = defaultdict(
                 "OBJ_SUFFIX": "o",
             },
         },
+        "rust-library-libm": {
+            "defines": {},
+            "substs": {
+                "COMPILE_ENVIRONMENT": "1",
+                "CC_TYPE": "clang",
+                "RUST_TARGET": "x86_64-unknown-linux-gnu",
+                "LIB_PREFIX": "lib",
+                "LIB_SUFFIX": "a",
+                "OBJ_SUFFIX": "o",
+            },
+        },
         "shared-lib-paths-windows": {
             "defines": {},
             "substs": {

@@ -1,0 +1,13 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+SOURCES += ["shared.c"]
+
+USE_LIBS += [
+    "clib",
+    "test-library",
+]
+
+OS_LIBS += ["m"]
+
+SharedLibrary("shared")

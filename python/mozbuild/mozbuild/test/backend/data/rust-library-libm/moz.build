@@ -1,0 +1,28 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+
+@template
+def Library(name):
+    LIBRARY_NAME = name
+
+
+@template
+def SharedLibrary(name):
+    FORCE_SHARED_LIB = True
+    LIBRARY_NAME = name
+
+
+@template
+def RustLibrary(name):
+    Library(name)
+
+    IS_RUST_LIBRARY = True
+
+
+DIRS += [
+    "clib",
+    "rust",
+    "shared",
+    "shared-nolibm",
+]

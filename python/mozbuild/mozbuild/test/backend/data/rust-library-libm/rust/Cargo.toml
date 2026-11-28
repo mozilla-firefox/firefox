@@ -1,0 +1,18 @@
+[package]
+name = "test-library"
+version = "0.1.0"
+authors = [
+  "The Mozilla Project Developers",
+]
+
+[lib]
+crate-type = ["staticlib"]
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"
+
+[dependencies]
+mozilla-central-workspace-hack = { version = "0.1", features = ["test-library"], optional = true }

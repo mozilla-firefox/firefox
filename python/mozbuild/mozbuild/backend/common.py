@@ -29,9 +29,11 @@ from mozbuild.frontend.data import (
     IPDLCollection,
     JsShellArchive,
     MacOSBundle,
+    Program,
     RustTests,
     SandboxedWasmLibrary,
     SharedLibrary,
+    SimpleProgram,
     Sources,
     StaticLibrary,
     UnifiedSources,
@@ -690,6 +692,25 @@ class CommonBackend(BuildBackend):
             if lib not in seen_libs:
                 seen_libs.add(lib)
                 os_libs.append(lib)
+
+        # We have to link any Rust libraries after all intermediate static
+        # libraries have been listed to ensure that the Rust libraries are
+        # searched after the C/C++ objects that might reference Rust symbols.
+        rust_libs = [l for l in static_libs if isinstance(l, BaseRustLibrary)]
+        static_libs = [l for l in static_libs if not isinstance(l, BaseRustLibrary)]
+        # Rust's compiler_builtins defines weak fmod, floor, ceil and other
+        # libm functions on all targets but Windows and Apple. Linking libm
+        # before the Rust libraries keeps calls from C/C++ code bound to
+        # libm's versions. Where compiler_builtins lacks them, moving -lm
+        # forward changes nothing. The flag is the only string in the list.
+        if (
+            rust_libs
+            and isinstance(input_bin, (Program, SimpleProgram, SharedLibrary))
+            and input_bin.KIND == "target"
+            and "-lm" in os_libs
+        ):
+            static_libs.append("-lm")
+        static_libs += rust_libs
 
         return (objs, shared_libs, os_libs, static_libs)
 

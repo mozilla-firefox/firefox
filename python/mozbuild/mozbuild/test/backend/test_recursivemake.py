@@ -2291,6 +2291,26 @@ class TestRecursiveMakeBackend(BackendTester):
         # after cargo has already looked for the archive in dist/lib.
         self.assertIn("STATIC_LIB_TARGET := target", backend)
 
+    def test_rust_library_after_libm(self):
+        """-lm goes between the C/C++ and the Rust static libraries, so
+        compiler_builtins' weak libm functions don't override libm's. A
+        linkable that doesn't link libm doesn't gain it, and the flag is
+        not a prerequisite."""
+        env = self._consume("rust-library-libm", RecursiveMakeBackend)
+
+        def values(relobjdir, var):
+            prefix = f"{var} += "
+            with open(mozpath.join(env.topobjdir, relobjdir, "backend.mk")) as fh:
+                return [l.strip()[len(prefix) :] for l in fh if l.startswith(prefix)]
+
+        clib = "$(DEPTH)/clib/libclib.a"
+        rust_lib = "$(DEPTH)/x86_64-unknown-linux-gnu/release/libtest_library.a"
+
+        self.assertEqual(values("shared", "STATIC_LIBS"), [clib, "-lm", rust_lib])
+        self.assertEqual(values("shared", "STATIC_LIB_DEPS"), [clib, rust_lib])
+        self.assertEqual(values("shared-nolibm", "STATIC_LIBS"), [clib, rust_lib])
+        self.assertEqual(values("shared-nolibm", "STATIC_LIB_DEPS"), [clib, rust_lib])
+
     def test_jar_manifests_non_application(self):
         _, reg = self._dist_bin_registry(
             "jar-manifests-non-application", manifest="_tests"

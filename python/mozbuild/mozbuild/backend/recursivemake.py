@@ -1901,17 +1901,16 @@ class RecursiveMakeBackend(MakeBackend):
                 "SHARED_LIBS += %s\n" % self._pretty_path(lib.import_path, backend_file)
             )
 
-        # We have to link any Rust libraries after all intermediate static
-        # libraries have been listed to ensure that the Rust libraries are
-        # searched after the C/C++ objects that might reference Rust symbols.
         var = "HOST_LIBS" if obj.KIND == "host" else "STATIC_LIBS"
-        for lib in chain(
-            (l for l in static_libs if not isinstance(l, BaseRustLibrary)),
-            (l for l in static_libs if isinstance(l, BaseRustLibrary)),
-        ):
-            backend_file.write_once(
-                "%s += %s\n" % (var, self._pretty_path(lib.import_path, backend_file))
-            )
+        for lib in static_libs:
+            # String entries are linker flags, not prerequisites.
+            if isinstance(lib, str):
+                path = lib
+            else:
+                path = self._pretty_path(lib.import_path, backend_file)
+                if var == "STATIC_LIBS":
+                    backend_file.write_once(f"STATIC_LIB_DEPS += {path}\n")
+            backend_file.write_once(f"{var} += {path}\n")
 
         for lib in os_libs:
             if obj.KIND == "target":
