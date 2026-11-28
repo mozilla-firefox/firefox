@@ -328,6 +328,7 @@ Metadata CycloneDX has no field for is recorded as `moz:`-prefixed properties:
 | `moz:moz-yaml.path` | The manifest this component came from |
 | `moz:bugzilla.product`, `moz:bugzilla.component` | Where to file bugs |
 | `moz:origin.release`, `moz:origin.notes` | Free-form `origin` fields |
+| `moz:origin.revision` | The commit hash, where the version is the release instead |
 | `moz:vendoring.source-hosting`, `moz:vendoring.vendor-directory` | `vendoring` fields |
 | `moz:license.notice-ids` | The `about:license` notices covering this component |
 | `moz:cargo.source`, `moz:cargo.license-file` | For components derived from `Cargo.lock` |

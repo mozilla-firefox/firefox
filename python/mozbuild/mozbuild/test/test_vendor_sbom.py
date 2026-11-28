@@ -73,6 +73,20 @@ class TestManifestToRecord(unittest.TestCase):
         )
         self.assertEqual(record["version"], "v1.5.7")
 
+    def test_version_release_preferred_over_commit_hash(self):
+        revision = "21d1eb0f306e1141c10931e914dfc038c06121da"
+        for release, version in (
+            ("5bba75bf8e1e2b3c4d5e6f708192a3b4c5d6e7f8 (2024-01-02)", revision),
+            ("20240115", "20240115"),
+            ("78.3", "78.3"),
+        ):
+            record = manifest_to_record(
+                "a/moz.yaml", manifest({"release": release, "revision": revision})
+            )
+            self.assertEqual(record["version"], version)
+            self.assertEqual(record["purl"][3], revision)
+        self.assertEqual(record["properties"]["moz:origin.revision"], revision)
+
     def test_release_used_when_no_revision(self):
         record = manifest_to_record(
             "a/moz.yaml", manifest({"release": "version 3.7.3"})

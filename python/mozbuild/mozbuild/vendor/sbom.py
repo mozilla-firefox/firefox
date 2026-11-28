@@ -34,6 +34,8 @@ RE_GITLAB = re.compile(
 )
 
 RE_PURL_UNSAFE = re.compile(r"[^a-z0-9._-]+")
+RE_COMMIT = re.compile(r"^[0-9a-f]{7,40}$")
+RE_VERSION = re.compile(r"^v?\d")
 
 # `mach vendor`'s updatebot-only shims describe a version bump rather than code
 # vendored at this path, so they are not components.
@@ -94,6 +96,10 @@ def _licenses(origin):
     return list(license)
 
 
+def _is_commit(value):
+    return bool(value and RE_COMMIT.match(value)) and not value.isdigit()
+
+
 def manifest_to_record(rel_path, manifest):
     """Build an SBOM record from one parsed moz.yaml.
 
@@ -110,7 +116,15 @@ def manifest_to_record(rel_path, manifest):
 
     manifest_dir = mozpath.dirname(rel_path) or "."
     name = origin["name"]
-    version = origin.get("revision") or clean_version(origin.get("release"))
+    revision = origin.get("revision")
+    release = clean_version(origin.get("release"))
+    version = revision or release
+    if (
+        _is_commit(revision)
+        and not _is_commit(release)
+        and RE_VERSION.match(release or "")
+    ):
+        version = release
 
     properties = {
         "moz:moz-yaml.path": rel_path,
@@ -122,6 +136,7 @@ def manifest_to_record(rel_path, manifest):
         # recorded here so that pass does not have to reparse every manifest.
         ("moz:npm.name", origin.get("npm-name")),
         ("moz:origin.release", origin.get("release")),
+        ("moz:origin.revision", revision if revision != version else None),
         ("moz:origin.notes", origin.get("notes")),
         ("moz:vendoring.source-hosting", vendoring.get("source-hosting")),
         ("moz:vendoring.vendor-directory", vendoring.get("vendor-directory")),
@@ -141,7 +156,7 @@ def manifest_to_record(rel_path, manifest):
         "name": name,
         "version": version,
         "description": origin.get("description"),
-        "purl": _purl(name, version, vendoring),
+        "purl": _purl(name, revision or version, vendoring),
         "licenses": licenses,
         "website": origin.get("url"),
         "vcs": vendoring.get("url"),
