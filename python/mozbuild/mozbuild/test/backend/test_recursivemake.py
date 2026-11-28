@@ -564,6 +564,13 @@ class TestRecursiveMakeBackend(BackendTester):
         self.assertIn("consumer/pre-compile: generated-header.h", lines)
         self.assertNotIn("consumer/pre-compile: export", lines)
 
+    def test_generated_files_inputs_root(self):
+        env = self._consume("generated-files-inputs-root", RecursiveMakeBackend)
+
+        with open(mozpath.join(env.topobjdir, "root-deps.mk")) as fh:
+            rules = [l.strip() for l in fh if "input.txt" in l]
+        self.assertEqual(rules, [])
+
     def test_generated_files_host_tool(self):
         env = self._consume("generated-files-host-tool", RecursiveMakeBackend)
 

@@ -1,0 +1,10 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+GENERATED_FILES += ["input.txt", "output.h"]
+
+GENERATED_FILES["input.txt"].script = "generate.py"
+
+output = GENERATED_FILES["output.h"]
+output.script = "generate.py"
+output.inputs = ["!input.txt"]

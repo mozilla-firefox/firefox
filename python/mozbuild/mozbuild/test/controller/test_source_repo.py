@@ -7,11 +7,14 @@ import tempfile
 import unittest
 from unittest import mock
 
+import buildconfig
 import mozunit
+import variables
 from mozversioncontrol import InvalidRepoPath
 
 from mozbuild.controller import building
 from mozbuild.controller.building import SOURCE_REPO_FILE, write_source_repo
+from mozbuild.util import FileAvoidWrite
 
 
 class TestWriteSourceRepo(unittest.TestCase):
@@ -96,6 +99,28 @@ class TestWriteSourceRepo(unittest.TestCase):
         repo = {"MOZ_SOURCE_REPO": "https://example.com/repo"}
         self._write({**repo, "MOZ_SOURCE_CHANGESET": "first"})
         self._write({**repo, "MOZ_SOURCE_CHANGESET": "second"})
+
+        self.assertEqual(self._read(), "second\nhttps://example.com/repo\n")
+
+    def _generate(self, changeset):
+        substs = {
+            "MOZ_SOURCE_REPO": "https://example.com/repo",
+            "MOZ_SOURCE_CHANGESET": changeset,
+        }
+        with mock.patch.multiple(
+            buildconfig, topobjdir=self.topobjdir, topsrcdir="/src", substs=substs
+        ):
+            with FileAvoidWrite(self.path, readmode="rb") as output:
+                variables.source_repo_file(output)
+
+    def test_generated_file_missing(self):
+        self._generate("first")
+
+        self.assertEqual(self._read(), "first\nhttps://example.com/repo\n")
+
+    def test_generated_file_reconfigured(self):
+        self._generate("first")
+        self._generate("second")
 
         self.assertEqual(self._read(), "second\nhttps://example.com/repo\n")
 
