@@ -25,7 +25,6 @@
 
 using mozilla::dom::cache::Cache;
 using mozilla::dom::cache::CacheStorage;
-using mozilla::ipc::PrincipalInfo;
 
 namespace mozilla::dom {
 
@@ -99,7 +98,7 @@ class CacheLoadHandler final : public PromiseNativeHandler,
   nsresult DataReceivedFromCache(
       const uint8_t* aString, uint32_t aStringLen,
       const mozilla::dom::ChannelInfo& aChannelInfo,
-      UniquePtr<PrincipalInfo> aPrincipalInfo,
+      nsIPrincipal* aResponsePrincipal,
       const PolicyContainer::Headers& aPolicyContainerHeaders,
       const nsACString& aReferrerPolicyHeaderValue,
       const nsACString& aReportingEndpointsHeaderValue);
@@ -114,7 +113,7 @@ class CacheLoadHandler final : public PromiseNativeHandler,
   nsCOMPtr<nsIInputStreamPump> mPump;
   nsCOMPtr<nsIURI> mBaseURI;
   mozilla::dom::ChannelInfo mChannelInfo;
-  UniquePtr<PrincipalInfo> mPrincipalInfo;
+  nsCOMPtr<nsIPrincipal> mPrincipal;
   UniquePtr<ScriptDecoder> mDecoder;
   PolicyContainer::Headers mPolicyContainerHeaders;
   nsCString mReferrerPolicyHeaderValue;

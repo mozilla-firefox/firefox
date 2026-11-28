@@ -400,13 +400,6 @@ Result<IPCInternalRequest, nsresult> GetIPCInternalRequest(
         cacheInfoChannel->PreferredAlternativeDataTypes()[0].type());
   }
 
-  Maybe<PrincipalInfo> principalInfo;
-  if (loadInfo->TriggeringPrincipal()) {
-    principalInfo.emplace();
-    MOZ_ALWAYS_SUCCEEDS(PrincipalToPrincipalInfo(
-        loadInfo->TriggeringPrincipal(), principalInfo.ptr()));
-  }
-
   nsTArray<RedirectHistoryEntryInfo> redirectChain;
   for (const nsCOMPtr<nsIRedirectHistoryEntry>& redirectEntry :
        loadInfo->RedirectChain()) {
@@ -435,7 +428,7 @@ Result<IPCInternalRequest, nsresult> GetIPCInternalRequest(
       referrer, referrerPolicy, environmentReferrerPolicy, requestMode,
       requestCredentials, cacheMode, requestRedirect, requestPriority,
       integrity, /* keepalive */ false, /* hasStreamBody */ false, fragment,
-      principalInfo,
+      loadInfo->TriggeringPrincipal(),
       /* interceptionTriggeringPrincipal */ loadInfo->TriggeringPrincipal(),
       contentPolicyType, redirectChain, isThirdPartyChannel, embedderPolicy);
 }

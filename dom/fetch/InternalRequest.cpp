@@ -162,17 +162,13 @@ InternalRequest::InternalRequest(const IPCInternalRequest& aIPCRequest)
       mHasStreamBody(aIPCRequest.hasStreamBody()),
       mFragment(aIPCRequest.fragment()),
       mEmbedderPolicy(aIPCRequest.embedderPolicy()),
+      mPrincipal(aIPCRequest.principal()),
       mInterceptionTriggeringPrincipal(
           aIPCRequest.interceptionTriggeringPrincipal()),
       mInterceptionContentPolicyType(
           aIPCRequest.interceptionContentPolicyType()),
       mInterceptionRedirectChain(aIPCRequest.interceptionRedirectChain()),
       mInterceptionFromThirdParty(aIPCRequest.interceptionFromThirdParty()) {
-  if (aIPCRequest.principalInfo()) {
-    mPrincipalInfo = std::make_unique<mozilla::ipc::PrincipalInfo>(
-        aIPCRequest.principalInfo().ref());
-  }
-
   const Maybe<BodyStreamVariant>& body = aIPCRequest.body();
 
   if (body) {
@@ -213,10 +209,7 @@ void InternalRequest::ToIPCInternalRequest(
   aIPCRequest->hasStreamBody() = mHasStreamBody;
   aIPCRequest->fragment() = mFragment;
   aIPCRequest->embedderPolicy() = mEmbedderPolicy;
-
-  if (mPrincipalInfo) {
-    aIPCRequest->principalInfo() = Some(*mPrincipalInfo);
-  }
+  aIPCRequest->principal() = mPrincipal;
 
   if (mInterceptionTriggeringPrincipal) {
     aIPCRequest->interceptionTriggeringPrincipal() =
@@ -537,10 +530,5 @@ void InternalRequest::MaybeSkipCacheIfPerformingRevalidation() {
       mHeaders->HasRevalidationHeaders()) {
     mCacheMode = RequestCache::No_store;
   }
-}
-
-void InternalRequest::SetPrincipalInfo(
-    UniquePtr<mozilla::ipc::PrincipalInfo> aPrincipalInfo) {
-  mPrincipalInfo = std::move(aPrincipalInfo);
 }
 }  // namespace mozilla::dom

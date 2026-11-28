@@ -13,10 +13,6 @@
 #include "nsWrapperCache.h"
 
 namespace mozilla {
-namespace ipc {
-class PrincipalInfo;
-}  // namespace ipc
-
 namespace dom {
 
 class Headers;
@@ -69,8 +65,8 @@ class Response final : public FetchBody<Response>, public nsWrapperCache {
     return mInternalResponse->GetChannelInfo();
   }
 
-  const UniquePtr<mozilla::ipc::PrincipalInfo>& GetPrincipalInfo() const {
-    return mInternalResponse->GetPrincipalInfo();
+  nsIPrincipal* GetPrincipal() const {
+    return mInternalResponse->GetPrincipal();
   }
 
   bool HasCacheInfoChannel() const {

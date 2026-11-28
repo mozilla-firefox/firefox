@@ -6,7 +6,6 @@
 #define mozilla_dom_InternalRequest_h
 
 #include "mozilla/LoadTainting.h"
-#include "mozilla/UniquePtr.h"
 #include "mozilla/dom/HeadersBinding.h"
 #include "mozilla/dom/InternalHeaders.h"
 #include "mozilla/dom/InternalResponse.h"
@@ -31,7 +30,6 @@ namespace mozilla {
 
 namespace ipc {
 class PBackgroundChild;
-class PrincipalInfo;
 }  // namespace ipc
 
 namespace dom {
@@ -379,11 +377,8 @@ class InternalRequest final : public AtomicSafeRefCounted<InternalRequest> {
   static RequestCredentials MapChannelToRequestCredentials(
       nsIChannel* aChannel);
 
-  // Takes ownership of the principal info.
-  void SetPrincipalInfo(UniquePtr<mozilla::ipc::PrincipalInfo> aPrincipalInfo);
-  const UniquePtr<mozilla::ipc::PrincipalInfo>& GetPrincipalInfo() const {
-    return mPrincipalInfo;
-  }
+  void SetPrincipal(nsIPrincipal* aPrincipal) { mPrincipal = aPrincipal; }
+  nsIPrincipal* GetPrincipal() const { return mPrincipal; }
 
   const nsCString& GetPreferredAlternativeDataType() const {
     return mPreferredAlternativeDataType;
@@ -533,7 +528,7 @@ class InternalRequest final : public AtomicSafeRefCounted<InternalRequest> {
   nsILoadInfo::CrossOriginEmbedderPolicy mEmbedderPolicy =
       nsILoadInfo::EMBEDDER_POLICY_NULL;
 
-  UniquePtr<mozilla::ipc::PrincipalInfo> mPrincipalInfo;
+  nsCOMPtr<nsIPrincipal> mPrincipal;
 
   // Following members are specific for the FetchEvent.request or
   // NavigationPreload request which is extracted from the
