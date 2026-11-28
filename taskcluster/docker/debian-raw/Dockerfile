@@ -12,7 +12,6 @@ COPY topsrcdir/taskcluster/docker/recipes/setup_packages.sh /usr/local/sbin/
 # %include taskcluster/docker/recipes/clean_packages.sh
 COPY topsrcdir/taskcluster/docker/recipes/clean_packages.sh /usr/local/sbin/
 
-COPY taskcluster-hack.sh /usr/local/sbin
 COPY snapshot-hack.py /usr/local/sbin
 COPY gpgvnoexpkeysig /usr/local/sbin
 
@@ -49,9 +48,6 @@ RUN if [ -n "$DIST" ]; then for s in debian_$DIST debian_$DIST-updates debian_$D
       echo 'APT::Install-Recommends "false";'; \
       echo 'Acquire::Check-Valid-Until "false";'; \
       echo 'Acquire::Retries "5";'; \
-      if dpkg --compare-versions $(apt --version | awk '{print $2}') ge 2.1.15; then \
-        echo 'dir::bin::methods::https "/usr/local/sbin/taskcluster-hack.sh";'; \
-      fi; \
       if [ "$DIST" = "jessie" ]; then \
         echo 'Dir::Bin::gpg "/usr/local/sbin/gpgvnoexpkeysig";'; \
       fi; \
