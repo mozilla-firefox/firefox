@@ -188,7 +188,6 @@ tasks:
         definition: debian-raw
         args:
             BASE_IMAGE: debian:jessie-20210208
-            DIST: jessie
     debian8-packages:
         symbol: I(deb8-pkg)
         definition: debian-packages
@@ -198,7 +197,6 @@ tasks:
         definition: debian-raw
         args:
             BASE_IMAGE: i386/debian:jessie-20210208
-            DIST: jessie
     debian8-i386-packages:
         symbol: I(deb8-32-pkg)
         definition: debian-packages
@@ -210,7 +208,6 @@ tasks:
         definition: debian-raw
         args:
             BASE_IMAGE: debian:buster-20230612
-            DIST: buster
         arch: arm64
     debian10-arm64-packages:
         symbol: I(deb10-arm64-pkg)
@@ -243,7 +240,6 @@ tasks:
         definition: debian-raw
         args:
             BASE_IMAGE: debian:bookworm-20261020
-            DIST: bookworm
             SNAPSHOT: 20261022T022452Z
     debian12-packages:
         symbol: I(deb12-pkg)
@@ -289,7 +285,6 @@ tasks:
         definition: debian-raw
         args:
             BASE_IMAGE: debian:trixie-20261020
-            DIST: trixie
             SNAPSHOT: 20261022T022452Z
     debian13-packages:
         symbol: I(deb13-pkg)

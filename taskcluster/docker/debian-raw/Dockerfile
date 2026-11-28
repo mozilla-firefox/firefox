@@ -15,7 +15,6 @@ COPY topsrcdir/taskcluster/docker/recipes/clean_packages.sh /usr/local/sbin/
 COPY snapshot-hack.py /usr/local/sbin
 COPY gpgvnoexpkeysig /usr/local/sbin
 
-ARG DIST
 ARG SNAPSHOT
 ARG TASKCLUSTER_ROOT_URL
 
@@ -23,7 +22,14 @@ RUN if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then mv /etc/apt/sources.l
 
 # Set apt sources list to a snapshot.
 # Note: the use of gpgvnoexpkeysig is because the Debian Jessie GPG key expired.
-RUN if [ -n "$DIST" ]; then for s in debian_$DIST debian_$DIST-updates debian_$DIST-backports debian-security_$DIST-security debian-debug_$DIST-debug debian-debug_$DIST-proposed-updates-debug debian-debug_$DIST-backports-debug; do \
+RUN set -ex; \
+  DIST="$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release)" ; \
+  if [ -z "$DIST" ]; then \
+    : Debian jessie does not have VERSION_CODENAME ; \
+    DIST="$(sed -n 's/^VERSION=.*(\([^)]*\)).*/\1/p' /etc/os-release)" ; \
+  fi; \
+  if grep -q ID=debian /etc/os-release; then \
+    for s in debian_$DIST debian_$DIST-updates debian_$DIST-backports debian-security_$DIST-security debian-debug_$DIST-debug debian-debug_$DIST-proposed-updates-debug debian-debug_$DIST-backports-debug; do \
       case "$s" in \
       debian-debug_jessie*|debian_jessie-updates) \
           : No debian-debug/updates archive for Jessie; \
@@ -41,21 +47,22 @@ RUN if [ -n "$DIST" ]; then for s in debian_$DIST debian_$DIST-updates debian_$D
           echo "deb http://snapshot.debian.org/archive/${s%_*}/$SNAPSHOT/ ${s#*_} main"; \
           ;; \
       esac; \
-    done > /etc/apt/sources.list ; fi && \
-    rm -f /etc/apt/sources.list.d/* && \
-    ( echo 'quiet "true";'; \
-      echo 'APT::Get::Assume-Yes "true";'; \
-      echo 'APT::Install-Recommends "false";'; \
-      echo 'Acquire::Check-Valid-Until "false";'; \
-      echo 'Acquire::Retries "5";'; \
-      if [ "$DIST" = "jessie" ]; then \
-        echo 'Dir::Bin::gpg "/usr/local/sbin/gpgvnoexpkeysig";'; \
-      fi; \
-    ) > /etc/apt/apt.conf.d/99taskcluster && \
-    ( echo 'Package: *'; \
-      echo 'Pin: origin "'$TASKCLUSTER_ROOT_URL'"' | sed 's,https://,,'; \
-      echo 'Pin-Priority: 1001'; \
-    ) > /etc/apt/preferences.d/99taskcluster
+    done > /etc/apt/sources.list ; \
+  fi; \
+  rm -f /etc/apt/sources.list.d/* && \
+  ( echo 'quiet "true";'; \
+    echo 'APT::Get::Assume-Yes "true";'; \
+    echo 'APT::Install-Recommends "false";'; \
+    echo 'Acquire::Check-Valid-Until "false";'; \
+    echo 'Acquire::Retries "5";'; \
+    if [ "$DIST" = "jessie" ]; then \
+      echo 'Dir::Bin::gpg "/usr/local/sbin/gpgvnoexpkeysig";'; \
+    fi; \
+  ) > /etc/apt/apt.conf.d/99taskcluster && \
+  ( echo 'Package: *'; \
+    echo 'Pin: origin "'$TASKCLUSTER_ROOT_URL'"' | sed 's,https://,,'; \
+    echo 'Pin-Priority: 1001'; \
+  ) > /etc/apt/preferences.d/99taskcluster
 
 RUN if [ -f /etc/apt/ubuntu.sources ]; then mv /etc/apt/ubuntu.sources /etc/apt/sources.list.d/; fi
 
