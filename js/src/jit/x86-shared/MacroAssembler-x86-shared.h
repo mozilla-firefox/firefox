@@ -1121,6 +1121,7 @@ class MacroAssemblerX86Shared : public Assembler {
 
   // Emit a JMP that can be toggled to a CMP. See ToggleToJmp(), ToggleToCmp().
   CodeOffset toggledJump(Label* label) {
+    MOZ_ASSERT(!label->isNear());
     CodeOffset offset(size());
     jump(label);
     return offset;

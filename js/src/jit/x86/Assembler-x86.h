@@ -556,6 +556,7 @@ class Assembler : public AssemblerX86Shared {
   // Re-routes pending jumps to an external target, flushing the label in the
   // process.
   void retarget(Label* label, ImmPtr target, RelocationKind reloc) {
+    MOZ_ASSERT(!label->isNear());
     if (label->used()) {
       bool more;
       X86Encoding::JmpSrc jmp(label->offset());

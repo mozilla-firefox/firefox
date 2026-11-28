@@ -979,11 +979,23 @@ class AssemblerX86Shared : public AssemblerShared {
   }
 
  protected:
+  void useNearLabel(Label* label, JmpSrc j) {
+    JmpSrc prev;
+    if (label->used()) {
+      prev = JmpSrc(label->offset());
+    }
+    label->use(j.offset());
+    masm.setNextShortJump(j, prev);
+  }
+
   void jSrc(Condition cond, Label* label) {
     if (label->bound()) {
       // The jump can be immediately encoded to the correct destination.
       masm.jCC_i(static_cast<X86Encoding::Condition>(cond),
                  JmpDst(label->offset()));
+    } else if (label->isNear()) {
+      useNearLabel(label,
+                   masm.jCC_short(static_cast<X86Encoding::Condition>(cond)));
     } else {
       // Thread the jump list through the unpatched jump targets.
       JmpSrc j = masm.jCC(static_cast<X86Encoding::Condition>(cond));
@@ -999,6 +1011,8 @@ class AssemblerX86Shared : public AssemblerShared {
     if (label->bound()) {
       // The jump can be immediately encoded to the correct destination.
       masm.jmp_i(JmpDst(label->offset()));
+    } else if (label->isNear()) {
+      useNearLabel(label, masm.jmp_short());
     } else {
       // Thread the jump list through the unpatched jump targets.
       JmpSrc j = masm.jmp();
@@ -1013,6 +1027,7 @@ class AssemblerX86Shared : public AssemblerShared {
 
   // Comparison of EAX against the address given by a Label.
   JmpSrc cmpSrc(Label* label) {
+    MOZ_ASSERT(!label->isNear());
     JmpSrc j = masm.cmp_eax();
     if (label->bound()) {
       // The jump can be immediately patched to the correct destination.
@@ -1035,8 +1050,13 @@ class AssemblerX86Shared : public AssemblerShared {
       JmpSrc jmp(label->offset());
       do {
         JmpSrc next;
-        more = masm.nextJump(jmp, &next);
-        masm.linkJump(jmp, dst);
+        if (label->isNear()) {
+          more = masm.nextShortJump(jmp, &next);
+          masm.linkShortJump(jmp, dst);
+        } else {
+          more = masm.nextJump(jmp, &next);
+          masm.linkJump(jmp, dst);
+        }
         jmp = next;
       } while (more);
     }
@@ -1087,6 +1107,8 @@ class AssemblerX86Shared : public AssemblerShared {
 
   // Re-routes pending jumps to a new label.
   void retarget(Label* label, Label* target) {
+    MOZ_ASSERT(!label->isNear());
+    MOZ_ASSERT(!target->isNear());
     if (!label->used()) {
       return;
     }
@@ -1132,6 +1154,7 @@ class AssemblerX86Shared : public AssemblerShared {
     masm.ret_i(n.value - sizeof(void*));
   }
   CodeOffset call(Label* label) {
+    MOZ_ASSERT(!label->isNear());
     JmpSrc j = masm.call();
     if (label->bound()) {
       masm.linkJump(j, JmpDst(label->offset()));

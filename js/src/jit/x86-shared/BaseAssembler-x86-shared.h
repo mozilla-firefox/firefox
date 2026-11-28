@@ -2873,6 +2873,27 @@ class BaseAssembler : public GenericAssembler {
     return r;
   }
 
+  // rel8 forms for forward branches to an unbound NearLabel. The returned
+  // JmpSrc points past the instruction; the displacement byte is at
+  // JmpSrc::offset() - 1.
+  [[nodiscard]] JmpSrc jCC_short(Condition cond) {
+    auto offset = currentOffset();
+    m_formatter.oneByteOp(jccRel8(cond));
+    m_formatter.immediate8s(0);
+    JmpSrc r(m_formatter.size());
+    spew(offset, "j%s        .Lfrom%d (rel8)", CCName(cond), r.offset());
+    return r;
+  }
+
+  [[nodiscard]] JmpSrc jmp_short() {
+    auto offset = currentOffset();
+    m_formatter.oneByteOp(OP_JMP_rel8);
+    m_formatter.immediate8s(0);
+    JmpSrc r(m_formatter.size());
+    spew(offset, "jmp        .Lfrom%d (rel8)", r.offset());
+    return r;
+  }
+
   // SSE operations:
 
   void vpcmpeqb_rr(XMMRegisterID src1, XMMRegisterID src0, XMMRegisterID dst) {
@@ -4881,6 +4902,71 @@ class BaseAssembler : public GenericAssembler {
          to.offset());
     unsigned char* code = m_formatter.data();
     SetRel32(code + from.offset(), code + to.offset(), from.trailing());
+  }
+
+  void assertValidShortJmpSrc(JmpSrc src) {
+    // The displacement is stored at offset - 1.
+    MOZ_RELEASE_ASSERT(src.offset() >= 2);
+    MOZ_RELEASE_ASSERT(size_t(src.offset()) <= size());
+  }
+
+  // Unbound rel8 branches to a label are chained through their displacement
+  // bytes: each holds the distance back to the previous branch, or 0 for the
+  // first one. Branches that all reach the label are also within rel8 range
+  // of each other.
+  bool nextShortJump(const JmpSrc& from, JmpSrc* next) {
+    if (oom()) {
+      return false;
+    }
+
+    assertValidShortJmpSrc(from);
+
+    const unsigned char* code = m_formatter.data();
+    int32_t distance = code[from.offset() - 1];
+    if (distance == 0) {
+      return false;
+    }
+
+    *next = JmpSrc(from.offset() - distance);
+    return true;
+  }
+  void setNextShortJump(const JmpSrc& from, const JmpSrc& to) {
+    if (oom()) {
+      return;
+    }
+
+    assertValidShortJmpSrc(from);
+
+    int32_t distance = 0;
+    if (to.offset() != -1) {
+      distance = from.offset() - to.offset();
+      MOZ_RELEASE_ASSERT(distance > 0 && distance <= INT8_MAX,
+                         "NearLabel branches out of rel8 range");
+    }
+
+    unsigned char* code = m_formatter.data();
+    code[from.offset() - 1] = static_cast<unsigned char>(distance);
+  }
+
+  void linkShortJump(JmpSrc from, JmpDst to) {
+    MOZ_ASSERT(from.offset() != -1);
+    MOZ_ASSERT(to.offset() != -1);
+
+    if (oom()) {
+      return;
+    }
+
+    assertValidShortJmpSrc(from);
+    MOZ_RELEASE_ASSERT(size_t(to.offset()) <= size());
+
+    int32_t diff = to.offset() - from.offset();
+    MOZ_RELEASE_ASSERT(diff >= 0 && diff <= INT8_MAX,
+                       "NearLabel bound out of rel8 range");
+
+    spew(currentOffset(), ".set short .Lfrom%d, .Llabel%d", from.offset(),
+         to.offset());
+    unsigned char* code = m_formatter.data();
+    code[from.offset() - 1] = static_cast<unsigned char>(diff);
   }
 
   void executableCopy(void* dst) {

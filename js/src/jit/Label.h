@@ -22,6 +22,10 @@ struct LabelBase {
   // incoming uses and needs to be bound.
   uint32_t offset_ : 31;
 
+#if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
+  bool near_ = false;
+#endif
+
 #if defined(JS_CODEGEN_MIPS64) || defined(JS_CODEGEN_LOONG64) || \
     defined(JS_CODEGEN_RISCV64)
  public:
@@ -30,6 +34,17 @@ struct LabelBase {
 
  public:
   LabelBase() : bound_(false), offset_(INVALID_OFFSET) {}
+
+  // See NearLabel. Must be called before the label is used or bound.
+#if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
+  void setNear() {
+    MOZ_ASSERT(!bound() && !used());
+    near_ = true;
+  }
+  bool isNear() const { return near_; }
+#else
+  void setNear() {}
+#endif
 
   void operator=(const LabelBase& label) = delete;
 
@@ -81,8 +96,26 @@ class Label : public LabelBase {
 #endif
 };
 
+#if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
+static_assert(sizeof(Label) == 2 * sizeof(uint32_t),
+              "Label should have same size as two uint32_t");
+#else
 static_assert(sizeof(Label) == sizeof(uint32_t),
               "Label should have same size as uint32_t");
+#endif
+
+// A label that is declared, branched to and bound inside one emitter, where
+// every forward branch binds within rel8 range (about 125 bytes) in all build
+// configurations, including DEBUG-only emission. On x86 and x64 forward
+// branches to it use the 2-byte form instead of the rel32 form; a branch that
+// ends up out of range is a release assert. It must not be retargeted, used
+// as a call target or passed to toggledJump(). Other architectures treat it as
+// a plain Label. A Label that is near only under some condition can call
+// setNear() instead.
+class NearLabel : public Label {
+ public:
+  NearLabel() { setNear(); }
+};
 
 // Label's destructor asserts that if it has been used it has also been bound.
 // In the case long-lived labels, however, failed compilation (e.g. OOM) will
