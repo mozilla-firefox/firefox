@@ -26,8 +26,13 @@ def _crate_records(topsrcdir, topobjdir, substs, log):
     what Cargo.lock cannot express: whether a crate is reached as a normal, a
     build or a dev dependency, and so whether it ships at all.
 
-    Returns (shipped, tooling, edges, kinds). Without `cargo metadata` nothing
-    can be told apart, so every crate counts as shipped and ``kinds`` is empty.
+    A crate `cargo metadata --filter-platform RUST_TARGET` does not build into
+    the product is in ``other_platforms``, or tooling if this platform builds
+    it.
+
+    Returns (shipped, tooling, other_platforms, edges, kinds). Without
+    `cargo metadata` nothing can be told apart, so every crate counts as
+    shipped and ``kinds`` is empty.
     """
     from mozbuild.vendor.sbom_cargo import (
         collect_dependency_kinds,
@@ -42,11 +47,32 @@ def _crate_records(topsrcdir, topobjdir, substs, log):
         log=log,
         rustc=substs.get("RUSTC"),
     )
+    target_kinds = {}
+    if kinds and substs.get("RUST_TARGET"):
+        target_kinds = collect_dependency_kinds(
+            topsrcdir,
+            topobjdir,
+            substs.get("CARGO"),
+            log=log,
+            rustc=substs.get("RUSTC"),
+            target=substs["RUST_TARGET"],
+        )
     crates, edges = crate_records(topsrcdir, kinds=kinds)
-    shipped, tooling = [], []
+    shipped, tooling, other_platforms = [], [], []
     for crate in crates:
-        (tooling if is_tooling(crate) else shipped).append(crate)
-    return shipped, tooling, edges, kinds
+        target = target_kinds.get((crate["name"], crate["version"]), [])
+        built_here = (
+            not target_kinds or "normal" not in crate["kinds"] or "normal" in target
+        )
+        if is_tooling(crate) or (target and not built_here):
+            tooling.append(crate)
+        elif built_here:
+            shipped.append(crate)
+        else:
+            other_platforms.append(crate)
+    if other_platforms:
+        log(f"{len(other_platforms)} crate(s) only other platforms build left out.")
+    return shipped, tooling, other_platforms, edges, kinds
 
 
 def _manifest_records(repo, topsrcdir, log):
@@ -184,7 +210,7 @@ def build_tooling_document(
 
     # The crates only the tests, the tools and the build scripts build, which
     # the product document leaves out.
-    _, crates, crate_edges, kinds = _crate_records(topsrcdir, topobjdir, substs, log)
+    _, crates, _, crate_edges, kinds = _crate_records(topsrcdir, topobjdir, substs, log)
     records.extend(crates)
     dependencies.update(crate_edges)
     if kinds:
@@ -277,7 +303,7 @@ def build_document(
 
     # A crate only tests, tools or build scripts use ships in nothing; the
     # build tooling document has it.
-    crates, tooling, dependencies, kinds = _crate_records(
+    crates, tooling, other_platforms, dependencies, kinds = _crate_records(
         topsrcdir, topobjdir, substs, log
     )
     records.extend(crates)
@@ -342,7 +368,7 @@ def build_document(
                 records,
                 notices,
                 lambda path: os.path.isfile(os.path.join(topsrcdir, path)),
-                elsewhere=manifest_tooling + tooling,
+                elsewhere=manifest_tooling + tooling + other_platforms,
             )
         )
         product_notices = unattached_notices(records, notices)

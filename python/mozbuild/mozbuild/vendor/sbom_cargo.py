@@ -231,7 +231,7 @@ def dependency_kinds(metadata, tooling_members=TOOLING_MEMBERS, report=None):
 
 
 def collect_dependency_kinds(
-    topsrcdir, topobjdir=None, cargo=None, log=None, rustc=None
+    topsrcdir, topobjdir=None, cargo=None, log=None, rustc=None, target=None
 ):
     """Run `cargo metadata` and reduce it to dependency kinds.
 
@@ -240,7 +240,9 @@ def collect_dependency_kinds(
     ``rustc`` is the RUSTC subst, passed through as the `RUSTC` environment
     variable: resolving the dependency graph makes cargo run `rustc -vV` for
     the host target and cfgs, and it looks for it on PATH, where the Linux
-    build tasks do not have it. Cargo reads `RUSTC` ahead of PATH.
+    build tasks do not have it. Cargo reads `RUSTC` ahead of PATH. A
+    ``target`` triple leaves out the dependencies only another platform's
+    `cfg` selects.
 
     Returns {} when the answer is not available rather than failing: the
     vendored-source replacement lives in the objdir's generated cargo config,
@@ -269,7 +271,8 @@ def collect_dependency_kinds(
 
     try:
         output = subprocess.run(
-            [cargo or "cargo", "metadata", "--format-version", "1", "--offline"],
+            [cargo or "cargo", "metadata", "--format-version", "1", "--offline"]
+            + (["--filter-platform", target] if target else []),
             cwd=topsrcdir,
             env=environment,
             capture_output=True,

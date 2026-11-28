@@ -268,6 +268,17 @@ class TestCrateRecords(unittest.TestCase):
             )
         self.assertEqual(run.call_args.kwargs["env"]["RUSTC"], "/path/to/rustc")
 
+    def test_target_is_passed_to_cargo(self):
+        os.makedirs(os.path.join(self.topsrcdir, ".cargo"), exist_ok=True)
+        completed = subprocess.CompletedProcess([], 0, stdout="{}", stderr="")
+        with mock.patch("subprocess.run", return_value=completed) as run:
+            collect_dependency_kinds(
+                self.topsrcdir, self.topsrcdir, target="x86_64-pc-windows-msvc"
+            )
+        self.assertEqual(
+            run.call_args.args[0][-2:], ["--filter-platform", "x86_64-pc-windows-msvc"]
+        )
+
     def test_missing_cargo_lock_is_not_an_error(self):
         os.remove(os.path.join(self.topsrcdir, "Cargo.lock"))
         self.assertEqual(crate_records(self.topsrcdir), ([], {}))
