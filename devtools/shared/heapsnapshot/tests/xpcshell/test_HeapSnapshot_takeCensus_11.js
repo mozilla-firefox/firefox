@@ -9,13 +9,7 @@
 function doLiveAndOfflineCensus(g, dbg, opts) {
   dbg.memory.allocationSamplingProbability = 1;
   dbg.memory.trackingAllocationSites = true;
-  g.eval(`                                          // 1
-         (function unsafeAtAnySpeed() {             // 2
-           for (var i = 0; i < 100; i++) {          // 3
-             this.markers.push(allocationMarker()); // 4
-           }                                        // 5
-         }());                                      // 6
-         `);
+  g.unsafeAtAnySpeed();
   dbg.memory.trackingAllocationSites = false;
 
   return {
@@ -42,6 +36,14 @@ function run_test() {
   const dbg = new Debugger(g);
 
   g.eval("this.markers = []");
+  // Evaluate this only once so all allocation stacks have the same source.
+  g.eval(`                                          // 1
+         function unsafeAtAnySpeed() {              // 2
+           for (var i = 0; i < 100; i++) {          // 3
+             this.markers.push(allocationMarker()); // 4
+           }                                        // 5
+         }                                          // 6
+         `);
   const markerSize = getMarkerSize(g, dbg);
 
   // First, test that we get the same counts and sizes as we allocate and retain
