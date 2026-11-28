@@ -323,6 +323,14 @@ class TestComponentsForUnmatched(unittest.TestCase):
         )
         self.assertEqual(extra[0]["occurrences"], ["third_party/rlbox"])
 
+    def test_code_described_elsewhere_is_covered(self):
+        extra = components_for_unmatched(
+            [],
+            [self.notice("mit", ["third_party/rust/proc-macro2"], "MIT")],
+            elsewhere=[self.record("third_party/rust/proc-macro2")],
+        )
+        self.assertEqual(extra, [])
+
     def test_notice_without_a_manifest_becomes_a_component(self):
         extra = components_for_unmatched(
             [], [self.notice("mit", ["third_party/rust/byteorder"], "MIT")]

@@ -316,6 +316,7 @@ def build_document(
                 records,
                 notices,
                 lambda path: os.path.isfile(os.path.join(topsrcdir, path)),
+                elsewhere=tooling,
             )
         )
         product_notices = unattached_notices(records, notices)

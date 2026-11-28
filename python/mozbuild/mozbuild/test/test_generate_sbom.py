@@ -215,6 +215,17 @@ class TestBuildDocument(unittest.TestCase):
         edges = {d["ref"]: d.get("dependsOn", []) for d in document["dependencies"]}
         self.assertIn("cargo:serde@1.0.200", edges[ROOT_BOM_REF])
 
+    def write_notice(self, crate):
+        self.write(f"third_party/rust/{crate}/Cargo.toml", "")
+        notice = {"id": "mit", "title": "MIT", "spdx": "MIT", "url": None}
+        notice["paths"] = [f"third_party/rust/{crate}"]
+        self.write("licenses.json", json.dumps({"licenses": [notice]}))
+
+    def test_noticed_tooling_crates_do_not_come_back(self):
+        self.write_notice("hyper")
+        refs = {c["bom-ref"] for c in self.build()["components"]}
+        self.assertFalse([r for r in refs if "hyper" in r or r.startswith("license:")])
+
     def test_rejected_arguments(self):
         output = os.path.join(self.topsrcdir, "sbom.json")
         for arguments in (

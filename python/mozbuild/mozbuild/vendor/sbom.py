@@ -295,7 +295,7 @@ def merge_license_notices(records, notices):
     return records
 
 
-def components_for_unmatched(records, notices, is_file=None):
+def components_for_unmatched(records, notices, is_file=None, elsewhere=()):
     """Build records for licensed code that no moz.yaml or crate describes.
 
     about:license attributes roughly 250 paths, but moz.yaml only exists for
@@ -311,8 +311,12 @@ def components_for_unmatched(records, notices, is_file=None):
     ``is_file`` decides whether a path is a file rather than a directory; it
     defaults to the filesystem-free heuristic that a basename with a suffix is
     a file, so callers with a real tree should pass ``os.path.isfile``.
+    ``elsewhere`` holds records another document describes, whose code must
+    not come back as a notice component.
     """
-    known = {location for record in records for location in _locations(record)}
+    known = {
+        location for record in [*records, *elsewhere] for location in _locations(record)
+    }
 
     def covered(path):
         """Is `path` already described by a component, exactly or within one?
